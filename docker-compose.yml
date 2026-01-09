@@ -2,11 +2,8 @@ services:
   ipqs:
     build: .
     restart: unless-stopped
-    environment:
-      - DOCKER=1
-      - IPQS_API_KEY=${IPQS_API_KEY}
-      - IPQS_DOMAIN=${IPQS_DOMAIN:-indeed.com}
-      - WORKERS=${WORKERS:-1}
+    env_file:
+      - stack.env
     ports:
       - "${PORT:-8000}:8000"
     volumes:

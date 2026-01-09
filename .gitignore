@@ -17,7 +17,6 @@ data/
 *.jsonl
 
 # Docker
-stack.env
 
 # OS
 .DS_Store
