@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Data
+data/
+*.jsonl
+
+# Docker
+stack.env
+
+# OS
+.DS_Store
+Thumbs.db

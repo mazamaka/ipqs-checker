@@ -1,0 +1,10 @@
+__pycache__
+*.py[cod]
+.git
+.gitignore
+.env
+stack.env
+data/
+.idea/
+.vscode/
+*.md

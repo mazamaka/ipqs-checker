@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Fingerprint Check</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --muted: #6b7280;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--muted); margin-top: 8px; }
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .loader {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--muted); }
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .score-section { grid-template-columns: 1fr; }
+        }
+        .score-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .score-value {
+            font-size: 3.5em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score-value.low { color: var(--success); }
+        .score-value.medium { color: var(--warning); }
+        .score-value.high { color: var(--danger); }
+        .score-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .verdict {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.85em;
+        }
+        .verdict.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .verdict.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .alerts {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .alerts h3 {
+            color: var(--danger);
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+        .alert-item.danger { border-left: 3px solid var(--danger); }
+        .alert-item.warning { border-left: 3px solid var(--warning); }
+        .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-badge {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--accent);
+            color: white;
+        }
+        .card-body { padding: 4px 0; }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+        .row:last-child { border-bottom: none; }
+        .row:hover { background: rgba(255,255,255,0.02); }
+        .row.critical { background: rgba(239, 68, 68, 0.08); }
+        .row-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .row-value {
+            font-size: 0.9em;
+            text-align: right;
+            max-width: 55%;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        .row-value.hash {
+            font-size: 0.75em;
+            color: var(--muted);
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .tag.yes { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .tag.no { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .tag.info { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
+        .critical-marker {
+            width: 6px;
+            height: 6px;
+            background: var(--danger);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .json-panel { margin-top: 24px; }
+        .json-toggle {
+            width: 100%;
+            padding: 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .json-toggle:hover { background: var(--border); }
+        .json-box {
+            display: none;
+            margin-top: 12px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #8b949e;
+        }
+        .hidden { display: none; }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Device Fingerprint Analysis</h1>
+            <p>Проверка уникальности и рисков устройства</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loader"></div>
+            <p class="loading-text">Сбор fingerprint данных...</p>
+        </div>
+
+        <div id="result" class="hidden">
+            <div class="score-section">
+                <div class="score-card">
+                    <div class="score-value" id="fraudScore">--</div>
+                    <div class="score-label">Fraud Score</div>
+                    <div class="verdict" id="verdict">Анализ...</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-value" id="guidConf" style="font-size:2.5em">--</div>
+                    <div class="score-label">GUID Confidence</div>
+                    <div id="uniqueTag" class="verdict">--</div>
+                </div>
+            </div>
+
+            <div class="alerts" id="alerts">
+                <h3>Критичные параметры для Google</h3>
+                <div class="alert-grid" id="alertGrid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Детекции</span>
+                </div>
+                <div class="card-body" id="detections"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+                        <span class="critical-marker"></span>
+                        Fingerprints (Критично для Google)
+                    </span>
+                    <span class="card-badge">UNIQUE ID</span>
+                </div>
+                <div class="card-body" id="fingerprints"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Железо и окружение</span>
+                </div>
+                <div class="card-body" id="hardware"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Сеть</span>
+                </div>
+                <div class="card-body" id="network"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Устройство</span>
+                </div>
+                <div class="card-body" id="device"></div>
+            </div>
+
+            <div class="json-panel">
+                <button class="json-toggle" onclick="toggleJson()">Показать полный JSON</button>
+                <pre class="json-box" id="jsonBox"></pre>
+            </div>
+        </div>
+
+        <div class="footer">
+            Device Fingerprint Analysis
+        </div>
+    </div>
+
+    <script>
+        let API_URL = '';
+        let jsonData = null;
+
+        const $ = id => document.getElementById(id);
+        const truncate = (s, n=40) => s && s.length > n ? s.slice(0,n) + '...' : s;
+
+        function tag(val, yesIsBad = true) {
+            if (val === true) return `<span class="tag ${yesIsBad ? 'yes' : 'no'}">${yesIsBad ? 'X' : 'V'} Yes</span>`;
+            if (val === false) return `<span class="tag ${yesIsBad ? 'no' : 'yes'}">${yesIsBad ? 'V' : 'X'} No</span>`;
+            return `<span class="tag info">N/A</span>`;
+        }
+
+        function row(label, value, critical = false, isHash = false) {
+            const v = value ?? '-';
+            const cls = critical ? ' critical' : '';
+            const valCls = isHash ? ' hash' : '';
+            const marker = critical ? '<span class="critical-marker"></span>' : '';
+            return `<div class="row${cls}">
+                <span class="row-label">${marker}${label}</span>
+                <span class="row-value${valCls}">${isHash ? truncate(v, 50) : v}</span>
+            </div>`;
+        }
+
+        function render(d) {
+            jsonData = d;
+            $('loading').classList.add('hidden');
+            $('result').classList.remove('hidden');
+
+            const fraud = d.fraud_chance || 0;
+            const scoreEl = $('fraudScore');
+            scoreEl.textContent = fraud + '%';
+            scoreEl.className = 'score-value ' + (fraud >= 75 ? 'high' : fraud >= 50 ? 'medium' : 'low');
+
+            const verdictEl = $('verdict');
+            if (fraud >= 75) {
+                verdictEl.textContent = 'Высокий риск';
+                verdictEl.className = 'verdict high';
+            } else if (fraud >= 50) {
+                verdictEl.textContent = 'Средний риск';
+                verdictEl.className = 'verdict medium';
+            } else {
+                verdictEl.textContent = 'Низкий риск';
+                verdictEl.className = 'verdict low';
+            }
+
+            $('guidConf').textContent = (d.guid_confidence || 0) + '%';
+            $('uniqueTag').innerHTML = d.unique
+                ? '<span class="tag no">Уникальное устройство</span>'
+                : '<span class="tag yes">Известное устройство</span>';
+
+            const alerts = [];
+            const osMismatch = d.true_os && d.operating_system &&
+                !d.true_os.toLowerCase().includes(d.operating_system.split(' ')[0].toLowerCase());
+            alerts.push({ text: 'OS Mismatch', bad: osMismatch, critical: true });
+
+            const tzMismatch = d.timezone && d.device_timezone && d.timezone !== d.device_timezone;
+            alerts.push({ text: 'Timezone Mismatch', bad: tzMismatch, critical: true });
+            alerts.push({ text: 'Canvas Hash', bad: !d.canvas_hash, critical: true });
+            alerts.push({ text: 'WebGL Hash', bad: !d.webgl_hash, critical: true });
+            alerts.push({ text: 'Memory Detected', bad: !d.memory || d.memory === 0, critical: false });
+            alerts.push({ text: 'Bot Detection', bad: d.bot_status, critical: true });
+            alerts.push({ text: 'Proxy/VPN', bad: d.proxy || d.vpn || d.active_vpn, critical: false });
+
+            $('alertGrid').innerHTML = alerts.map(a => {
+                const cls = a.bad ? (a.critical ? 'danger' : 'warning') : 'ok';
+                const icon = a.bad ? 'X' : 'V';
+                return `<div class="alert-item ${cls}">${icon} ${a.text}</div>`;
+            }).join('');
+
+            $('detections').innerHTML =
+                row('Bot Status', tag(d.bot_status)) +
+                row('Proxy', tag(d.proxy)) +
+                row('VPN', tag(d.vpn)) +
+                row('Active VPN', tag(d.active_vpn)) +
+                row('Tor', tag(d.tor)) +
+                row('Crawler', tag(d.is_crawler)) +
+                row('High Risk Device', tag(d.high_risk_device)) +
+                row('Recent Abuse', tag(d.recent_abuse));
+
+            $('fingerprints').innerHTML =
+                row('Canvas Hash', d.canvas_hash, !d.canvas_hash, true) +
+                row('WebGL Hash', d.webgl_hash, !d.webgl_hash, true) +
+                row('SSL Fingerprint', d.ssl_fingerprint, false, true) +
+                row('Device ID', d.device_id, false, true) +
+                row('GUID', d.guid, false, true) +
+                row('Audio Hash', d.audio_hash || 'N/A', !d.audio_hash, true);
+
+            const res = d.resolution
+                ? (Array.isArray(d.resolution) ? d.resolution.join(' x ') : d.resolution)
+                : 'N/A';
+            $('hardware').innerHTML =
+                row('Resolution', res) +
+                row('CPU Cores', d.cpu_cores || 'N/A', !d.cpu_cores) +
+                row('Memory (GB)', d.memory || 'N/A', !d.memory) +
+                row('Graphics Card', truncate(d.graphics_card, 50) || 'N/A') +
+                row('Browser Timezone', d.device_timezone || 'N/A', tzMismatch) +
+                row('IP Timezone', d.timezone || 'N/A', tzMismatch) +
+                row('Language', d.language || 'N/A') +
+                row('User Agent', truncate(d.user_agent, 60) || 'N/A');
+
+            $('network').innerHTML =
+                row('IP Address', d.ip_address) +
+                row('Country', d.country) +
+                row('City', d.city) +
+                row('ISP', d.isp) +
+                row('Organization', d.organization) +
+                row('Connection Type', d.connection_type) +
+                row('Interface', d.interface) +
+                row('MTU', d.mtu);
+
+            $('device').innerHTML =
+                row('Device Type', d.device) +
+                row('OS (Fingerprint)', d.operating_system, osMismatch) +
+                row('OS (Detected)', d.true_os, osMismatch) +
+                row('Browser', d.browser) +
+                row('Mobile', tag(d.mobile, false)) +
+                row('Plugins', d.plugins ? d.plugins.length + ' шт.' : 'N/A');
+
+            $('jsonBox').textContent = JSON.stringify(d, null, 2);
+
+            // Log to server
+            fetch('/api/log', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(d)
+            }).catch(() => {});
+        }
+
+        function toggleJson() {
+            const box = $('jsonBox');
+            if (!jsonData) {
+                box.textContent = 'Данные загружаются...';
+                box.style.display = 'block';
+                return;
+            }
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showError(msg) {
+            $('loading').innerHTML = `<div style="color: var(--danger)">Ошибка: ${msg}</div>`;
+        }
+
+        async function init() {
+            try {
+                // Get config from server
+                const configResp = await fetch('/api/config');
+                const config = await configResp.json();
+                API_URL = config.api_url;
+
+                loadIPQS();
+            } catch (e) {
+                showError('Не удалось получить конфигурацию');
+            }
+        }
+
+        let dataReceived = false;
+
+        function loadIPQS() {
+            const script = document.createElement('script');
+            script.src = API_URL + '/learn.js';
+
+            script.onload = () => {
+                if (typeof Startup !== 'undefined' && Startup.Loaded) {
+                    Startup.Loaded(() => {
+                        Startup.Store(result => {
+                            if (!dataReceived) {
+                                dataReceived = true;
+                                render(result);
+                            }
+                        }, fetchFallback);
+                    });
+                } else {
+                    setTimeout(fetchFallback, 2000);
+                }
+            };
+
+            script.onerror = fetchFallback;
+            document.head.appendChild(script);
+
+            // Fallback timeout
+            setTimeout(() => {
+                if (!dataReceived) fetchFallback();
+            }, 8000);
+        }
+
+        function fetchFallback() {
+            if (dataReceived) return;
+            $('loading').querySelector('.loading-text').textContent = 'Получение результатов...';
+
+            fetch(API_URL + '/learn/fetch')
+                .then(r => r.json())
+                .then(d => {
+                    if (!dataReceived) {
+                        dataReceived = true;
+                        render(d);
+                    }
+                })
+                .catch(() => showError('Не удалось загрузить данные'));
+        }
+
+        init();
+    </script>
+</body>
+</html>
