@@ -119,11 +119,20 @@ async def ipqs_proxy_post(path: str, request: Request):
     """Reverse proxy POST for IPQS"""
     url = f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}/{path}"
 
+    # Get real client IP
+    client_ip = (
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
+        request.headers.get("x-real-ip") or
+        (request.client.host if request.client else None)
+    )
+
     try:
         body = await request.body()
         headers = {
             "Content-Type": request.headers.get("content-type", "application/json"),
             "User-Agent": request.headers.get("user-agent", ""),
+            "X-Forwarded-For": client_ip,
+            "X-Real-IP": client_ip,
         }
 
         async with httpx.AsyncClient(timeout=30) as client:
