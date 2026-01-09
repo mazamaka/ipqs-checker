@@ -513,12 +513,15 @@
             if (dataReceived) return;
             $('loading').querySelector('.loading-text').textContent = 'Получение результатов...';
 
-            fetch(API_URL + '/learn/fetch')
+            // Use server proxy to bypass CORS issues
+            fetch('/api/proxy/fetch')
                 .then(r => r.json())
                 .then(d => {
-                    if (!dataReceived) {
+                    if (!dataReceived && !d.error) {
                         dataReceived = true;
                         render(d);
+                    } else if (d.error) {
+                        showError('Ошибка: ' + d.error);
                     }
                 })
                 .catch(() => showError('Не удалось загрузить данные'));

@@ -4,6 +4,7 @@ IPQS Device Fingerprint Checker - FastAPI Server
 
 import os
 import json
+import httpx
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -73,6 +74,18 @@ async def get_config():
     return {
         "api_url": f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}"
     }
+
+
+@app.get("/api/proxy/fetch")
+async def proxy_fetch():
+    """Proxy IPQS fetch to bypass CORS issues"""
+    url = f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}/learn/fetch"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            return resp.json()
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/api/log")
