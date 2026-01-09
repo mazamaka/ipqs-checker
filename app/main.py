@@ -72,8 +72,56 @@ async def health():
 async def get_config():
     """Get IPQS configuration for frontend"""
     return {
-        "api_url": f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}"
+        "api_url": "/ipqs"  # Use local proxy instead of direct IPQS
     }
+
+
+@app.get("/ipqs/{path:path}")
+async def ipqs_proxy(path: str, request: Request):
+    """Reverse proxy for IPQS to bypass fn.fn bug"""
+    url = f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}/{path}"
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            # Forward the request
+            resp = await client.get(url)
+
+            # Return with appropriate content type
+            content_type = resp.headers.get("content-type", "application/octet-stream")
+            from fastapi.responses import Response
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/ipqs/{path:path}")
+async def ipqs_proxy_post(path: str, request: Request):
+    """Reverse proxy POST for IPQS"""
+    url = f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}/{path}"
+
+    try:
+        body = await request.body()
+        headers = {
+            "Content-Type": request.headers.get("content-type", "application/json"),
+            "User-Agent": request.headers.get("user-agent", ""),
+        }
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(url, content=body, headers=headers)
+
+            content_type = resp.headers.get("content-type", "application/json")
+            from fastapi.responses import Response
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/api/proxy/fetch")
