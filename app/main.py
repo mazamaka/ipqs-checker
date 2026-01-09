@@ -72,7 +72,7 @@ async def health():
 async def get_config():
     """Get IPQS configuration for frontend"""
     return {
-        "api_url": "/ipqs"  # Use local proxy instead of direct IPQS
+        "api_url": f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}"
     }
 
 
