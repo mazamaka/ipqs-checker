@@ -72,7 +72,7 @@ async def health():
 async def get_config():
     """Get IPQS configuration for frontend"""
     return {
-        "api_url": f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}"
+        "api_url": "/ipqs"  # Use patched proxy
     }
 
 
@@ -83,14 +83,30 @@ async def ipqs_proxy(path: str, request: Request):
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            # Forward the request
             resp = await client.get(url)
-
-            # Return with appropriate content type
+            content = resp.content
             content_type = resp.headers.get("content-type", "application/octet-stream")
+
+            # Patch learn.js to fix fn.fn bug
+            if path == "learn.js" and b"fn.us.ipqscdn.com" in content:
+                # Replace any occurrence that might cause fn.fn
+                content = content.replace(
+                    b'fn."+"us.ipqscdn.com',
+                    b'us.ipqscdn.com'
+                )
+                content = content.replace(
+                    b"fn.us.ipqscdn.com",
+                    b"us.ipqscdn.com"
+                )
+                # Also replace in case it's building URL differently
+                content = content.replace(
+                    b'"fn."',
+                    b'""'
+                )
+
             from fastapi.responses import Response
             return Response(
-                content=resp.content,
+                content=content,
                 media_type=content_type,
                 headers={"Access-Control-Allow-Origin": "*"}
             )

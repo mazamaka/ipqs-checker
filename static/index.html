@@ -468,12 +468,6 @@
 
         async function init() {
             try {
-                // Register Service Worker to fix fn.fn bug
-                if ('serviceWorker' in navigator) {
-                    await navigator.serviceWorker.register('/static/sw.js');
-                    await navigator.serviceWorker.ready;
-                }
-
                 // Get config from server
                 const configResp = await fetch('/api/config');
                 const config = await configResp.json();
