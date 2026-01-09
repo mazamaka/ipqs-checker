@@ -19,8 +19,13 @@ IPQS_API_KEY = os.getenv(
     "***REMOVED***"
 )
 IPQS_DOMAIN = os.getenv("IPQS_DOMAIN", "indeed.com")
-DATA_DIR = Path("/app/data")
-DATA_DIR.mkdir(exist_ok=True)
+
+# Data directory - /app/data in Docker, ./data locally
+if Path("/app/data").exists() or os.getenv("DOCKER"):
+    DATA_DIR = Path("/app/data")
+else:
+    DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 VISITORS_LOG = DATA_DIR / "visitors.jsonl"
 
 app = FastAPI(
