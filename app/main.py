@@ -71,8 +71,6 @@ async def health():
 async def get_config():
     """Get IPQS configuration for frontend"""
     return {
-        "api_key": IPQS_API_KEY,
-        "domain": IPQS_DOMAIN,
         "api_url": f"https://fn.us.ipqscdn.com/api/{IPQS_DOMAIN}/{IPQS_API_KEY}"
     }
 
