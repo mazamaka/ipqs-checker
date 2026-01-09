@@ -19,8 +19,13 @@ IPQS_API_KEY = os.getenv(
     "Cj3vYxb1VZH2JWf0tcSCvYQYYDpTUVzrhnbokrjKBwfU27WZkOPIVPU4jKvusri0MQWIKEwDWZtsinjFTdO0Hhh1FHSreV5Jnpzkwv0GNqfA8rAuB5X5R1ybqqrbmKoEYLRUWRekgbYgshv7NvtZLyFKku08TbCeYn13r0sbLioZLjLXNYo6nLRp4SOYCPIMH3dJdLHQ8z7FZL15cTmK2tI1bGbWR16xbdY6W0LwxLmfkf4StKb1qrCavtM4u500"
 )
 IPQS_DOMAIN = os.getenv("IPQS_DOMAIN", "indeed.com")
-DATA_DIR = Path("/app/data")
-DATA_DIR.mkdir(exist_ok=True)
+
+# Data directory - /app/data in Docker, ./data locally
+if Path("/app/data").exists() or os.getenv("DOCKER"):
+    DATA_DIR = Path("/app/data")
+else:
+    DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 VISITORS_LOG = DATA_DIR / "visitors.jsonl"
 
 app = FastAPI(
