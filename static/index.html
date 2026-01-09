@@ -481,6 +481,23 @@
 
         let dataReceived = false;
 
+        // Intercept fetch/XHR to fix fn.fn bug
+        (function() {
+            const fixUrl = (url) => url.replace('fn.fn.us.ipqscdn.com', 'fn.us.ipqscdn.com');
+
+            // Override fetch
+            const origFetch = window.fetch;
+            window.fetch = function(url, opts) {
+                return origFetch.call(this, fixUrl(String(url)), opts);
+            };
+
+            // Override XMLHttpRequest.open
+            const origOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+                return origOpen.call(this, method, fixUrl(String(url)), ...rest);
+            };
+        })();
+
         function loadIPQS() {
             const script = document.createElement('script');
             script.src = API_URL + '/learn.js';
