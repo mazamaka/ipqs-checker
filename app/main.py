@@ -181,6 +181,25 @@ async def ipqs_proxy_post(path: str, request: Request):
 extension_reports = {}
 
 
+def count_device_visits(device_id: str, guid: str) -> int:
+    """Count how many times this device was seen"""
+    if not VISITORS_LOG.exists():
+        return 1
+
+    count = 0
+    with open(VISITORS_LOG) as f:
+        for line in f:
+            if line.strip():
+                try:
+                    entry = json.loads(line)
+                    ipqs = entry.get("ipqs", {})
+                    if ipqs.get("device_id") == device_id or ipqs.get("guid") == guid:
+                        count += 1
+                except json.JSONDecodeError:
+                    continue
+    return count + 1  # +1 for current visit
+
+
 @app.post("/api/extension/report")
 async def extension_report(request: Request):
     """Receive fingerprint data from browser extension"""
@@ -189,13 +208,30 @@ async def extension_report(request: Request):
         session_id = data.get("session_id", "default")
         fingerprint = data.get("fingerprint", {})
 
+        # Count device visits
+        device_id = fingerprint.get("device_id", "")
+        guid = fingerprint.get("guid", "")
+        visit_count = count_device_visits(device_id, guid) if (device_id or guid) else 1
+
+        # Add visit count to fingerprint
+        fingerprint["_visit_count"] = visit_count
+
         extension_reports[session_id] = {
             "fingerprint": fingerprint,
             "timestamp": datetime.utcnow().isoformat(),
             "source": data.get("source", "unknown")
         }
 
-        print(f"[EXT] Received fingerprint for session {session_id}")
+        # Log to visitors file
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "ipqs": fingerprint
+        }
+        with open(VISITORS_LOG, "a") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        print(f"[EXT] Received fingerprint for session {session_id}, visit #{visit_count}")
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
