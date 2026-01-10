@@ -138,6 +138,15 @@
             border-radius: 10px;
             font-size: 13px;
             color: rgba(255,255,255,0.8);
+            line-height: 1.8;
+        }
+        .note code {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: #ffc107;
         }
         .check-status {
             margin-top: 20px;
@@ -217,8 +226,8 @@
             </div>
 
             <div class="note">
-                <strong>Firefox:</strong> <a href="about:debugging#/runtime/this-firefox" style="color: #ff9500;">about:debugging#/runtime/this-firefox</a> → Load Temporary Add-on → выберите manifest.json<br>
-                <strong>Chrome:</strong> <a href="chrome://extensions" style="color: #4285f4;">chrome://extensions</a> → Developer mode → Load unpacked
+                <strong>Firefox:</strong> <code>about:debugging</code> → This Firefox → Load Add-on<br>
+                <strong>Chrome:</strong> <code>chrome://extensions</code> → Developer mode → Load unpacked
             </div>
 
             <div class="check-status" id="checkStatus">
