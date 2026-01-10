@@ -1,50 +1,36 @@
-// Content script for indeed.com - intercepts IPQS fingerprint data
+// Content script for indeed.com - backup interceptor for IPQS fingerprint data
+// Main interception happens in background.js via webRequest.filterResponseData
+// This is a fallback if filterResponseData doesn't catch the data
 
 (function() {
     'use strict';
 
-    const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
+    const api = typeof browser !== 'undefined' ? browser : chrome;
     let dataSent = false;
 
-    // Send data to our server
-    async function sendToServer(data) {
+    // Send data via background script (proper session handling)
+    function sendViaBackground(data) {
         if (dataSent) return;
         dataSent = true;
 
-        const sessionId = 'default';
-
-        try {
-            const response = await fetch(SERVER_URL + '/api/extension/report', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    fingerprint: data,
-                    source: 'indeed.com',
-                    timestamp: Date.now()
-                })
-            });
-            console.log('[IPQS Checker] Fingerprint sent to server:', data.fraud_chance + '%');
-
-            // Notify extension background
-            const api = typeof browser !== 'undefined' ? browser : chrome;
-            api.runtime.sendMessage({ type: 'IPQS_DATA', data: data });
-        } catch (e) {
-            console.error('[IPQS Checker] Failed to send:', e);
-        }
+        console.log('[IPQS Content] Sending fingerprint via background script');
+        api.runtime.sendMessage({
+            type: 'IPQS_DATA',
+            data: data
+        });
     }
 
-    // Hook into IPQS Startup when it becomes available
+    // Hook into IPQS Startup when it becomes available (fallback method)
     function hookStartup() {
         if (typeof Startup !== 'undefined' && Startup.Store) {
-            console.log('[IPQS Checker] Found Startup, hooking...');
+            console.log('[IPQS Content] Found Startup, hooking...');
 
             // Call Startup.Store to get the data
             Startup.Store(function(data) {
-                console.log('[IPQS Checker] Got IPQS data');
-                sendToServer(data);
+                console.log('[IPQS Content] Got IPQS data via Startup.Store');
+                sendViaBackground(data);
             }, function(error) {
-                console.error('[IPQS Checker] IPQS error:', error);
+                console.error('[IPQS Content] IPQS Startup error:', error);
             });
 
             return true;
@@ -52,7 +38,7 @@
         return false;
     }
 
-    // Also listen for IPQS callback via MutationObserver on script elements
+    // Keep trying to hook Startup
     function watchForIPQS() {
         // Try immediately
         if (hookStartup()) return;
@@ -74,5 +60,5 @@
         watchForIPQS();
     }
 
-    console.log('[IPQS Checker] Content script loaded');
+    console.log('[IPQS Content] Content script loaded (backup interceptor)');
 })();

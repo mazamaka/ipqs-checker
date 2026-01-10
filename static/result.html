@@ -612,10 +612,11 @@
             const osFamily = {
                 'ubuntu': 'linux', 'debian': 'linux', 'fedora': 'linux', 'centos': 'linux',
                 'arch': 'linux', 'manjaro': 'linux', 'mint': 'linux', 'kali': 'linux',
-                'chrome os': 'linux', 'chromeos': 'linux',
-                'macos': 'mac', 'mac os': 'mac', 'os x': 'mac',
-                'ios': 'ios', 'iphone': 'ios', 'ipad': 'ios',
-                'android': 'android'
+                'chrome os': 'linux', 'chromeos': 'linux', 'gnu/linux': 'linux', 'linux': 'linux',
+                'macos': 'mac', 'mac os': 'mac', 'os x': 'mac', 'darwin': 'mac',
+                'ios': 'ios', 'iphone': 'ios', 'ipad': 'ios', 'ipados': 'ios',
+                'android': 'android',
+                'windows': 'windows', 'win32': 'windows', 'win64': 'windows'
             };
             const normalizeOs = (os) => {
                 if (!os) return '';
