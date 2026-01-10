@@ -8,17 +8,25 @@ import httpx
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-# Config
-IPQS_API_KEY = os.getenv("IPQS_API_KEY")
-IPQS_DOMAIN = os.getenv("IPQS_DOMAIN", "indeed.com")
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")  # Для защиты админ-операций
+# App imports
+from app.config import SETTINGS
+from app.db import db, get_db
+from app.services import profile_service, check_service
+from app.admin import admin_router
+
+# Config from settings
+IPQS_API_KEY = SETTINGS.ipqs_api_key
+IPQS_DOMAIN = SETTINGS.ipqs_domain
+ADMIN_TOKEN = SETTINGS.admin_token
 
 if not IPQS_API_KEY:
     print("[WARN] IPQS_API_KEY not set, some features will not work")
@@ -31,10 +39,31 @@ else:
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 VISITORS_LOG = DATA_DIR / "visitors.jsonl"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan - startup and shutdown"""
+    # Startup
+    print("[DB] Initializing database...")
+    try:
+        await db.init_models()
+        print("[DB] Database initialized successfully")
+    except Exception as e:
+        print(f"[DB] Database initialization error: {e}")
+        print("[DB] Running without database - results will not be persisted")
+
+    yield
+
+    # Shutdown
+    print("[DB] Closing database connections...")
+    await db.dispose()
+
+
 app = FastAPI(
     title="IPQS Device Fingerprint Checker",
     description="Check device fingerprint and fraud score",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS for extension
@@ -244,29 +273,74 @@ async def extension_report(request: Request):
         data = await request.json()
         session_id = data.get("session_id", "default")
         fingerprint = data.get("fingerprint", {})
+        source = data.get("source", "unknown")
 
-        # Count device visits
+        # Extract fingerprint data
         device_id = fingerprint.get("device_id", "")
         guid = fingerprint.get("guid", "")
         canvas_hash = fingerprint.get("canvas_hash", "")
         webgl_hash = fingerprint.get("webgl_hash", "")
 
-        visit_count = count_device_visits(device_id, guid) if (device_id or guid) else 1
+        # Try to save to database
+        profile_id = None
+        check_id = None
+        visit_count = 1
+        fingerprint_unique = True
 
-        # Check fingerprint uniqueness (canvas + webgl)
-        fingerprint_unique = is_fingerprint_unique(canvas_hash, webgl_hash, device_id)
+        try:
+            async with db.session() as db_session:
+                # Get or create profile
+                profile = await profile_service.get_or_create_profile(
+                    db_session,
+                    canvas_hash=canvas_hash,
+                    webgl_hash=webgl_hash,
+                    device_id=device_id,
+                )
+
+                # Add source to fingerprint data
+                fingerprint["source"] = source
+
+                # Create check record
+                check = await check_service.create_check(
+                    db_session,
+                    profile.id,
+                    fingerprint,
+                    session_id,
+                )
+
+                # Update profile stats
+                await profile_service.update_profile_from_check(
+                    db_session,
+                    profile,
+                    fingerprint,
+                )
+
+                profile_id = profile.id
+                check_id = check.id
+                visit_count = profile.check_count
+                fingerprint_unique = profile.check_count == 1
+
+                print(f"[DB] Saved check {check_id} for profile {profile_id}")
+        except Exception as db_error:
+            print(f"[DB] Error saving to database: {db_error}")
+            # Fallback to file-based counting
+            visit_count = count_device_visits(device_id, guid) if (device_id or guid) else 1
+            fingerprint_unique = is_fingerprint_unique(canvas_hash, webgl_hash, device_id)
 
         # Add visit count and uniqueness to fingerprint
         fingerprint["_visit_count"] = visit_count
         fingerprint["_fingerprint_unique"] = fingerprint_unique
 
+        # Store in memory for quick access from result page
         extension_reports[session_id] = {
             "fingerprint": fingerprint,
             "timestamp": datetime.utcnow().isoformat(),
-            "source": data.get("source", "unknown")
+            "source": source,
+            "profile_id": profile_id,
+            "check_id": check_id,
         }
 
-        # Log to visitors file
+        # Also log to visitors file (backup)
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "session_id": session_id,
@@ -391,3 +465,7 @@ async def clear_visitors(request: Request):
     if VISITORS_LOG.exists():
         VISITORS_LOG.unlink()
     return {"status": "cleared"}
+
+
+# Mount admin router
+app.include_router(admin_router)
