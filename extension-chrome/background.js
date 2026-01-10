@@ -78,7 +78,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Отправляем на сервер
         sendToServer(currentSessionId, fingerprint)
-            .then(() => {
+            .then(async () => {
                 addLog('Открываю страницу результатов...');
 
                 // Закрываем вкладку indeed.com
@@ -86,6 +86,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     chrome.tabs.remove(indeedTabId).catch(() => {});
                     indeedTabId = null;
                 }
+
+                // Очищаем данные indeed.com после проверки
+                await clearIndeedData();
+                addLog('Данные indeed.com очищены после проверки');
 
                 // Открываем страницу результатов
                 chrome.tabs.create({
