@@ -68,6 +68,12 @@
         .loading-text {
             color: rgba(255,255,255,0.9);
         }
+        .hint {
+            margin-top: 8px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+        }
         .status.success {
             display: block;
             background: rgba(46, 213, 115, 0.2);
@@ -161,6 +167,10 @@
     </button>
 
     <div class="status" id="status"></div>
+
+    <div class="hint" id="hint" style="display: none;">
+        Проверка может занять до 60 сек в зависимости от скорости прокси
+    </div>
 
     <div class="last-check" id="lastCheck" style="display: none;">
         <div>Последняя проверка:</div>
