@@ -262,6 +262,58 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        .fingerprint-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 22px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .fingerprint-status.unique {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+        .fingerprint-status.duplicate {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+        .fp-icon {
+            font-size: 2em;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .fingerprint-status.unique .fp-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+        .fingerprint-status.duplicate .fp-icon {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+        .fp-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .fp-text strong {
+            font-size: 1.1em;
+        }
+        .fingerprint-status.unique .fp-text strong {
+            color: var(--success);
+        }
+        .fingerprint-status.duplicate .fp-text strong {
+            color: var(--danger);
+        }
+        .fp-text span {
+            font-size: 0.85em;
+            color: var(--muted);
+        }
         .warning-box {
             display: flex;
             align-items: flex-start;
@@ -508,6 +560,16 @@
                         <div class="score-label">Visit Count</div>
                         <div class="score-desc">Количество проверок этого устройства</div>
                         <div class="verdict ${(d._visit_count || 1) > 1 ? 'medium' : 'low'}">${(d._visit_count || 1) === 1 ? 'Первый визит' : 'Повторный визит'}</div>
+                    </div>
+                </div>
+
+                <div class="fingerprint-status ${d._fingerprint_unique ? 'unique' : 'duplicate'}">
+                    <div class="fp-icon">${d._fingerprint_unique ? '✓' : '⚠'}</div>
+                    <div class="fp-text">
+                        <strong>${d._fingerprint_unique ? 'Fingerprint уникален' : 'Fingerprint уже встречался!'}</strong>
+                        <span>${d._fingerprint_unique
+                            ? 'Этот отпечаток устройства ранее не фиксировался в базе'
+                            : 'Такой отпечаток уже был зарегистрирован — профиль скомпрометирован'}</span>
                     </div>
                 </div>
 
