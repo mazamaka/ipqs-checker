@@ -6,10 +6,12 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 // Store for collecting response data
 let responseData = {};
 
-// Listen for IPQS fetch responses
+// Listen for IPQS fetch responses (both GET and POST)
 api.webRequest.onBeforeRequest.addListener(
     function(details) {
-        if (details.url.includes('ipqscdn.com') && details.url.includes('/learn/fetch')) {
+        console.log('[IPQS Checker] Request:', details.method, details.url);
+
+        if (details.url.includes('ipqscdn.com') && details.url.includes('learn/fetch')) {
             console.log('[IPQS Checker] Detected IPQS fetch request:', details.url);
 
             // Use a filter to read the response
