@@ -154,6 +154,10 @@ async function sendToServer(data, tabId) {
         // Store locally
         await api.storage.local.set({ lastFingerprint: data, lastCheck: Date.now() });
 
+        // Очищаем данные indeed.com после проверки
+        await clearIndeedCookies();
+        await log('Данные indeed.com очищены после проверки');
+
         // Close the indeed tab and open results
         if (tabId) {
             try {

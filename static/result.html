@@ -804,11 +804,11 @@
                 ${(d.first_seen || d.last_seen) ? `
                 <div class="card">
                     <div class="card-header">
-                        <span class="card-title">История устройства (IPQS)</span>
+                        <span class="card-title">История GUID (IPQS)</span>
                     </div>
                     <div class="card-body">
-                        ${row('First Seen', d.first_seen || 'N/A', 'Первое появление в IPQS')}
-                        ${row('Last Seen', d.last_seen || 'N/A', 'Последнее появление в IPQS')}
+                        ${row('First Seen', d.first_seen || 'N/A', 'Первое появление этого GUID (сбрасывается при очистке кук)')}
+                        ${row('Last Seen', d.last_seen || 'N/A', 'Последнее появление этого GUID (сбрасывается при очистке кук)')}
                     </div>
                 </div>
                 ` : ''}
