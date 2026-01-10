@@ -14,7 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const debugLogs = document.getElementById('debugLogs');
 
     function setStatus(text, type = 'loading') {
-        statusEl.textContent = text;
+        if (type === 'loading') {
+            statusEl.innerHTML = `<div class="spinner"></div><span class="loading-text">${text}</span>`;
+        } else {
+            statusEl.textContent = text;
+        }
         statusEl.className = 'status ' + type;
     }
 
