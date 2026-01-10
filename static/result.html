@@ -373,19 +373,29 @@
         // critical: 'danger' = красный (детект), false = обычный (N/A будет оранжевым автоматически)
         function row(label, value, hint = '', critical = false, isHash = false) {
             const v = value ?? '-';
-            const isNA = v === 'N/A' || v === '-' || v === 0 || v === '0';
+            const isHTML = typeof v === 'string' && v.includes('<');
+            const isNA = !isHTML && (v === 'N/A' || v === '-' || v === 0 || v === '0');
             const rowCls = critical === 'danger' ? ' critical' : '';
             const valCls = isHash ? ' hash' : '';
             // danger = реальный детект, na = просто нет данных
             const statusCls = critical === 'danger' ? ' danger' : (isNA ? ' na' : '');
             const marker = critical === 'danger' ? '<span class="critical-marker"></span>' : '';
-            const copyVal = typeof v === 'string' ? v.replace(/'/g, "\\'") : v;
+
+            // Для HTML (tags) не добавляем onclick
+            let valueHtml;
+            if (isHTML) {
+                valueHtml = `<span class="row-value">${v}</span>`;
+            } else {
+                const copyVal = typeof v === 'string' ? v.replace(/'/g, "\\'") : v;
+                valueHtml = `<span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${v}</span>`;
+            }
+
             return `<div class="row${rowCls}">
                 <div class="row-left">
                     <span class="row-label">${marker}${label}</span>
                     ${hint ? `<span class="row-hint">${hint}</span>` : ''}
                 </div>
-                <span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${v}</span>
+                ${valueHtml}
             </div>`;
         }
 
@@ -578,7 +588,8 @@
 
         function toggleJson() {
             const box = $('jsonBox');
-            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            const isHidden = getComputedStyle(box).display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
         }
 
         function showError() {
