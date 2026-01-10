@@ -627,16 +627,21 @@
                 normalizeOs(d.true_os) !== normalizeOs(d.operating_system);
             const tzMismatch = d.timezone && d.device_timezone && d.timezone !== d.device_timezone;
 
+            // TCP-level detections
+            const iface = (d.interface || '').toLowerCase();
+            const tunnelDetected = iface.includes('tunnel') || iface.includes('vpn') || iface.includes('proxy');
+
             // bad = реальный детект (красный), unknown = нет данных (серый), ok = всё хорошо (зелёный)
             const alerts = [
-                { text: 'OS Mismatch', bad: osMismatch, unknown: false, hint: 'Несовпадение реальной и заявленной ОС' },
+                { text: 'OS Mismatch', bad: osMismatch, unknown: false, hint: 'TCP стек выдаёт реальную ОС (TTL, Window Size)' },
                 { text: 'Timezone Mismatch', bad: tzMismatch, unknown: false, hint: 'Несовпадение часовых поясов' },
+                { text: 'Tunnel/VPN (TCP)', bad: tunnelDetected, unknown: false, hint: 'Детект туннеля на уровне TCP пакетов' },
+                { text: 'Proxy/VPN (API)', bad: d.proxy || d.vpn || d.active_vpn, unknown: false, hint: 'Детект прокси через IP базы данных' },
                 { text: 'Canvas Hash', bad: false, unknown: !d.canvas_hash, hint: 'Уникальный отпечаток Canvas' },
                 { text: 'WebGL Hash', bad: false, unknown: !d.webgl_hash, hint: 'Уникальный отпечаток WebGL' },
                 { text: 'Memory', bad: false, unknown: !d.memory || d.memory === 0, hint: 'Объём RAM устройства' },
                 { text: 'Audio Hash', bad: false, unknown: !d.audio_hash, hint: 'Уникальный аудио отпечаток' },
-                { text: 'Bot Detection', bad: d.bot_status, unknown: false, hint: 'Обнаружен бот/автоматизация' },
-                { text: 'Proxy/VPN', bad: d.proxy || d.vpn || d.active_vpn, unknown: false, hint: 'Использование прокси/VPN' }
+                { text: 'Bot Detection', bad: d.bot_status, unknown: false, hint: 'Обнаружен бот/автоматизация' }
             ];
 
             const res = d.resolution
@@ -764,7 +769,7 @@
                         ${row('ISP', d.isp, 'Интернет-провайдер')}
                         ${row('Organization', d.organization, 'Организация-владелец IP')}
                         ${row('Connection Type', d.connection_type, 'Тип подключения')}
-                        ${row('Interface', d.interface, 'Сетевой интерфейс')}
+                        ${row('Interface', d.interface || 'N/A', 'Сетевой интерфейс (TCP fingerprint)', tunnelDetected ? 'danger' : false)}
                         ${row('MTU', d.mtu, 'Максимальный размер пакета')}
                     </div>
                 </div>
