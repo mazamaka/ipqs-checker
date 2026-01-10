@@ -588,8 +588,21 @@
 
         function toggleJson() {
             const box = $('jsonBox');
+            const btn = document.querySelector('.json-toggle');
             const isHidden = getComputedStyle(box).display === 'none';
             box.style.display = isHidden ? 'block' : 'none';
+
+            // Копируем JSON при открытии
+            if (isHidden && jsonData) {
+                navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
+                    btn.textContent = 'JSON скопирован!';
+                    setTimeout(() => {
+                        btn.textContent = 'Скрыть JSON';
+                    }, 1500);
+                });
+            } else {
+                btn.textContent = 'Показать полный JSON';
+            }
         }
 
         function showError() {
