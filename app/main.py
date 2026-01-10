@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Config
@@ -33,6 +34,14 @@ app = FastAPI(
     title="IPQS Device Fingerprint Checker",
     description="Check device fingerprint and fraud score",
     version="1.0.0",
+)
+
+# CORS for extension
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Static files
@@ -147,6 +156,38 @@ async def ipqs_proxy_post(path: str, request: Request):
             )
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# Store for extension reports (in-memory, use Redis in production)
+extension_reports = {}
+
+
+@app.post("/api/extension/report")
+async def extension_report(request: Request):
+    """Receive fingerprint data from browser extension"""
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "default")
+        fingerprint = data.get("fingerprint", {})
+
+        extension_reports[session_id] = {
+            "fingerprint": fingerprint,
+            "timestamp": datetime.utcnow().isoformat(),
+            "source": data.get("source", "unknown")
+        }
+
+        print(f"[EXT] Received fingerprint for session {session_id}")
+        return {"status": "ok"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.get("/api/extension/result/{session_id}")
+async def extension_result(session_id: str):
+    """Get fingerprint result for session"""
+    if session_id in extension_reports:
+        return extension_reports[session_id]
+    return {"status": "pending"}
 
 
 @app.get("/api/proxy/fetch")
