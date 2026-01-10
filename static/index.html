@@ -139,6 +139,7 @@
             font-size: 13px;
             color: rgba(255,255,255,0.8);
             line-height: 1.8;
+            text-align: left;
         }
         .note code {
             background: rgba(255,255,255,0.1);
@@ -147,6 +148,14 @@
             font-family: 'Monaco', 'Menlo', monospace;
             font-size: 12px;
             color: #ffc107;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .note code:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .note code.copied {
+            background: rgba(76, 175, 80, 0.3);
         }
         .check-status {
             margin-top: 20px;
@@ -226,7 +235,7 @@
             </div>
 
             <div class="note">
-                <strong>Firefox:</strong> <code>about:debugging</code> → This Firefox → Load Add-on<br>
+                <strong>Firefox:</strong> <code>about:debugging#/runtime/this-firefox</code> → Load Add-on<br>
                 <strong>Chrome:</strong> <code>chrome://extensions</code> → Developer mode → Load unpacked
             </div>
 
@@ -238,6 +247,16 @@
     </div>
 
     <script>
+        // Copy code on click
+        document.querySelectorAll('.note code').forEach(code => {
+            code.title = 'Нажми чтобы скопировать';
+            code.addEventListener('click', async () => {
+                await navigator.clipboard.writeText(code.textContent);
+                code.classList.add('copied');
+                setTimeout(() => code.classList.remove('copied'), 500);
+            });
+        });
+
         // Check if there's a pending result
         const urlParams = new URLSearchParams(window.location.search);
         const session = urlParams.get('session');
