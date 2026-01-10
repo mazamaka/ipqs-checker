@@ -81,6 +81,12 @@
             font-size: 0.9em;
             margin-top: 8px;
         }
+        .score-desc {
+            color: var(--muted);
+            font-size: 0.75em;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
         .verdict {
             display: inline-block;
             padding: 6px 16px;
@@ -118,10 +124,25 @@
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
             font-size: 0.85em;
+            position: relative;
         }
         .alert-item.danger { border-left: 3px solid var(--danger); }
         .alert-item.warning { border-left: 3px solid var(--warning); }
         .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+        .alert-item[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            white-space: nowrap;
+            z-index: 10;
+        }
         .card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -154,7 +175,7 @@
         .row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             padding: 10px 18px;
             border-bottom: 1px solid var(--border);
             transition: background 0.15s;
@@ -162,12 +183,18 @@
         .row:last-child { border-bottom: none; }
         .row:hover { background: rgba(255,255,255,0.02); }
         .row.critical { background: rgba(239, 68, 68, 0.08); }
+        .row-left { display: flex; flex-direction: column; gap: 2px; }
         .row-label {
             color: var(--muted);
             font-size: 0.9em;
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+        .row-hint {
+            font-size: 0.7em;
+            color: var(--muted);
+            opacity: 0.6;
         }
         .row-value {
             font-size: 0.9em;
@@ -179,6 +206,10 @@
         .row-value.hash {
             font-size: 0.75em;
             color: var(--muted);
+        }
+        .row-value.na {
+            color: var(--danger);
+            opacity: 0.7;
         }
         .tag {
             display: inline-flex;
@@ -296,14 +327,18 @@
             return `<span class="tag info">N/A</span>`;
         }
 
-        function row(label, value, critical = false, isHash = false) {
+        function row(label, value, hint = '', critical = false, isHash = false) {
             const v = value ?? '-';
             const cls = critical ? ' critical' : '';
             const valCls = isHash ? ' hash' : '';
+            const naCls = (v === 'N/A' || v === '-' || v === 0 || v === '0') ? ' na' : '';
             const marker = critical ? '<span class="critical-marker"></span>' : '';
             return `<div class="row${cls}">
-                <span class="row-label">${marker}${label}</span>
-                <span class="row-value${valCls}">${isHash ? truncate(v, 50) : v}</span>
+                <div class="row-left">
+                    <span class="row-label">${marker}${label}</span>
+                    ${hint ? `<span class="row-hint">${hint}</span>` : ''}
+                </div>
+                <span class="row-value${valCls}${naCls}">${isHash ? truncate(v, 50) : v}</span>
             </div>`;
         }
 
@@ -322,13 +357,14 @@
             const tzMismatch = d.timezone && d.device_timezone && d.timezone !== d.device_timezone;
 
             const alerts = [
-                { text: 'OS Mismatch', bad: osMismatch, critical: true },
-                { text: 'Timezone Mismatch', bad: tzMismatch, critical: true },
-                { text: 'Canvas Hash', bad: !d.canvas_hash, critical: true },
-                { text: 'WebGL Hash', bad: !d.webgl_hash, critical: true },
-                { text: 'Memory Detected', bad: !d.memory || d.memory === 0, critical: false },
-                { text: 'Bot Detection', bad: d.bot_status, critical: true },
-                { text: 'Proxy/VPN', bad: d.proxy || d.vpn || d.active_vpn, critical: false }
+                { text: 'OS Mismatch', bad: osMismatch, critical: true, hint: 'Несовпадение реальной и заявленной ОС' },
+                { text: 'Timezone Mismatch', bad: tzMismatch, critical: true, hint: 'Несовпадение часовых поясов' },
+                { text: 'Canvas Hash', bad: !d.canvas_hash, critical: true, hint: 'Уникальный отпечаток Canvas' },
+                { text: 'WebGL Hash', bad: !d.webgl_hash, critical: true, hint: 'Уникальный отпечаток WebGL' },
+                { text: 'Memory', bad: !d.memory || d.memory === 0, critical: false, hint: 'Объём RAM устройства' },
+                { text: 'Audio Hash', bad: !d.audio_hash, critical: false, hint: 'Уникальный аудио отпечаток' },
+                { text: 'Bot Detection', bad: d.bot_status, critical: true, hint: 'Обнаружен бот/автоматизация' },
+                { text: 'Proxy/VPN', bad: d.proxy || d.vpn || d.active_vpn, critical: false, hint: 'Использование прокси/VPN' }
             ];
 
             const res = d.resolution
@@ -340,11 +376,13 @@
                     <div class="score-card">
                         <div class="score-value ${scoreClass}">${fraud}%</div>
                         <div class="score-label">Fraud Score</div>
+                        <div class="score-desc">Вероятность мошенничества</div>
                         <div class="verdict ${scoreClass}">${verdictText}</div>
                     </div>
                     <div class="score-card">
                         <div class="score-value" style="font-size:2.5em">${d.guid_confidence || 0}%</div>
                         <div class="score-label">GUID Confidence</div>
+                        <div class="score-desc">Уверенность в идентификации устройства</div>
                         <div class="verdict ${d.unique ? 'low' : 'high'}">${d.unique ? 'Уникальное устройство' : 'Известное устройство'}</div>
                     </div>
                 </div>
@@ -355,7 +393,7 @@
                         ${alerts.map(a => {
                             const cls = a.bad ? (a.critical ? 'danger' : 'warning') : 'ok';
                             const icon = a.bad ? '✗' : '✓';
-                            return `<div class="alert-item ${cls}">${icon} ${a.text}</div>`;
+                            return `<div class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</div>`;
                         }).join('')}
                     </div>
                 </div>
@@ -365,14 +403,14 @@
                         <span class="card-title">Детекции</span>
                     </div>
                     <div class="card-body">
-                        ${row('Bot Status', tag(d.bot_status))}
-                        ${row('Proxy', tag(d.proxy))}
-                        ${row('VPN', tag(d.vpn))}
-                        ${row('Active VPN', tag(d.active_vpn))}
-                        ${row('Tor', tag(d.tor))}
-                        ${row('Crawler', tag(d.is_crawler))}
-                        ${row('High Risk Device', tag(d.high_risk_device))}
-                        ${row('Recent Abuse', tag(d.recent_abuse))}
+                        ${row('Bot Status', tag(d.bot_status), 'Автоматизированный доступ')}
+                        ${row('Proxy', tag(d.proxy), 'Использование прокси-сервера')}
+                        ${row('VPN', tag(d.vpn), 'VPN соединение')}
+                        ${row('Active VPN', tag(d.active_vpn), 'Активный VPN в момент проверки')}
+                        ${row('Tor', tag(d.tor), 'Сеть Tor')}
+                        ${row('Crawler', tag(d.is_crawler), 'Поисковый робот')}
+                        ${row('High Risk Device', tag(d.high_risk_device), 'Устройство с высоким риском')}
+                        ${row('Recent Abuse', tag(d.recent_abuse), 'Недавние нарушения с IP')}
                     </div>
                 </div>
 
@@ -385,12 +423,12 @@
                         <span class="card-badge">UNIQUE ID</span>
                     </div>
                     <div class="card-body">
-                        ${row('Canvas Hash', d.canvas_hash, !d.canvas_hash, true)}
-                        ${row('WebGL Hash', d.webgl_hash, !d.webgl_hash, true)}
-                        ${row('SSL Fingerprint', d.ssl_fingerprint, false, true)}
-                        ${row('Device ID', d.device_id, false, true)}
-                        ${row('GUID', d.guid, false, true)}
-                        ${row('Audio Hash', d.audio_hash || 'N/A', !d.audio_hash, true)}
+                        ${row('Canvas Hash', d.canvas_hash || 'N/A', 'Отпечаток рендеринга Canvas', !d.canvas_hash, true)}
+                        ${row('WebGL Hash', d.webgl_hash || 'N/A', 'Отпечаток 3D рендеринга', !d.webgl_hash, true)}
+                        ${row('Audio Hash', d.audio_hash || 'N/A', 'Отпечаток аудио контекста', !d.audio_hash, true)}
+                        ${row('SSL Fingerprint', d.ssl_fingerprint || 'N/A', 'TLS/SSL отпечаток соединения', false, true)}
+                        ${row('Device ID', d.device_id || 'N/A', 'Уникальный ID устройства', false, true)}
+                        ${row('GUID', d.guid || 'N/A', 'Глобальный ID пользователя', false, true)}
                     </div>
                 </div>
 
@@ -399,14 +437,14 @@
                         <span class="card-title">Железо и окружение</span>
                     </div>
                     <div class="card-body">
-                        ${row('Resolution', res)}
-                        ${row('CPU Cores', d.cpu_cores || 'N/A', !d.cpu_cores)}
-                        ${row('Memory (GB)', d.memory || 'N/A', !d.memory)}
-                        ${row('Graphics Card', truncate(d.graphics_card, 50) || 'N/A')}
-                        ${row('Browser Timezone', d.device_timezone || 'N/A', tzMismatch)}
-                        ${row('IP Timezone', d.timezone || 'N/A', tzMismatch)}
-                        ${row('Language', d.language || 'N/A')}
-                        ${row('User Agent', truncate(d.user_agent, 60) || 'N/A')}
+                        ${row('Resolution', res, 'Разрешение экрана')}
+                        ${row('CPU Cores', d.cpu_cores || 'N/A', 'Количество ядер процессора', !d.cpu_cores)}
+                        ${row('Memory (GB)', d.memory || 'N/A', 'Объём оперативной памяти', !d.memory)}
+                        ${row('Graphics Card', truncate(d.graphics_card, 50) || 'N/A', 'Видеокарта/GPU')}
+                        ${row('Browser Timezone', d.device_timezone || 'N/A', 'Часовой пояс браузера', tzMismatch)}
+                        ${row('IP Timezone', d.timezone || 'N/A', 'Часовой пояс по IP', tzMismatch)}
+                        ${row('Language', d.language || 'N/A', 'Язык браузера')}
+                        ${row('User Agent', truncate(d.user_agent, 60) || 'N/A', 'Строка User-Agent')}
                     </div>
                 </div>
 
@@ -415,14 +453,14 @@
                         <span class="card-title">Сеть</span>
                     </div>
                     <div class="card-body">
-                        ${row('IP Address', d.ip_address)}
-                        ${row('Country', d.country)}
-                        ${row('City', d.city)}
-                        ${row('ISP', d.isp)}
-                        ${row('Organization', d.organization)}
-                        ${row('Connection Type', d.connection_type)}
-                        ${row('Interface', d.interface)}
-                        ${row('MTU', d.mtu)}
+                        ${row('IP Address', d.ip_address, 'Внешний IP адрес')}
+                        ${row('Country', d.country, 'Страна по GeoIP')}
+                        ${row('City', d.city, 'Город по GeoIP')}
+                        ${row('ISP', d.isp, 'Интернет-провайдер')}
+                        ${row('Organization', d.organization, 'Организация-владелец IP')}
+                        ${row('Connection Type', d.connection_type, 'Тип подключения')}
+                        ${row('Interface', d.interface, 'Сетевой интерфейс')}
+                        ${row('MTU', d.mtu, 'Максимальный размер пакета')}
                     </div>
                 </div>
 
@@ -431,14 +469,14 @@
                         <span class="card-title">Устройство</span>
                     </div>
                     <div class="card-body">
-                        ${row('Device Type', d.device)}
-                        ${row('OS (Fingerprint)', d.operating_system, osMismatch)}
-                        ${row('OS (Detected)', d.true_os, osMismatch)}
-                        ${row('Browser', d.browser)}
-                        ${row('Mobile', tag(d.mobile, false))}
-                        ${row('Plugins', d.plugins ? d.plugins.length + ' шт.' : 'N/A')}
-                        ${row('Private Browsing', tag(d.private_browser))}
-                        ${row('Do Not Track', tag(d.do_not_track, false))}
+                        ${row('Device Type', d.device, 'Тип устройства')}
+                        ${row('OS (Fingerprint)', d.operating_system, 'ОС по fingerprint', osMismatch)}
+                        ${row('OS (Detected)', d.true_os, 'Реальная ОС', osMismatch)}
+                        ${row('Browser', d.browser, 'Браузер и версия')}
+                        ${row('Mobile', tag(d.mobile, false), 'Мобильное устройство')}
+                        ${row('Plugins', d.plugins ? d.plugins.length + ' шт.' : 'N/A', 'Количество плагинов')}
+                        ${row('Private Browsing', tag(d.private_browser), 'Приватный режим')}
+                        ${row('Do Not Track', tag(d.do_not_track, false), 'Заголовок DNT')}
                     </div>
                 </div>
 

@@ -81,6 +81,11 @@
             padding-top: 12px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .debug-toggle {
             background: none;
             border: none;
@@ -88,10 +93,26 @@
             font-size: 11px;
             cursor: pointer;
             padding: 5px;
-            width: 100%;
         }
         .debug-toggle:hover {
             color: rgba(255,255,255,0.8);
+        }
+        .copy-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 10px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .copy-btn.copied {
+            background: rgba(46, 213, 115, 0.3);
+            color: #2ed573;
         }
         .debug-logs {
             display: none;
@@ -130,7 +151,10 @@
     </div>
 
     <div class="debug-section">
-        <button class="debug-toggle" id="debugToggle">Показать логи отладки</button>
+        <div class="debug-header">
+            <button class="debug-toggle" id="debugToggle">Показать логи</button>
+            <button class="copy-btn" id="copyBtn" style="display: none;">Копировать</button>
+        </div>
         <div class="debug-logs" id="debugLogs"></div>
     </div>
 
