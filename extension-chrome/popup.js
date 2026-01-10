@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkBtn.disabled = loading;
         checkBtn.textContent = loading ? 'Проверка...' : 'Проверить мой фингерпринт';
         checkInProgress = loading;
+        document.getElementById('hint').style.display = loading ? 'block' : 'none';
     }
 
     async function updateLogs() {
