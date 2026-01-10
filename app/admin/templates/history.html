@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>История проверок</h1>
+    <p>Всего: {{ total }} проверок</p>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Время</th>
+                    <th>IP</th>
+                    <th>Страна</th>
+                    <th>Fraud Score</th>
+                    <th>Proxy</th>
+                    <th>VPN</th>
+                    <th>Bot</th>
+                    <th>Профиль</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in checks %}
+                <tr>
+                    <td>{{ check.created_at|datetime }}</td>
+                    <td>{{ check.ip_address or 'N/A' }}</td>
+                    <td>{{ check.country or 'N/A' }}</td>
+                    <td>
+                        <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
+                            {{ check.fraud_chance|fraud_score }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if check.proxy %}
+                        <span class="badge badge-danger">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.vpn %}
+                        <span class="badge badge-warning">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.bot_status %}
+                        <span class="badge badge-danger">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.profile_id %}
+                        <a href="/admin/profile/{{ check.profile_id }}">
+                            {% if check.profile and check.profile.is_flagged %}
+                            <span class="flag-indicator flagged"></span>
+                            {% endif %}
+                            #{{ check.profile_id }}
+                        </a>
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--muted); padding: 40px;">
+                        Нет проверок
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}">&laquo; Назад</a>
+    {% endif %}
+
+    {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <span class="active">{{ p }}</span>
+        {% elif p <= 3 or p >= pages - 2 or (p >= page - 1 and p <= page + 1) %}
+        <a href="?page={{ p }}">{{ p }}</a>
+        {% elif p == 4 and page > 5 %}
+        <span>...</span>
+        {% elif p == pages - 3 and page < pages - 4 %}
+        <span>...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < pages %}
+    <a href="?page={{ page + 1 }}">Вперед &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

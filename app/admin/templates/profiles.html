@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Профили</h1>
+    <p>Всего: {{ total }} профилей</p>
+</div>
+
+<!-- Filters -->
+<form class="filters" method="get">
+    <input type="text" name="search" class="form-input" placeholder="Поиск по IP, Device ID..." value="{{ search }}">
+    <select name="order_by" onchange="this.form.submit()">
+        <option value="last_seen" {% if order_by == 'last_seen' %}selected{% endif %}>По последней активности</option>
+        <option value="fraud_score" {% if order_by == 'fraud_score' %}selected{% endif %}>По Fraud Score</option>
+        <option value="check_count" {% if order_by == 'check_count' %}selected{% endif %}>По количеству проверок</option>
+        <option value="first_seen" {% if order_by == 'first_seen' %}selected{% endif %}>По дате создания</option>
+    </select>
+    <label style="display: flex; align-items: center; gap: 6px; color: var(--muted);">
+        <input type="checkbox" name="flagged" {% if flagged %}checked{% endif %} onchange="this.form.submit()">
+        Только помеченные
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">Поиск</button>
+</form>
+
+<!-- Table -->
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Последний IP</th>
+                    <th>Страна</th>
+                    <th>Fraud Score</th>
+                    <th>Проверок</th>
+                    <th>Первая / Последняя</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>
+                        {% if profile.is_flagged %}
+                        <span class="flag-indicator flagged" title="Помечен"></span>
+                        {% endif %}
+                        <a href="/admin/profile/{{ profile.id }}">#{{ profile.id }}</a>
+                    </td>
+                    <td>{{ profile.last_ip or 'N/A' }}</td>
+                    <td>{{ profile.last_country or 'N/A' }}</td>
+                    <td>
+                        <span class="badge badge-{{ fraud_color_class(profile.last_fraud_score) }}">
+                            {{ profile.last_fraud_score|fraud_score }}
+                        </span>
+                        {% if profile.avg_fraud_score %}
+                        <span style="color: var(--muted); font-size: 0.85em;">
+                            (avg: {{ profile.avg_fraud_score|round(1) }}%)
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ profile.check_count }}</td>
+                    <td style="font-size: 0.85em; color: var(--muted);">
+                        {{ profile.first_seen|datetime('%d.%m.%y') }} / {{ profile.last_seen|datetime('%d.%m.%y %H:%M') }}
+                    </td>
+                    <td>
+                        <a href="/admin/profile/{{ profile.id }}" class="btn btn-sm btn-primary">Детали</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--muted); padding: 40px;">
+                        Профили не найдены
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&search={{ search }}&order_by={{ order_by }}{% if flagged %}&flagged=on{% endif %}">&laquo; Назад</a>
+    {% endif %}
+
+    {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <span class="active">{{ p }}</span>
+        {% elif p <= 3 or p >= pages - 2 or (p >= page - 1 and p <= page + 1) %}
+        <a href="?page={{ p }}&search={{ search }}&order_by={{ order_by }}{% if flagged %}&flagged=on{% endif %}">{{ p }}</a>
+        {% elif p == 4 and page > 5 %}
+        <span>...</span>
+        {% elif p == pages - 3 and page < pages - 4 %}
+        <span>...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < pages %}
+    <a href="?page={{ page + 1 }}&search={{ search }}&order_by={{ order_by }}{% if flagged %}&flagged=on{% endif %}">Вперед &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

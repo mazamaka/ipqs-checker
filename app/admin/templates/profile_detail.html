@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+        <h1>Профиль #{{ profile.id }}</h1>
+        <p>Fingerprint: {{ profile.fingerprint_hash[:16] }}...</p>
+    </div>
+    <form method="post" action="/admin/api/profile/{{ profile.id }}/flag" style="display: flex; gap: 8px;">
+        {% if profile.is_flagged %}
+        <input type="hidden" name="flagged" value="false">
+        <button type="submit" class="btn btn-sm" style="background: var(--border);">Снять пометку</button>
+        {% else %}
+        <input type="hidden" name="flagged" value="true">
+        <button type="submit" class="btn btn-sm btn-danger">Пометить</button>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Profile Info -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-value {% if profile.is_flagged %}danger{% endif %}">
+            {% if profile.is_flagged %}!{% else %}OK{% endif %}
+        </div>
+        <div class="stat-label">Статус</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value {{ fraud_color_class(profile.last_fraud_score) }}">
+            {{ profile.last_fraud_score|fraud_score }}
+        </div>
+        <div class="stat-label">Последний Fraud Score</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ profile.check_count }}</div>
+        <div class="stat-label">Всего проверок</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ profile.avg_fraud_score|round(1) if profile.avg_fraud_score else 'N/A' }}%</div>
+        <div class="stat-label">Средний Fraud Score</div>
+    </div>
+</div>
+
+<!-- Details -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Информация о профиле</span>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Последний IP</div>
+                <div>{{ profile.last_ip or 'N/A' }}</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Страна / Город</div>
+                <div>{{ profile.last_country or 'N/A' }} / {{ profile.last_city or 'N/A' }}</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Браузер</div>
+                <div>{{ profile.last_browser or 'N/A' }}</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">ОС</div>
+                <div>{{ profile.last_os or 'N/A' }}</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Device ID</div>
+                <div style="font-family: monospace; font-size: 0.9em;">{{ profile.device_id[:32] if profile.device_id else 'N/A' }}...</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Canvas Hash</div>
+                <div style="font-family: monospace; font-size: 0.9em;">{{ profile.canvas_hash[:16] if profile.canvas_hash else 'N/A' }}...</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">WebGL Hash</div>
+                <div style="font-family: monospace; font-size: 0.9em;">{{ profile.webgl_hash[:16] if profile.webgl_hash else 'N/A' }}...</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Fraud Score (min/avg/max)</div>
+                <div>{{ profile.min_fraud_score or 'N/A' }} / {{ profile.avg_fraud_score|round(1) if profile.avg_fraud_score else 'N/A' }} / {{ profile.max_fraud_score or 'N/A' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Временная шкала</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Первое появление</div>
+                <div>{{ profile.first_seen|datetime('%d.%m.%Y %H:%M:%S') }}</div>
+            </div>
+            <div>
+                <div style="color: var(--muted); font-size: 0.85em;">Последнее появление</div>
+                <div>{{ profile.last_seen|datetime('%d.%m.%Y %H:%M:%S') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes -->
+{% if profile.notes %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Заметки</span>
+    </div>
+    <div class="card-body">
+        <p>{{ profile.notes }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Check History -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">История проверок ({{ checks|length }})</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Время</th>
+                    <th>IP</th>
+                    <th>Fraud Score</th>
+                    <th>Proxy</th>
+                    <th>VPN</th>
+                    <th>Bot</th>
+                    <th>OS Mismatch</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in checks %}
+                <tr>
+                    <td>{{ check.created_at|datetime }}</td>
+                    <td>{{ check.ip_address or 'N/A' }}</td>
+                    <td>
+                        <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
+                            {{ check.fraud_chance|fraud_score }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if check.proxy %}
+                        <span class="badge badge-danger">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.vpn %}
+                        <span class="badge badge-warning">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.bot_status %}
+                        <span class="badge badge-danger">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.os_mismatch %}
+                        <span class="badge badge-warning">Yes</span>
+                        {% else %}
+                        <span class="badge badge-muted">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--muted);">
+                        Нет проверок
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 24px;">
+    <a href="/admin/profiles" class="btn" style="background: var(--border);">&laquo; Назад к списку</a>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Обзор всех проверок IPQS</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.profiles_count or 0 }}</div>
+        <div class="stat-label">Профилей</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.checks_count or 0 }}</div>
+        <div class="stat-label">Проверок</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value {% if stats.avg_fraud_score and stats.avg_fraud_score > 70 %}danger{% elif stats.avg_fraud_score and stats.avg_fraud_score > 30 %}warning{% else %}success{% endif %}">
+            {{ stats.avg_fraud_score or 0 }}%
+        </div>
+        <div class="stat-label">Средний Fraud Score</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value danger">{{ stats.high_risk_profiles or 0 }}</div>
+        <div class="stat-label">Высокий риск (>70%)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value warning">{{ stats.medium_risk_profiles or 0 }}</div>
+        <div class="stat-label">Средний риск (30-70%)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value success">{{ stats.low_risk_profiles or 0 }}</div>
+        <div class="stat-label">Низкий риск (<30%)</div>
+    </div>
+</div>
+
+<!-- Detection Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.unique_ips or 0 }}</div>
+        <div class="stat-label">Уникальных IP</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.detections.proxy or 0 if stats.detections else 0 }}</div>
+        <div class="stat-label">Proxy детектов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.detections.vpn or 0 if stats.detections else 0 }}</div>
+        <div class="stat-label">VPN детектов</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value danger">{{ stats.flagged_profiles or 0 }}</div>
+        <div class="stat-label">Помечено</div>
+    </div>
+</div>
+
+<!-- Countries -->
+{% if stats.countries %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title">Топ стран</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for country, count in stats.countries.items() %}
+            <span class="badge badge-muted">{{ country }}: {{ count }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Checks -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Последние проверки</span>
+        <a href="/admin/history" class="btn btn-sm btn-primary">Все проверки</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Время</th>
+                    <th>IP</th>
+                    <th>Страна</th>
+                    <th>Fraud Score</th>
+                    <th>Профиль</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in recent_checks %}
+                <tr>
+                    <td>{{ check.created_at|datetime }}</td>
+                    <td>{{ check.ip_address or 'N/A' }}</td>
+                    <td>{{ check.country or 'N/A' }}</td>
+                    <td>
+                        <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
+                            {{ check.fraud_chance|fraud_score }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if check.profile_id %}
+                        <a href="/admin/profile/{{ check.profile_id }}">
+                            #{{ check.profile_id }}
+                        </a>
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--muted);">
+                        Нет данных
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
