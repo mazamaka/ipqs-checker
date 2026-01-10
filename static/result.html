@@ -561,7 +561,7 @@
                         ${row('OS (Detected)', d.true_os, 'Реальная ОС', osMismatch ? 'danger' : false)}
                         ${row('Browser', d.browser, 'Браузер и версия')}
                         ${row('Mobile', tag(d.mobile, false), 'Мобильное устройство')}
-                        ${row('Plugins', d.plugins ? d.plugins.length + ' шт.' : 'N/A', 'Количество плагинов')}
+                        ${row('Plugins', d.plugins ? d.plugins.length + ' шт.: ' + d.plugins.map(p => p.name).join(', ') : 'N/A', 'Установленные плагины браузера')}
                         ${row('Private Browsing', tag(d.private_browser), 'Приватный режим')}
                         ${row('Do Not Track', tag(d.do_not_track, false), 'Заголовок DNT')}
                     </div>
