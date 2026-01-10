@@ -1,14 +1,17 @@
 {
   "manifest_version": 2,
   "name": "IPQS Fingerprint Checker",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Автоматический сбор IPQS fingerprint с indeed.com",
   "permissions": [
     "activeTab",
     "storage",
+    "webRequest",
+    "webRequestBlocking",
     "https://secure.indeed.com/*",
     "https://*.indeed.com/*",
     "https://fn.us.ipqscdn.com/*",
+    "https://*.ipqscdn.com/*",
     "https://check-ipqs.farm-mafia.cash/*"
   ],
   "background": {
