@@ -6,7 +6,8 @@ services:
       - DOCKER=1
       - WORKERS=${WORKERS:-1}
       - IPQS_DOMAIN=${IPQS_DOMAIN:-indeed.com}
-      - IPQS_API_KEY=***REMOVED***
+      - IPQS_API_KEY=${IPQS_API_KEY}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
     ports:
       - "${PORT:-8000}:8000"
     volumes:
