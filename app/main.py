@@ -131,6 +131,21 @@ async def get_extension(filename: str):
     return JSONResponse({"error": "File not found"}, status_code=404)
 
 
+@app.get("/dist/{filename}")
+async def get_dist_file(filename: str):
+    """Serve packaged extensions from dist folder"""
+    dist_dir = Path(__file__).parent.parent / "dist"
+    file_path = (dist_dir / filename).resolve()
+
+    # Защита от path traversal
+    if not str(file_path).startswith(str(dist_dir.resolve())):
+        return JSONResponse({"error": "Invalid path"}, status_code=400)
+
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path, filename=filename)
+    return JSONResponse({"error": "File not found"}, status_code=404)
+
+
 @app.get("/api/config")
 async def get_config():
     """Get IPQS configuration for frontend"""
