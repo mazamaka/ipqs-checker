@@ -262,6 +262,30 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        .plugins-list {
+            display: none;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 18px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .plugins-list.show {
+            display: flex;
+        }
+        .plugins-toggle {
+            cursor: pointer;
+        }
+        .plugins-toggle.expanded small {
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+        .plugin-item {
+            background: var(--border);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            color: var(--muted);
+        }
         .json-panel { margin-top: 24px; }
         .json-toggle {
             width: 100%;
@@ -561,7 +585,18 @@
                         ${row('OS (Detected)', d.true_os, 'Реальная ОС', osMismatch ? 'danger' : false)}
                         ${row('Browser', d.browser, 'Браузер и версия')}
                         ${row('Mobile', tag(d.mobile, false), 'Мобильное устройство')}
-                        ${row('Plugins', d.plugins ? d.plugins.length + ' шт.: ' + d.plugins.map(p => p.name).join(', ') : 'N/A', 'Установленные плагины браузера')}
+                        ${d.plugins && d.plugins.length ? `
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="row-label">Plugins</span>
+                                <span class="row-hint">Установленные плагины браузера</span>
+                            </div>
+                            <span class="row-value plugins-toggle" onclick="this.classList.toggle('expanded'); this.closest('.row').nextElementSibling.classList.toggle('show')">${d.plugins.length} шт. <small style="opacity:0.6">▼</small></span>
+                        </div>
+                        <div class="plugins-list">
+                            ${[...new Set(d.plugins.map(p => p.name))].map(name => `<span class="plugin-item">${name}</span>`).join('')}
+                        </div>
+                        ` : row('Plugins', 'N/A', 'Установленные плагины браузера')}
                         ${row('Private Browsing', tag(d.private_browser), 'Приватный режим')}
                         ${row('Do Not Track', tag(d.do_not_track, false), 'Заголовок DNT')}
                     </div>
