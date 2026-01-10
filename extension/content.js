@@ -88,7 +88,8 @@
             console.log('[IPQS Checker] Fingerprint sent to server');
 
             // Notify extension background
-            chrome.runtime.sendMessage({ type: 'IPQS_DATA', data: data });
+            const api = typeof browser !== 'undefined' ? browser : chrome;
+            api.runtime.sendMessage({ type: 'IPQS_DATA', data: data });
         } catch (e) {
             console.error('[IPQS Checker] Failed to send:', e);
         }
