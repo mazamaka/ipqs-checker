@@ -157,4 +157,17 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     }
 });
 
+// При запуске Service Worker сбрасываем незавершённую проверку
+chrome.storage.local.get(['checkComplete']).then(data => {
+    if (data.checkComplete === false) {
+        // Была незавершённая проверка - сбрасываем
+        chrome.storage.local.set({
+            checkComplete: true,
+            sessionId: null,
+            debugLogs: []
+        });
+        addLog('Сброшена незавершённая проверка');
+    }
+});
+
 addLog('Service Worker запущен');
