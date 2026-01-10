@@ -3,12 +3,12 @@ const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
 
 let logsVisible = false;
 let logsInterval = null;
+let currentLogs = [];
 
 document.getElementById('checkBtn').addEventListener('click', async () => {
     const btn = document.getElementById('checkBtn');
     const status = document.getElementById('status');
 
-    // Disable button and show loading
     btn.disabled = true;
     btn.textContent = 'Проверка...';
     status.className = 'status loading';
@@ -21,13 +21,12 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
     // Show logs automatically
     document.getElementById('debugLogs').classList.add('show');
     document.getElementById('debugToggle').textContent = 'Скрыть логи';
+    document.getElementById('copyBtn').style.display = 'block';
     logsVisible = true;
     startLogsPolling();
 
-    // Send message to background to start check
     api.runtime.sendMessage({ type: 'START_CHECK' });
 
-    // Start polling for result
     const sessionData = await api.storage.local.get('sessionId');
     const sessionId = sessionData.sessionId;
 
@@ -44,24 +43,57 @@ function startLogsPolling() {
 
 async function updateLogs() {
     const data = await api.storage.local.get('debugLogs');
-    const logs = data.debugLogs || [];
+    currentLogs = data.debugLogs || [];
     const logsDiv = document.getElementById('debugLogs');
-    logsDiv.innerHTML = logs.map(log => `<div class="log-entry">${log}</div>`).join('');
+    logsDiv.innerHTML = currentLogs.map(log => `<div class="log-entry">${log}</div>`).join('');
     logsDiv.scrollTop = logsDiv.scrollHeight;
 }
 
+// Copy logs button
+document.getElementById('copyBtn').addEventListener('click', async () => {
+    const copyBtn = document.getElementById('copyBtn');
+    const logsText = currentLogs.join('\n');
+
+    try {
+        await navigator.clipboard.writeText(logsText);
+        copyBtn.textContent = 'Скопировано!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+            copyBtn.textContent = 'Копировать';
+            copyBtn.classList.remove('copied');
+        }, 2000);
+    } catch (e) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = logsText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        copyBtn.textContent = 'Скопировано!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+            copyBtn.textContent = 'Копировать';
+            copyBtn.classList.remove('copied');
+        }, 2000);
+    }
+});
+
 document.getElementById('debugToggle').addEventListener('click', () => {
     const logsDiv = document.getElementById('debugLogs');
-    const btn = document.getElementById('debugToggle');
+    const toggleBtn = document.getElementById('debugToggle');
+    const copyBtn = document.getElementById('copyBtn');
     logsVisible = !logsVisible;
 
     if (logsVisible) {
         logsDiv.classList.add('show');
-        btn.textContent = 'Скрыть логи';
+        toggleBtn.textContent = 'Скрыть логи';
+        copyBtn.style.display = 'block';
         startLogsPolling();
     } else {
         logsDiv.classList.remove('show');
-        btn.textContent = 'Показать логи отладки';
+        toggleBtn.textContent = 'Показать логи';
+        copyBtn.style.display = 'none';
         if (logsInterval) {
             clearInterval(logsInterval);
             logsInterval = null;
@@ -71,7 +103,7 @@ document.getElementById('debugToggle').addEventListener('click', () => {
 
 async function pollForResult(sessionId, status, btn) {
     let attempts = 0;
-    const maxAttempts = 120; // 60 seconds
+    const maxAttempts = 120;
 
     const poll = async () => {
         attempts++;
@@ -85,12 +117,16 @@ async function pollForResult(sessionId, status, btn) {
                 const now = Date.now();
 
                 if (now - resultTime < 60000) {
-                    // Got fresh result!
                     status.className = 'status success';
                     status.textContent = `Готово! Fraud Score: ${data.fingerprint.fraud_chance}%`;
                     btn.textContent = 'Проверить мой фингерпринт';
                     btn.disabled = false;
                     showLastCheck();
+
+                    // Close popup after 1.5 seconds
+                    setTimeout(() => {
+                        window.close();
+                    }, 1500);
                     return;
                 }
             }
