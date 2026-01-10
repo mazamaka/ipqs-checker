@@ -123,7 +123,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             addLog('Открываю secure.indeed.com/auth...');
             chrome.tabs.create({
                 url: 'https://secure.indeed.com/auth',
-                active: false  // НЕ делаем активной чтобы popup не закрылся
+                active: true  // Делаем активной для корректного сбора fingerprint (особенно Audio)
             }, (tab) => {
                 indeedTabId = tab.id;  // Сохраняем ID вкладки
                 addLog(`Открыта вкладка ID: ${tab.id}`);
