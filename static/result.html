@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты проверки - IPQS Checker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .result-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .fraud-score {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .fraud-score .label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 10px;
+        }
+        .fraud-score .value {
+            font-size: 72px;
+            font-weight: bold;
+        }
+        .fraud-score .suffix {
+            font-size: 24px;
+            color: rgba(255,255,255,0.6);
+        }
+        .fraud-low { color: #2ed573; }
+        .fraud-medium { color: #ffa502; }
+        .fraud-high { color: #ff4757; }
+        .details {
+            display: grid;
+            gap: 15px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        .detail-row .key {
+            color: rgba(255,255,255,0.6);
+        }
+        .detail-row .value {
+            font-weight: 500;
+        }
+        .detail-row .value.good { color: #2ed573; }
+        .detail-row .value.bad { color: #ff4757; }
+        .detail-row .value.warn { color: #ffa502; }
+        .error {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .section-title {
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            margin: 25px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Результаты проверки IPQS</h1>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Загрузка результатов...</div>
+        </div>
+
+        <div id="result" class="result-card" style="display: none;"></div>
+
+        <div id="error" class="error" style="display: none;">
+            <div>Результаты не найдены</div>
+            <div style="margin-top: 10px; font-size: 14px; color: rgba(255,255,255,0.6);">
+                Возможно, проверка ещё не завершена или сессия истекла
+            </div>
+            <a href="/" class="btn">Попробовать снова</a>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = new URLSearchParams(window.location.search).get('session');
+
+        async function loadResult() {
+            if (!sessionId) {
+                showError();
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/extension/result/' + sessionId);
+                const data = await resp.json();
+
+                if (data.fingerprint) {
+                    showResult(data.fingerprint);
+                } else if (data.status === 'pending') {
+                    // Keep polling
+                    setTimeout(loadResult, 1000);
+                } else {
+                    showError();
+                }
+            } catch (e) {
+                showError();
+            }
+        }
+
+        function showResult(fp) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+
+            const score = fp.fraud_chance || 0;
+            let scoreClass = 'fraud-low';
+            if (score >= 70) scoreClass = 'fraud-high';
+            else if (score >= 30) scoreClass = 'fraud-medium';
+
+            result.innerHTML = `
+                <div class="fraud-score">
+                    <div class="label">Fraud Score</div>
+                    <div class="value ${scoreClass}">${score}<span class="suffix">%</span></div>
+                </div>
+
+                <div class="section-title">Основная информация</div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span class="key">IP адрес</span>
+                        <span class="value">${fp.ip_address || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Страна</span>
+                        <span class="value">${fp.country || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">VPN/Proxy</span>
+                        <span class="value ${fp.active_vpn || fp.is_proxy ? 'bad' : 'good'}">${fp.active_vpn || fp.is_proxy ? 'Да' : 'Нет'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">TOR</span>
+                        <span class="value ${fp.tor ? 'bad' : 'good'}">${fp.tor ? 'Да' : 'Нет'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Bot</span>
+                        <span class="value ${fp.bot_status ? 'bad' : 'good'}">${fp.bot_status ? 'Да' : 'Нет'}</span>
+                    </div>
+                </div>
+
+                <div class="section-title">Fingerprint</div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span class="key">Device ID</span>
+                        <span class="value">${(fp.device_id || 'N/A').substring(0, 16)}...</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">GUID</span>
+                        <span class="value">${(fp.guid || 'N/A').substring(0, 16)}...</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Canvas Hash</span>
+                        <span class="value">${fp.canvas_hash ? fp.canvas_hash.substring(0, 12) + '...' : 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">WebGL Hash</span>
+                        <span class="value">${fp.webgl_hash ? fp.webgl_hash.substring(0, 12) + '...' : 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="section-title">Дополнительно</div>
+                <div class="details">
+                    <div class="detail-row">
+                        <span class="key">Recent Abuse</span>
+                        <span class="value ${fp.recent_abuse ? 'bad' : 'good'}">${fp.recent_abuse ? 'Да' : 'Нет'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Shared Device</span>
+                        <span class="value ${fp.shared_device ? 'warn' : 'good'}">${fp.shared_device ? 'Да' : 'Нет'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Private Browsing</span>
+                        <span class="value ${fp.private_browser ? 'warn' : 'good'}">${fp.private_browser ? 'Да' : 'Нет'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="key">Do Not Track</span>
+                        <span class="value">${fp.do_not_track ? 'Да' : 'Нет'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+        }
+
+        loadResult();
+    </script>
+</body>
+</html>

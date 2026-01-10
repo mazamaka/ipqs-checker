@@ -71,10 +71,29 @@ async def index():
     return HTMLResponse(content="<h1>IPQS Checker</h1><p>Static files not found</p>")
 
 
+@app.get("/result", response_class=HTMLResponse)
+async def result_page():
+    """Result page for extension redirect"""
+    html_file = STATIC_DIR / "result.html"
+    if html_file.exists():
+        return HTMLResponse(content=html_file.read_text())
+    return HTMLResponse(content="<h1>Results</h1><p>Page not found</p>")
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/extension/{filename}")
+async def get_extension(filename: str):
+    """Serve extension files for download"""
+    ext_dir = Path(__file__).parent.parent / "extension"
+    file_path = ext_dir / filename
+    if file_path.exists():
+        return FileResponse(file_path, filename=filename)
+    return JSONResponse({"error": "File not found"}, status_code=404)
 
 
 @app.get("/api/config")
