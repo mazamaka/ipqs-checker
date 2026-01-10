@@ -2,7 +2,23 @@
 const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
 
 let currentSessionId = null;
-let pendingFingerprint = null;
+let indeedTabId = null;  // Храним ID вкладки indeed.com
+
+// Debug logging helper
+async function addLog(message) {
+    console.log('[IPQS Background]', message);
+    try {
+        const data = await chrome.storage.local.get('debugLogs');
+        const logs = data.debugLogs || [];
+        const timestamp = new Date().toLocaleTimeString('ru-RU');
+        logs.push(`[${timestamp}] ${message}`);
+        // Keep last 100 logs
+        if (logs.length > 100) logs.shift();
+        await chrome.storage.local.set({ debugLogs: logs });
+    } catch (e) {
+        console.error('Log error:', e);
+    }
+}
 
 // Генерация ID сессии
 function generateSessionId() {
@@ -11,6 +27,7 @@ function generateSessionId() {
 
 // Отправка данных на сервер
 async function sendToServer(sessionId, fingerprint) {
+    addLog('Отправка на сервер...');
     try {
         const response = await fetch(`${SERVER_URL}/api/extension/report`, {
             method: 'POST',
@@ -21,20 +38,20 @@ async function sendToServer(sessionId, fingerprint) {
                 source: 'chrome-extension'
             })
         });
-        
+
         const result = await response.json();
-        console.log('[IPQS Background] Server response:', result);
+        addLog(`Сервер ответил: ${JSON.stringify(result).substring(0, 100)}`);
         return result;
     } catch (error) {
-        console.error('[IPQS Background] Send error:', error);
+        addLog(`Ошибка отправки: ${error.message}`);
         throw error;
     }
 }
 
 // Очистка данных indeed.com
 async function clearIndeedData() {
-    const since = Date.now() - (365 * 24 * 60 * 60 * 1000); // 1 год
-    
+    addLog('Очистка данных indeed.com...');
+
     try {
         await chrome.browsingData.remove({
             origins: ['https://indeed.com', 'https://www.indeed.com', 'https://secure.indeed.com']
@@ -44,50 +61,86 @@ async function clearIndeedData() {
             localStorage: true,
             indexedDB: true
         });
-        console.log('[IPQS Background] Indeed data cleared');
+        addLog('Данные очищены');
     } catch (e) {
-        console.error('[IPQS Background] Clear error:', e);
+        addLog(`Ошибка очистки: ${e.message}`);
     }
 }
 
 // Слушаем сообщения от content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('[IPQS Background] Message received:', message.type);
+    addLog(`Получено сообщение: ${message.type}`);
 
     if (message.type === 'IPQS_FINGERPRINT' && currentSessionId) {
         const fingerprint = message.data;
-        console.log('[IPQS Background] Got fingerprint for session:', currentSessionId);
-        
+        addLog(`Получен fingerprint для сессии ${currentSessionId}`);
+        addLog(`Fraud Score: ${fingerprint.fraud_chance}%`);
+
         // Отправляем на сервер
         sendToServer(currentSessionId, fingerprint)
             .then(() => {
+                addLog('Открываю страницу результатов...');
+
+                // Закрываем вкладку indeed.com
+                if (indeedTabId) {
+                    chrome.tabs.remove(indeedTabId).catch(() => {});
+                    indeedTabId = null;
+                }
+
                 // Открываем страницу результатов
                 chrome.tabs.create({
                     url: `${SERVER_URL}/result?session=${currentSessionId}`
                 });
+
+                // Сохраняем результат для popup
+                chrome.storage.local.set({
+                    lastFingerprint: fingerprint,
+                    lastCheck: new Date().toISOString(),
+                    checkComplete: true
+                });
             })
             .catch(err => {
-                console.error('[IPQS Background] Failed to send:', err);
+                addLog(`Ошибка: ${err.message}`);
+                chrome.storage.local.set({ checkComplete: true, checkError: err.message });
             });
-        
+
         sendResponse({ status: 'ok' });
     }
-    
+
     if (message.type === 'START_CHECK') {
         currentSessionId = generateSessionId();
-        console.log('[IPQS Background] Starting check, session:', currentSessionId);
-        
+        addLog(`Новая сессия: ${currentSessionId}`);
+
+        // Сохраняем sessionId и сбрасываем флаг завершения
+        chrome.storage.local.set({
+            sessionId: currentSessionId,
+            checkComplete: false,
+            checkError: null
+        });
+
         // Очищаем данные и открываем indeed
         clearIndeedData().then(() => {
+            addLog('Открываю secure.indeed.com/auth...');
             chrome.tabs.create({
-                url: 'https://secure.indeed.com/auth'
+                url: 'https://secure.indeed.com/auth',
+                active: false  // НЕ делаем активной чтобы popup не закрылся
+            }, (tab) => {
+                indeedTabId = tab.id;  // Сохраняем ID вкладки
+                addLog(`Открыта вкладка ID: ${tab.id}`);
             });
         });
-        
+
         sendResponse({ sessionId: currentSessionId });
     }
 
     return true; // async response
 });
 
-console.log('[IPQS Background] Service Worker started');
+// Очищаем indeedTabId если вкладка закрыта вручную
+chrome.tabs.onRemoved.addListener((tabId) => {
+    if (tabId === indeedTabId) {
+        indeedTabId = null;
+    }
+});
+
+addLog('Service Worker запущен');
