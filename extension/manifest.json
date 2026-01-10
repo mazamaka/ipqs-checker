@@ -1,10 +1,11 @@
 {
   "manifest_version": 2,
   "name": "IPQS Fingerprint Checker",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Автоматический сбор IPQS fingerprint с indeed.com",
   "permissions": [
     "activeTab",
+    "tabs",
     "storage",
     "webRequest",
     "webRequestBlocking",
@@ -24,6 +25,14 @@
       "run_at": "document_start"
     }
   ],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon48.png",
+      "128": "icon128.png"
+    },
+    "default_title": "IPQS Checker"
+  },
   "icons": {
     "48": "icon48.png",
     "128": "icon128.png"

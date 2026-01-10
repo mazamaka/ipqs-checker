@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 280px;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            margin: 0;
+        }
+        h2 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+        .status.loading {
+            display: block;
+            background: rgba(255,255,255,0.1);
+        }
+        .status.success {
+            display: block;
+            background: rgba(46, 213, 115, 0.2);
+            border: 1px solid rgba(46, 213, 115, 0.5);
+        }
+        .last-check {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+        }
+        .fraud-score {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        .fraud-low { color: #2ed573; }
+        .fraud-medium { color: #ffa502; }
+        .fraud-high { color: #ff4757; }
+    </style>
+</head>
+<body>
+    <h2>IPQS Fingerprint Checker</h2>
+
+    <button class="btn btn-primary" id="checkBtn">
+        Проверить мой фингерпринт
+    </button>
+
+    <div class="status" id="status"></div>
+
+    <div class="last-check" id="lastCheck" style="display: none;">
+        <div>Последняя проверка:</div>
+        <div class="fraud-score" id="fraudScore"></div>
+        <div id="checkTime"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
