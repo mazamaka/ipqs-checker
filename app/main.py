@@ -200,6 +200,37 @@ def count_device_visits(device_id: str, guid: str) -> int:
     return count + 1  # +1 for current visit
 
 
+def is_fingerprint_unique(canvas_hash: str, webgl_hash: str, device_id: str) -> bool:
+    """Check if this fingerprint combination was seen before"""
+    if not VISITORS_LOG.exists():
+        return True
+
+    if not canvas_hash and not webgl_hash and not device_id:
+        return True
+
+    with open(VISITORS_LOG) as f:
+        for line in f:
+            if line.strip():
+                try:
+                    entry = json.loads(line)
+                    ipqs = entry.get("ipqs", {})
+
+                    # Check by device_id first (most reliable)
+                    if device_id and ipqs.get("device_id") == device_id:
+                        return False
+
+                    # Check by canvas + webgl combination
+                    if canvas_hash and webgl_hash:
+                        if (ipqs.get("canvas_hash") == canvas_hash and
+                            ipqs.get("webgl_hash") == webgl_hash):
+                            return False
+
+                except json.JSONDecodeError:
+                    continue
+
+    return True
+
+
 @app.post("/api/extension/report")
 async def extension_report(request: Request):
     """Receive fingerprint data from browser extension"""
@@ -211,10 +242,17 @@ async def extension_report(request: Request):
         # Count device visits
         device_id = fingerprint.get("device_id", "")
         guid = fingerprint.get("guid", "")
+        canvas_hash = fingerprint.get("canvas_hash", "")
+        webgl_hash = fingerprint.get("webgl_hash", "")
+
         visit_count = count_device_visits(device_id, guid) if (device_id or guid) else 1
 
-        # Add visit count to fingerprint
+        # Check fingerprint uniqueness (canvas + webgl)
+        fingerprint_unique = is_fingerprint_unique(canvas_hash, webgl_hash, device_id)
+
+        # Add visit count and uniqueness to fingerprint
         fingerprint["_visit_count"] = visit_count
+        fingerprint["_fingerprint_unique"] = fingerprint_unique
 
         extension_reports[session_id] = {
             "fingerprint": fingerprint,
