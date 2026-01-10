@@ -262,6 +262,28 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        .warning-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+        .warning-icon {
+            font-size: 1.3em;
+            flex-shrink: 0;
+        }
+        .warning-text {
+            font-size: 0.85em;
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .warning-text strong {
+            color: var(--warning);
+        }
         .plugins-list {
             display: none;
             flex-wrap: wrap;
@@ -486,6 +508,14 @@
                         <div class="score-label">Visit Count</div>
                         <div class="score-desc">Количество проверок этого устройства</div>
                         <div class="verdict ${(d._visit_count || 1) > 1 ? 'medium' : 'low'}">${(d._visit_count || 1) === 1 ? 'Первый визит' : 'Повторный визит'}</div>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <span class="warning-icon">⚠️</span>
+                    <div class="warning-text">
+                        <strong>Внимание!</strong> Частые проверки с одного устройства повышают Fraud Score.
+                        Каждый запрос фиксируется в базе IPQS и влияет на оценку риска.
                     </div>
                 </div>
 
