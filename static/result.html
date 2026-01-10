@@ -540,6 +540,12 @@
 
         const $ = id => document.getElementById(id);
 
+        // Экранирование HTML для защиты от XSS
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
         // Копирование в буфер при клике
         async function copyToClipboard(text, el) {
             try {
@@ -578,8 +584,9 @@
             if (isHTML) {
                 valueHtml = `<span class="row-value">${v}</span>`;
             } else {
-                const copyVal = typeof v === 'string' ? v.replace(/'/g, "\\'") : v;
-                valueHtml = `<span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${v}</span>`;
+                const safeVal = escapeHtml(String(v));
+                const copyVal = String(v).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                valueHtml = `<span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${safeVal}</span>`;
             }
 
             return `<div class="row${rowCls}">

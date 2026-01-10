@@ -16,11 +16,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Config
-IPQS_API_KEY = os.getenv(
-    "IPQS_API_KEY",
-    "Cj3vYxb1VZH2JWf0tcSCvYQYYDpTUVzrhnbokrjKBwfU27WZkOPIVPU4jKvusri0MQWIKEwDWZtsinjFTdO0Hhh1FHSreV5Jnpzkwv0GNqfA8rAuB5X5R1ybqqrbmKoEYLRUWRekgbYgshv7NvtZLyFKku08TbCeYn13r0sbLioZLjLXNYo6nLRp4SOYCPIMH3dJdLHQ8z7FZL15cTmK2tI1bGbWR16xbdY6W0LwxLmfkf4StKb1qrCavtM4u500"
-)
+IPQS_API_KEY = os.getenv("IPQS_API_KEY")
 IPQS_DOMAIN = os.getenv("IPQS_DOMAIN", "indeed.com")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")  # Для защиты админ-операций
+
+if not IPQS_API_KEY:
+    print("[WARN] IPQS_API_KEY not set, some features will not work")
 
 # Data directory - /app/data in Docker, ./data locally
 if Path("/app/data").exists() or os.getenv("DOCKER"):
@@ -90,8 +91,13 @@ async def health():
 async def get_extension(filename: str):
     """Serve extension files for download"""
     ext_dir = Path(__file__).parent.parent / "extension"
-    file_path = ext_dir / filename
-    if file_path.exists():
+    file_path = (ext_dir / filename).resolve()
+
+    # Защита от path traversal
+    if not str(file_path).startswith(str(ext_dir.resolve())):
+        return JSONResponse({"error": "Invalid path"}, status_code=400)
+
+    if file_path.exists() and file_path.is_file():
         return FileResponse(file_path, filename=filename)
     return JSONResponse({"error": "File not found"}, status_code=404)
 
@@ -375,8 +381,13 @@ async def get_visitor_stats():
 
 
 @app.delete("/api/visitors")
-async def clear_visitors():
-    """Clear visitors log"""
+async def clear_visitors(request: Request):
+    """Clear visitors log (requires ADMIN_TOKEN)"""
+    # Проверка авторизации
+    auth = request.headers.get("Authorization", "")
+    if not ADMIN_TOKEN or auth != f"Bearer {ADMIN_TOKEN}":
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
     if VISITORS_LOG.exists():
         VISITORS_LOG.unlink()
     return {"status": "cleared"}

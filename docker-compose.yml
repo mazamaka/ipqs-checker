@@ -6,7 +6,8 @@ services:
       - DOCKER=1
       - WORKERS=${WORKERS:-1}
       - IPQS_DOMAIN=${IPQS_DOMAIN:-indeed.com}
-      - IPQS_API_KEY=Cj3vYxb1VZH2JWf0tcSCvYQYYDpTUVzrhnbokrjKBwfU27WZkOPIVPU4jKvusri0MQWIKEwDWZtsinjFTdO0Hhh1FHSreV5Jnpzkwv0GNqfA8rAuB5X5R1ybqqrbmKoEYLRUWRekgbYgshv7NvtZLyFKku08TbCeYn13r0sbLioZLjLXNYo6nLRp4SOYCPIMH3dJdLHQ8z7FZL15cTmK2tI1bGbWR16xbdY6W0LwxLmfkf4StKb1qrCavtM4u500
+      - IPQS_API_KEY=${IPQS_API_KEY}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
     ports:
       - "${PORT:-8000}:8000"
     volumes:
