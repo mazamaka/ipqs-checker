@@ -250,10 +250,21 @@
         // Copy code on click
         document.querySelectorAll('.note code').forEach(code => {
             code.title = 'Нажми чтобы скопировать';
-            code.addEventListener('click', async () => {
+            code.addEventListener('click', async (e) => {
                 await navigator.clipboard.writeText(code.textContent);
                 code.classList.add('copied');
-                setTimeout(() => code.classList.remove('copied'), 500);
+
+                // Show tooltip
+                const tooltip = document.createElement('span');
+                tooltip.textContent = 'Скопировано!';
+                tooltip.style.cssText = 'position:absolute;background:#4caf50;color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;transform:translateY(-100%);margin-top:-5px;';
+                code.style.position = 'relative';
+                code.appendChild(tooltip);
+
+                setTimeout(() => {
+                    code.classList.remove('copied');
+                    tooltip.remove();
+                }, 1000);
             });
         });
 
