@@ -275,8 +275,8 @@
             border: 1px solid rgba(16, 185, 129, 0.4);
         }
         .fingerprint-status.duplicate {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+            border: 1px solid rgba(245, 158, 11, 0.4);
         }
         .fp-icon {
             font-size: 2em;
@@ -293,8 +293,8 @@
             color: var(--success);
         }
         .fingerprint-status.duplicate .fp-icon {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
         }
         .fp-text {
             display: flex;
@@ -308,7 +308,7 @@
             color: var(--success);
         }
         .fingerprint-status.duplicate .fp-text strong {
-            color: var(--danger);
+            color: var(--warning);
         }
         .fp-text span {
             font-size: 0.85em;
@@ -564,12 +564,12 @@
                 </div>
 
                 <div class="fingerprint-status ${d._fingerprint_unique ? 'unique' : 'duplicate'}">
-                    <div class="fp-icon">${d._fingerprint_unique ? '✓' : '⚠'}</div>
+                    <div class="fp-icon">${d._fingerprint_unique ? '✓' : '!'}</div>
                     <div class="fp-text">
-                        <strong>${d._fingerprint_unique ? 'Fingerprint уникален' : 'Fingerprint уже встречался!'}</strong>
+                        <strong>${d._fingerprint_unique ? 'Fingerprint уникален' : 'Fingerprint уже в базе'}</strong>
                         <span>${d._fingerprint_unique
-                            ? 'Этот отпечаток устройства ранее не фиксировался в базе'
-                            : 'Такой отпечаток уже был зарегистрирован — профиль скомпрометирован'}</span>
+                            ? 'Этот отпечаток ранее не фиксировался — профиль чистый'
+                            : `Встречался ${d._visit_count || '?'} раз. Для антидетекта: если это не ваш повторный визит — профиль засвечен`}</span>
                     </div>
                 </div>
 
