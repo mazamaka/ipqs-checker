@@ -71,42 +71,52 @@ async function clearIndeedData() {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     addLog(`Получено сообщение: ${message.type}`);
 
-    if (message.type === 'IPQS_FINGERPRINT' && currentSessionId) {
-        const fingerprint = message.data;
-        addLog(`Получен fingerprint для сессии ${currentSessionId}`);
-        addLog(`Fraud Score: ${fingerprint.fraud_chance}%`);
+    if (message.type === 'IPQS_FINGERPRINT') {
+        // Получаем sessionId из storage (Service Worker мог перезапуститься)
+        chrome.storage.local.get(['sessionId']).then(data => {
+            const sessionId = data.sessionId || currentSessionId;
+            if (!sessionId) {
+                addLog('Ошибка: sessionId не найден!');
+                return;
+            }
+            currentSessionId = sessionId;
 
-        // Отправляем на сервер
-        sendToServer(currentSessionId, fingerprint)
-            .then(async () => {
-                addLog('Открываю страницу результатов...');
+            const fingerprint = message.data;
+            addLog(`Получен fingerprint для сессии ${sessionId}`);
+            addLog(`Fraud Score: ${fingerprint.fraud_chance}%`);
 
-                // Закрываем вкладку indeed.com
-                if (indeedTabId) {
-                    chrome.tabs.remove(indeedTabId).catch(() => {});
-                    indeedTabId = null;
-                }
+            // Отправляем на сервер
+            sendToServer(sessionId, fingerprint)
+                .then(async () => {
+                    addLog('Открываю страницу результатов...');
 
-                // Очищаем данные indeed.com после проверки
-                await clearIndeedData();
-                addLog('Данные indeed.com очищены после проверки');
+                    // Закрываем вкладку indeed.com
+                    if (indeedTabId) {
+                        chrome.tabs.remove(indeedTabId).catch(() => {});
+                        indeedTabId = null;
+                    }
 
-                // Открываем страницу результатов
-                chrome.tabs.create({
-                    url: `${SERVER_URL}/result?session=${currentSessionId}`
+                    // Очищаем данные indeed.com после проверки
+                    await clearIndeedData();
+                    addLog('Данные indeed.com очищены после проверки');
+
+                    // Открываем страницу результатов
+                    chrome.tabs.create({
+                        url: `${SERVER_URL}/result?session=${sessionId}`
+                    });
+
+                    // Сохраняем результат для popup
+                    chrome.storage.local.set({
+                        lastFingerprint: fingerprint,
+                        lastCheck: new Date().toISOString(),
+                        checkComplete: true
+                    });
+                })
+                .catch(err => {
+                    addLog(`Ошибка: ${err.message}`);
+                    chrome.storage.local.set({ checkComplete: true, checkError: err.message });
                 });
-
-                // Сохраняем результат для popup
-                chrome.storage.local.set({
-                    lastFingerprint: fingerprint,
-                    lastCheck: new Date().toISOString(),
-                    checkComplete: true
-                });
-            })
-            .catch(err => {
-                addLog(`Ошибка: ${err.message}`);
-                chrome.storage.local.set({ checkComplete: true, checkError: err.message });
-            });
+        });
 
         sendResponse({ status: 'ok' });
     }
