@@ -3,7 +3,9 @@ IPQS Device Fingerprint Checker - FastAPI Server
 """
 
 import os
+import io
 import json
+import zipfile
 import httpx
 from datetime import datetime
 from pathlib import Path
@@ -11,7 +13,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -153,6 +155,31 @@ async def get_dist_file(filename: str):
     if file_path.exists() and file_path.is_file():
         return FileResponse(file_path, filename=filename)
     return JSONResponse({"error": "File not found"}, status_code=404)
+
+
+@app.get("/download/extension-chrome.zip")
+async def download_chrome_extension():
+    """Generate Chrome extension zip on-the-fly from source files"""
+    ext_dir = Path(__file__).parent.parent / "extension-chrome"
+
+    if not ext_dir.exists():
+        return JSONResponse({"error": "Extension directory not found"}, status_code=404)
+
+    # Create zip in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path in ext_dir.rglob("*"):
+            if file_path.is_file() and not file_path.name.startswith("."):
+                arcname = file_path.relative_to(ext_dir)
+                zf.write(file_path, arcname)
+
+    zip_buffer.seek(0)
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=ipqs-checker-chrome.zip"}
+    )
 
 
 @app.get("/api/config")
