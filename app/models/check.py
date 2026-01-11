@@ -18,9 +18,12 @@ class Check(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
 
-    # Profile relation
-    profile_id: int = Field(foreign_key="profiles.id", index=True)
+    # Profile relation (optional for non-IPQS services)
+    profile_id: int | None = Field(default=None, foreign_key="profiles.id", index=True)
     profile: Optional["Profile"] = Relationship(back_populates="checks")
+
+    # Service type (ipqs, fingerprint_pro, etc.)
+    service: str = Field(default="ipqs", max_length=50, index=True)
 
     # Session info
     session_id: str = Field(max_length=64, index=True)

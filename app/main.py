@@ -322,8 +322,8 @@ async def ipqs_proxy_post(path: str, request: Request):
 # Store for extension reports (TTLCache with auto-cleanup)
 from cachetools import TTLCache
 
-# Auto-delete after 5 minutes, max 1000 entries
-extension_reports: TTLCache = TTLCache(maxsize=1000, ttl=300)
+# TTL = 1 hour cache, persistent storage in PostgreSQL
+extension_reports: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 
 
 def count_device_visits(device_id: str, guid: str) -> int:
@@ -469,13 +469,47 @@ async def extension_report(request: Request):
 @app.get("/api/extension/result/{session_id}")
 async def extension_result(session_id: str):
     """Get fingerprint result for session"""
+    # First check memory cache
     if session_id in extension_reports:
         return extension_reports[session_id]
+
+    # Fallback to database
+    try:
+        async with db.session() as db_session:
+            from app.models.check import Check
+            from sqlalchemy import select
+
+            result = await db_session.execute(
+                select(Check).where(Check.session_id == session_id).order_by(Check.created_at.desc())
+            )
+            check = result.scalar_one_or_none()
+
+            if check and check.raw_response:
+                # Normalize format: FP Pro stores full structure, IPQS stores just fingerprint
+                if "fingerprint" in check.raw_response:
+                    # Already in correct format (FP Pro)
+                    response_data = check.raw_response
+                else:
+                    # IPQS format - wrap fingerprint in structure
+                    response_data = {
+                        "fingerprint": check.raw_response,
+                        "timestamp": check.created_at.isoformat() if check.created_at else None,
+                        "source": check.source,
+                        "service": check.service if hasattr(check, 'service') else "ipqs",
+                        "profile_id": check.profile_id,
+                        "check_id": check.id,
+                    }
+                # Cache for future requests
+                extension_reports[session_id] = response_data
+                return response_data
+    except Exception as e:
+        logger.error(f"Error fetching from database: {e}")
+
     return {"status": "pending"}
 
 
-# Store for Fingerprint Pro reports (TTLCache with auto-cleanup)
-fingerprint_reports: TTLCache = TTLCache(maxsize=1000, ttl=300)
+# Store for Fingerprint Pro reports (TTL = 1 hour cache)
+fingerprint_reports: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 
 
 @app.post("/api/extension/report-fp")
@@ -503,11 +537,12 @@ async def extension_report_fp(request: Request):
         anti_detect = tampering.get("antiDetectBrowser", False)
         suspect = suspect_score.get("result", 0)
 
-        # Store in memory for quick access
-        fingerprint_reports[session_id] = {
+        # Build response data
+        response_data = {
             "fingerprint": fingerprint,
             "timestamp": datetime.utcnow().isoformat(),
             "source": source,
+            "service": "fingerprint_pro",
             "summary": {
                 "visitor_id": visitor_id,
                 "request_id": request_id,
@@ -518,8 +553,41 @@ async def extension_report_fp(request: Request):
             }
         }
 
-        # Also store in extension_reports for unified access
-        extension_reports[session_id] = fingerprint_reports[session_id]
+        # Save to PostgreSQL for persistent storage
+        check_id = None
+        try:
+            async with db.session() as db_session:
+                from app.models.check import Check
+
+                # Extract IP info if available
+                v4 = ip_info.get("v4", {})
+                v6 = ip_info.get("v6", {})
+                ip_data = v4 if v4.get("address") else v6
+
+                check = Check(
+                    session_id=session_id,
+                    service="fingerprint_pro",
+                    source=source,
+                    guid=visitor_id,
+                    ip_address=ip_data.get("address"),
+                    country=ip_data.get("geolocation", {}).get("country", {}).get("name"),
+                    city=ip_data.get("geolocation", {}).get("city", {}).get("name"),
+                    bot_status=bot_d.get("bot", {}).get("result") == "bad" if bot_d.get("bot") else None,
+                    vpn=vpn.get("result", False) if vpn else None,
+                    raw_response=response_data,  # Store full response
+                )
+                db_session.add(check)
+                await db_session.commit()
+                await db_session.refresh(check)
+                check_id = check.id
+                response_data["check_id"] = check_id
+                logger.info(f"Saved FP Pro check {check_id} to database")
+        except Exception as db_error:
+            logger.error(f"Error saving FP Pro to database: {db_error}")
+
+        # Store in memory cache for quick access
+        fingerprint_reports[session_id] = response_data
+        extension_reports[session_id] = response_data
 
         # Log to visitors file (backup)
         log_entry = {
