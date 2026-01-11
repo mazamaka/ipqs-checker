@@ -17,6 +17,7 @@
             --danger: #ef4444;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
@@ -227,10 +228,19 @@
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
             font-size: 0.85em;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .alert-item:hover {
+            background: rgba(236, 72, 153, 0.15);
+            transform: translateX(4px);
         }
         .alert-item.danger { border-left: 3px solid var(--danger); }
         .alert-item.warning { border-left: 3px solid var(--warning); }
         .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+        .alert-item.ok:hover { opacity: 1; }
 
         .card {
             background: var(--card);
@@ -352,6 +362,32 @@
             color: #8b949e;
         }
         .hidden { display: none; }
+
+        /* Plugins list */
+        .plugins-list {
+            display: none;
+            padding: 8px 18px 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .plugins-list.show {
+            display: flex;
+        }
+        .plugins-toggle {
+            cursor: pointer;
+        }
+        .plugins-toggle.expanded small {
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+        .plugin-item {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: var(--text);
+        }
         .error {
             background: rgba(255, 71, 87, 0.2);
             border: 1px solid rgba(255, 71, 87, 0.5);
@@ -464,6 +500,26 @@
             </div>`;
         }
 
+        function pluginsRow(plugins) {
+            if (!plugins || plugins.length === 0) {
+                return row('Plugins', 'N/A', 'Установленные плагины браузера');
+            }
+
+            const pluginNames = [...new Set(plugins.map(p => p.name))];
+            const count = pluginNames.length;
+
+            return `<div class="row">
+                <div class="row-left">
+                    <span class="row-label">Plugins</span>
+                    <span class="row-hint">Установленные плагины браузера</span>
+                </div>
+                <span class="row-value plugins-toggle" onclick="this.classList.toggle('expanded'); this.closest('.row').nextElementSibling.classList.toggle('show')">${count} шт. <small style="opacity:0.6">▼</small></span>
+            </div>
+            <div class="plugins-list">
+                ${pluginNames.map(name => `<span class="plugin-item">${escapeHtml(name)}</span>`).join('')}
+            </div>`;
+        }
+
         function render(data) {
             jsonData = data;
             $('loading').classList.add('hidden');
@@ -512,16 +568,16 @@
             let suspectClass = suspect >= 70 ? 'high' : suspect >= 30 ? 'medium' : 'low';
             let confidenceClass = confidence >= 0.9 ? 'low' : confidence >= 0.7 ? 'medium' : 'high';
 
-            // Alerts
+            // Alerts with anchor links
             const alerts = [
-                { text: 'Anti-detect Browser', bad: antiDetect, hint: 'Обнаружен антидетект-браузер' },
-                { text: 'Tampering', bad: tamperingResult, hint: 'Обнаружены признаки подмены данных' },
-                { text: 'Bot Detected', bad: isBot, hint: 'Обнаружен бот/автоматизация' },
-                { text: 'VPN/Proxy', bad: vpnDetected, hint: 'Обнаружен VPN или прокси' },
-                { text: 'Incognito', bad: incognito, hint: 'Приватный режим браузера' },
-                { text: 'Virtual Machine', bad: virtualMachine.result, hint: 'Обнаружена виртуальная машина' },
-                { text: 'High Activity', bad: highActivity.result, hint: 'Аномально высокая активность' },
-                { text: 'Location Spoofing', bad: locationSpoofing.result, hint: 'Подмена геолокации' }
+                { text: 'Anti-detect Browser', bad: antiDetect, hint: 'Обнаружен антидетект-браузер', anchor: 'card-tampering' },
+                { text: 'Tampering', bad: tamperingResult, hint: 'Обнаружены признаки подмены данных', anchor: 'card-tampering' },
+                { text: 'Bot Detected', bad: isBot, hint: 'Обнаружен бот/автоматизация', anchor: 'card-bot' },
+                { text: 'VPN/Proxy', bad: vpnDetected, hint: 'Обнаружен VPN или прокси', anchor: 'card-vpn' },
+                { text: 'Incognito', bad: incognito, hint: 'Приватный режим браузера', anchor: 'card-browser' },
+                { text: 'Virtual Machine', bad: virtualMachine.result, hint: 'Обнаружена виртуальная машина', anchor: 'card-tampering' },
+                { text: 'High Activity', bad: highActivity.result, hint: 'Аномально высокая активность', anchor: 'card-velocity' },
+                { text: 'Location Spoofing', bad: locationSpoofing.result, hint: 'Подмена геолокации', anchor: 'card-debug' }
             ];
 
             $('result').innerHTML = `
@@ -559,7 +615,7 @@
                         ${alerts.map(a => {
                             let cls = a.bad ? 'danger' : 'ok';
                             let icon = a.bad ? '✗' : '✓';
-                            return `<div class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</div>`;
+                            return `<a href="#${a.anchor}" class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</a>`;
                         }).join('')}
                     </div>
                 </div>
@@ -582,7 +638,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-tampering">
                     <div class="card-header">
                         <span class="card-title">Tampering (Подмена)</span>
                     </div>
@@ -590,10 +646,11 @@
                         ${row('Anti-detect Browser', tag(antiDetect), 'Обнаружен антидетект-браузер', antiDetect ? 'danger' : false)}
                         ${row('Tampering Detected', tag(tamperingResult), 'Обнаружены признаки подмены')}
                         ${row('Anomaly Score', anomalyScore.toFixed(3), 'Оценка аномальности (0-1)')}
+                        ${row('Virtual Machine', tag(virtualMachine.result), 'Виртуальная машина', virtualMachine.result ? 'danger' : false)}
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-bot">
                     <div class="card-header">
                         <span class="card-title">Bot Detection</span>
                     </div>
@@ -603,7 +660,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-vpn">
                     <div class="card-header">
                         <span class="card-title">VPN / Proxy</span>
                     </div>
@@ -615,7 +672,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-browser">
                     <div class="card-header">
                         <span class="card-title">Браузер и устройство</span>
                     </div>
@@ -666,7 +723,7 @@
                         ${row('Vendor', rawDeviceAttributes.vendor?.value || 'N/A', 'Vendor браузера')}
                         ${row('Vendor Flavors', rawDeviceAttributes.vendorFlavors?.value?.join(', ') || 'N/A', 'Vendor flavors')}
                         ${row('Fonts', rawDeviceAttributes.fonts?.value?.length ? rawDeviceAttributes.fonts.value.join(', ') : 'N/A', 'Установленные шрифты')}
-                        ${row('Plugins', rawDeviceAttributes.plugins?.value?.length || 0, 'Количество плагинов')}
+                        ${pluginsRow(rawDeviceAttributes.plugins?.value)}
                         ${row('PDF Viewer', tag(rawDeviceAttributes.pdfViewerEnabled?.value, false), 'PDF Viewer')}
                         ${row('Cookies Enabled', tag(rawDeviceAttributes.cookiesEnabled?.value, false), 'Cookies')}
                         ${row('Local Storage', tag(rawDeviceAttributes.localStorage?.value, false), 'Local Storage')}
@@ -708,7 +765,7 @@
                 </div>
                 ` : ''}
 
-                <div class="card">
+                <div class="card" id="card-velocity">
                     <div class="card-header">
                         <span class="card-title">Velocity & Activity</span>
                     </div>
@@ -723,7 +780,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-debug">
                     <div class="card-header">
                         <span class="card-title">Developer & Debug</span>
                     </div>
