@@ -133,6 +133,9 @@ async function handleCheckComplete(sessionId, lastFingerprint, service) {
 
     chrome.tabs.create({ url: resultUrl });
 
+    // Сохраняем в историю
+    await addToHistory(sessionId, lastFingerprint, service);
+
     // Сохраняем результат для popup
     chrome.storage.local.set({
         lastFingerprint: lastFingerprint,
@@ -140,6 +143,36 @@ async function handleCheckComplete(sessionId, lastFingerprint, service) {
         lastService: service,
         checkComplete: true
     });
+}
+
+// Добавление в историю проверок
+async function addToHistory(sessionId, fingerprint, service) {
+    const MAX_HISTORY = 10;
+    const data = await chrome.storage.local.get('checkHistory');
+    const history = data.checkHistory || [];
+
+    let score;
+    if (service === 'fingerprint') {
+        score = fingerprint.products?.suspectScore?.data?.result || 0;
+    } else {
+        score = fingerprint.fraud_chance || 0;
+    }
+
+    const newItem = {
+        sessionId: sessionId,
+        service: service,
+        score: score,
+        time: new Date().toLocaleString('ru-RU')
+    };
+
+    // Add to beginning, limit to MAX_HISTORY
+    history.unshift(newItem);
+    if (history.length > MAX_HISTORY) {
+        history.pop();
+    }
+
+    await chrome.storage.local.set({ checkHistory: history });
+    addLog(`Добавлено в историю: ${service} - ${score}`);
 }
 
 // Слушаем сообщения от content script
