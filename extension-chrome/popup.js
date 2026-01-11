@@ -40,11 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderHistory(history) {
         if (history.length === 0) {
-            historySection.style.display = 'none';
+            historyList.innerHTML = '<div class="history-empty">Нет проверок</div>';
             return;
         }
 
-        historySection.style.display = 'block';
         historyList.innerHTML = history.map(item => {
             const score = item.score || 0;
             const scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
