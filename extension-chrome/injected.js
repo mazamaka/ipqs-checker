@@ -14,14 +14,12 @@
             try {
                 const clone = response.clone();
                 const data = await clone.json();
-                console.log('[IPQS Interceptor] Captured fingerprint:', data);
-                
                 // Отправляем данные через CustomEvent
                 window.dispatchEvent(new CustomEvent('ipqs-fingerprint', {
                     detail: data
                 }));
             } catch (e) {
-                console.error('[IPQS Interceptor] Parse error:', e);
+                // Silent fail in production
             }
         }
         return response;
@@ -41,18 +39,14 @@
             this.addEventListener('load', function() {
                 try {
                     const data = JSON.parse(this.responseText);
-                    console.log('[IPQS Interceptor] Captured XHR fingerprint:', data);
-                    
                     window.dispatchEvent(new CustomEvent('ipqs-fingerprint', {
                         detail: data
                     }));
                 } catch (e) {
-                    console.error('[IPQS Interceptor] XHR parse error:', e);
+                    // Silent fail in production
                 }
             });
         }
         return originalXHRSend.apply(this, args);
     };
-
-    console.log('[IPQS Interceptor] Initialized');
 })();

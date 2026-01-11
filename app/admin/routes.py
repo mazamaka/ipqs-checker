@@ -2,6 +2,7 @@
 Admin routes - dashboard, profiles, history
 """
 
+import logging
 from pathlib import Path
 from datetime import datetime
 
@@ -9,6 +10,8 @@ from fastapi import APIRouter, Depends, Request, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel.ext.asyncio.session import AsyncSession
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.db import db, get_db
 from app.admin.auth import (
@@ -19,6 +22,9 @@ from app.admin.auth import (
 )
 from app.config import SETTINGS
 from app.services import profile_service, check_service
+
+logger = logging.getLogger(__name__)
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -75,19 +81,26 @@ async def login_page(request: Request):
 
 
 @router.post("/login")
+@limiter.limit("5/minute")  # Strict rate limit for login attempts
 async def login(request: Request, password: str = Form(...)):
     """Process login"""
+    client_ip = request.client.host if request.client else "unknown"
     if password == SETTINGS.admin_password:
         response = RedirectResponse(url="/admin", status_code=302)
         token = create_token()
+        # Determine if we're in production (HTTPS)
+        is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
         response.set_cookie(
             key=TOKEN_COOKIE_NAME,
             value=token,
             httponly=True,
+            secure=is_https,  # Only send over HTTPS in production
             max_age=86400,  # 24 hours
-            samesite="lax",
+            samesite="strict" if is_https else "lax",
         )
+        logger.info(f"Admin login successful from {client_ip}")
         return response
+    logger.warning(f"Failed admin login attempt from {client_ip}")
     return templates.TemplateResponse(
         "login.html",
         {"request": request, "error": "Неверный пароль"}
