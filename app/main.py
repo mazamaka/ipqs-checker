@@ -182,6 +182,35 @@ async def download_chrome_extension():
     )
 
 
+@app.get("/download/extension-firefox.xpi")
+async def download_firefox_extension():
+    """Generate Firefox extension xpi on-the-fly from source files"""
+    ext_dir = Path(__file__).parent.parent / "extension"
+
+    if not ext_dir.exists():
+        return JSONResponse({"error": "Extension directory not found"}, status_code=404)
+
+    # Create xpi (zip) in memory, excluding pre-built archives
+    zip_buffer = io.BytesIO()
+    exclude_ext = {".xpi", ".zip"}
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path in ext_dir.rglob("*"):
+            if (file_path.is_file() and
+                not file_path.name.startswith(".") and
+                file_path.suffix.lower() not in exclude_ext):
+                arcname = file_path.relative_to(ext_dir)
+                zf.write(file_path, arcname)
+
+    zip_buffer.seek(0)
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-xpinstall",
+        headers={"Content-Disposition": "attachment; filename=ipqs-checker-firefox.xpi"}
+    )
+
+
 @app.get("/api/config")
 async def get_config():
     """Get IPQS configuration for frontend"""
