@@ -110,6 +110,15 @@ async def result_page():
     return HTMLResponse(content="<h1>Results</h1><p>Page not found</p>")
 
 
+@app.get("/result-fp", response_class=HTMLResponse)
+async def result_fp_page():
+    """Result page for Fingerprint Pro"""
+    html_file = STATIC_DIR / "result-fp.html"
+    if html_file.exists():
+        return HTMLResponse(content=html_file.read_text())
+    return HTMLResponse(content="<h1>Fingerprint Pro Results</h1><p>Page not found</p>")
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -376,6 +385,74 @@ async def extension_result(session_id: str):
     if session_id in extension_reports:
         return extension_reports[session_id]
     return {"status": "pending"}
+
+
+# Store for Fingerprint Pro reports
+fingerprint_reports = {}
+
+
+@app.post("/api/extension/report-fp")
+async def extension_report_fp(request: Request):
+    """Receive Fingerprint Pro data from browser extension"""
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "default")
+        fingerprint = data.get("fingerprint", {})
+        source = data.get("source", "unknown")
+
+        # Extract key identifiers from Fingerprint Pro response
+        products = fingerprint.get("products", {})
+        identification = products.get("identification", {}).get("data", {})
+        tampering = products.get("tampering", {}).get("data", {})
+        suspect_score = products.get("suspectScore", {}).get("data", {})
+        bot_d = products.get("botd", {}).get("data", {})
+        ip_info = products.get("ipInfo", {}).get("data", {})
+        vpn = products.get("vpn", {}).get("data", {})
+
+        visitor_id = identification.get("visitorId", "")
+        request_id = identification.get("requestId", "")
+        confidence = identification.get("confidence", {}).get("score", 0)
+        anti_detect = tampering.get("antiDetectBrowser", False)
+        suspect = suspect_score.get("result", 0)
+
+        # Store in memory for quick access
+        fingerprint_reports[session_id] = {
+            "fingerprint": fingerprint,
+            "timestamp": datetime.utcnow().isoformat(),
+            "source": source,
+            "summary": {
+                "visitor_id": visitor_id,
+                "request_id": request_id,
+                "confidence": confidence,
+                "anti_detect_browser": anti_detect,
+                "suspect_score": suspect,
+                "is_bot": bot_d.get("bot", {}).get("result") == "bad" if bot_d.get("bot") else False,
+            }
+        }
+
+        # Also store in extension_reports for unified access
+        extension_reports[session_id] = fingerprint_reports[session_id]
+
+        # Log to visitors file (backup)
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "service": "fingerprint_pro",
+            "visitor_id": visitor_id,
+            "anti_detect": anti_detect,
+            "suspect_score": suspect,
+            "confidence": confidence,
+        }
+        with open(VISITORS_LOG, "a") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        print(f"[FP] Received Fingerprint Pro for session {session_id}")
+        print(f"[FP] Visitor ID: {visitor_id}, Anti-detect: {anti_detect}, Suspect: {suspect}")
+
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"[FP] Error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=400)
 
 
 @app.get("/api/proxy/fetch")

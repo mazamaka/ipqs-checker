@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты проверки - Fingerprint Pro</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --muted: #6b7280;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(236, 72, 153, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(236, 72, 153, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: blobFloat 20s ease-in-out infinite;
+        }
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+            bottom: -50px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(-30px, -20px) scale(1.02); }
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--muted); margin-top: 8px; }
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .loader {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--muted); }
+
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 800px) {
+            .score-section { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 500px) {
+            .score-section { grid-template-columns: 1fr; }
+        }
+        .score-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .score-value {
+            font-size: 3.5em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score-value.low { color: var(--success); }
+        .score-value.medium { color: var(--warning); }
+        .score-value.high { color: var(--danger); }
+        .score-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .score-desc {
+            color: var(--muted);
+            font-size: 0.75em;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+        .verdict {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.85em;
+        }
+        .verdict.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .verdict.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        /* Anti-detect alert */
+        .antidetect-alert {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            border: 2px solid rgba(239, 68, 68, 0.5);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .antidetect-alert.detected {
+            animation: pulseAlert 2s infinite;
+        }
+        @keyframes pulseAlert {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.2); }
+        }
+        .antidetect-alert h2 {
+            color: var(--danger);
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+        .antidetect-alert p {
+            color: var(--text);
+            opacity: 0.8;
+        }
+        .antidetect-alert.safe {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+        .antidetect-alert.safe h2 {
+            color: var(--success);
+        }
+
+        .alerts {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .alerts h3 {
+            color: var(--danger);
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+        .alert-item.danger { border-left: 3px solid var(--danger); }
+        .alert-item.warning { border-left: 3px solid var(--warning); }
+        .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-badge {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--accent);
+            color: white;
+        }
+        .card-body { padding: 4px 0; }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+        .row:last-child { border-bottom: none; }
+        .row:hover { background: rgba(255,255,255,0.02); }
+        .row.critical { background: rgba(239, 68, 68, 0.08); }
+        .row-left { display: flex; flex-direction: column; gap: 2px; }
+        .row-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .row-hint {
+            font-size: 0.7em;
+            color: var(--muted);
+            opacity: 0.6;
+        }
+        .row-value {
+            font-size: 0.9em;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .row-value:hover { color: var(--accent); }
+        .row-value.hash { font-size: 0.8em; color: var(--muted); }
+        .row-value.na { color: var(--warning); opacity: 0.8; }
+        .row-value.danger { color: var(--danger); }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .tag.yes { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .tag.no { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .tag.info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .critical-marker {
+            width: 6px;
+            height: 6px;
+            background: var(--danger);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .json-panel { margin-top: 24px; }
+        .json-toggle {
+            width: 100%;
+            padding: 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .json-toggle:hover { background: var(--border); }
+        .json-box {
+            display: none;
+            margin-top: 12px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #8b949e;
+        }
+        .hidden { display: none; }
+        .error {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="bg-grid"></div>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Fingerprint Pro Analysis</h1>
+            <p>Anti-detect browser detection</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loader"></div>
+            <p class="loading-text">Загрузка результатов...</p>
+        </div>
+
+        <div id="result" class="hidden"></div>
+
+        <div id="error" class="error hidden">
+            <div style="font-size: 1.2em; margin-bottom: 10px;">Результаты не найдены</div>
+            <div style="color: var(--muted);">Возможно, проверка ещё не завершена или сессия истекла</div>
+            <a href="/" class="btn">Попробовать снова</a>
+        </div>
+
+        <div class="footer">
+            Device Analysis via Fingerprint Pro
+        </div>
+    </div>
+
+    <script>
+        const sessionId = new URLSearchParams(window.location.search).get('session');
+        let jsonData = null;
+
+        const $ = id => document.getElementById(id);
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        async function copyToClipboard(text, el) {
+            try {
+                await navigator.clipboard.writeText(text);
+                el.style.color = 'var(--success)';
+                setTimeout(() => { el.style.color = ''; }, 1500);
+            } catch (e) {
+                console.error('Copy failed:', e);
+            }
+        }
+
+        function tag(val, yesIsBad = true) {
+            if (val === true) return `<span class="tag ${yesIsBad ? 'yes' : 'no'}">Yes</span>`;
+            if (val === false) return `<span class="tag ${yesIsBad ? 'no' : 'yes'}">No</span>`;
+            return `<span class="tag info">N/A</span>`;
+        }
+
+        function row(label, value, hint = '', critical = false, isHash = false) {
+            const v = value ?? '-';
+            const isHTML = typeof v === 'string' && v.includes('<');
+            const isNA = !isHTML && (v === 'N/A' || v === '-' || v === 0 || v === '0');
+            const rowCls = critical === 'danger' ? ' critical' : '';
+            const valCls = isHash ? ' hash' : '';
+            const statusCls = critical === 'danger' ? ' danger' : (isNA ? ' na' : '');
+            const marker = critical === 'danger' ? '<span class="critical-marker"></span>' : '';
+
+            let valueHtml;
+            if (isHTML) {
+                valueHtml = `<span class="row-value">${v}</span>`;
+            } else {
+                const safeVal = escapeHtml(String(v));
+                const copyVal = String(v).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                valueHtml = `<span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${safeVal}</span>`;
+            }
+
+            return `<div class="row${rowCls}">
+                <div class="row-left">
+                    <span class="row-label">${marker}${label}</span>
+                    ${hint ? `<span class="row-hint">${hint}</span>` : ''}
+                </div>
+                ${valueHtml}
+            </div>`;
+        }
+
+        function render(data) {
+            jsonData = data;
+            $('loading').classList.add('hidden');
+            $('error').classList.add('hidden');
+            $('result').classList.remove('hidden');
+
+            const products = data.products || {};
+            const identification = products.identification?.data || {};
+            const tampering = products.tampering?.data || {};
+            const suspectScore = products.suspectScore?.data || {};
+            const botd = products.botd?.data || {};
+            const vpn = products.vpn?.data || {};
+            const ipInfo = products.ipInfo?.data || {};
+            const rootApps = products.rootApps?.data || {};
+            const emulator = products.emulator?.data || {};
+            const clonedApp = products.clonedApp?.data || {};
+            const factoryReset = products.factoryReset?.data || {};
+            const jailbroken = products.jailbroken?.data || {};
+            const frida = products.frida?.data || {};
+            const privacySettings = products.privacySettings?.data || {};
+            const virtualMachine = products.virtualMachine?.data || {};
+            const rawDeviceAttributes = products.rawDeviceAttributes?.data || {};
+            const highActivity = products.highActivity?.data || {};
+            const locationSpoofing = products.locationSpoofing?.data || {};
+            const velocity = products.velocity?.data || {};
+
+            const visitorId = identification.visitorId || 'N/A';
+            const confidence = identification.confidence?.score || 0;
+            const antiDetect = tampering.antiDetectBrowser || false;
+            const tamperingResult = tampering.result || false;
+            const anomalyScore = tampering.anomalyScore || 0;
+            const suspect = suspectScore.result || 0;
+            const isBot = botd.bot?.result === 'bad';
+            const incognito = identification.incognito || false;
+
+            // Browser details
+            const browser = identification.browserDetails || {};
+            const ip = identification.ip || 'N/A';
+            const ipLoc = identification.ipLocation || {};
+
+            // VPN detection
+            const vpnDetected = vpn.result || false;
+            const vpnMethods = vpn.methods || {};
+
+            // Scores
+            let suspectClass = suspect >= 70 ? 'high' : suspect >= 30 ? 'medium' : 'low';
+            let confidenceClass = confidence >= 0.9 ? 'low' : confidence >= 0.7 ? 'medium' : 'high';
+
+            // Alerts
+            const alerts = [
+                { text: 'Anti-detect Browser', bad: antiDetect, hint: 'Обнаружен антидетект-браузер' },
+                { text: 'Tampering', bad: tamperingResult, hint: 'Обнаружены признаки подмены данных' },
+                { text: 'Bot Detected', bad: isBot, hint: 'Обнаружен бот/автоматизация' },
+                { text: 'VPN/Proxy', bad: vpnDetected, hint: 'Обнаружен VPN или прокси' },
+                { text: 'Incognito', bad: incognito, hint: 'Приватный режим браузера' },
+                { text: 'Virtual Machine', bad: virtualMachine.result, hint: 'Обнаружена виртуальная машина' },
+                { text: 'High Activity', bad: highActivity.result, hint: 'Аномально высокая активность' },
+                { text: 'Location Spoofing', bad: locationSpoofing.result, hint: 'Подмена геолокации' }
+            ];
+
+            $('result').innerHTML = `
+                <div class="antidetect-alert ${antiDetect ? 'detected' : 'safe'}">
+                    <h2>${antiDetect ? 'Anti-detect Browser Detected!' : 'No Anti-detect Detected'}</h2>
+                    <p>${antiDetect
+                        ? 'Fingerprint Pro обнаружил использование антидетект-браузера. Профиль может быть заблокирован.'
+                        : 'Антидетект-браузер не обнаружен. Fingerprint выглядит нативно.'}</p>
+                </div>
+
+                <div class="score-section">
+                    <div class="score-card">
+                        <div class="score-value ${suspectClass}">${suspect}</div>
+                        <div class="score-label">Suspect Score</div>
+                        <div class="score-desc">Уровень подозрительности (0-100)</div>
+                        <div class="verdict ${suspectClass}">${suspect >= 70 ? 'Высокий риск' : suspect >= 30 ? 'Средний риск' : 'Низкий риск'}</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value" style="font-size:2.5em">${Math.round(confidence * 100)}%</div>
+                        <div class="score-label">Confidence</div>
+                        <div class="score-desc">Уверенность в идентификации</div>
+                        <div class="verdict ${confidenceClass}">${confidence >= 0.9 ? 'Высокая' : confidence >= 0.7 ? 'Средняя' : 'Низкая'}</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value" style="font-size:2.5em; color: ${anomalyScore > 0.5 ? 'var(--danger)' : 'var(--success)'}">${anomalyScore.toFixed(2)}</div>
+                        <div class="score-label">Anomaly Score</div>
+                        <div class="score-desc">Отклонение от нормы (0-1)</div>
+                        <div class="verdict ${anomalyScore > 0.5 ? 'high' : 'low'}">${anomalyScore > 0.5 ? 'Аномалия' : 'Норма'}</div>
+                    </div>
+                </div>
+
+                <div class="alerts">
+                    <h3>Детекции</h3>
+                    <div class="alert-grid">
+                        ${alerts.map(a => {
+                            let cls = a.bad ? 'danger' : 'ok';
+                            let icon = a.bad ? '✗' : '✓';
+                            return `<div class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <span class="critical-marker"></span>
+                            Идентификация
+                        </span>
+                        <span class="card-badge">VISITOR ID</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Visitor ID', visitorId, 'Уникальный ID посетителя', false, true)}
+                        ${row('Request ID', identification.requestId || 'N/A', 'ID запроса', false, true)}
+                        ${row('Confidence', (confidence * 100).toFixed(1) + '%', 'Уверенность идентификации')}
+                        ${row('First Seen', identification.firstSeenAt?.global ? new Date(identification.firstSeenAt.global).toLocaleString('ru-RU') : 'N/A', 'Первое появление')}
+                        ${row('Last Seen', identification.lastSeenAt?.global ? new Date(identification.lastSeenAt.global).toLocaleString('ru-RU') : 'N/A', 'Последнее появление')}
+                        ${row('Seen Count', identification.seenAt?.global?.length || 'N/A', 'Количество визитов')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Tampering (Подмена)</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Anti-detect Browser', tag(antiDetect), 'Обнаружен антидетект-браузер', antiDetect ? 'danger' : false)}
+                        ${row('Tampering Detected', tag(tamperingResult), 'Обнаружены признаки подмены')}
+                        ${row('Anomaly Score', anomalyScore.toFixed(3), 'Оценка аномальности (0-1)')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Bot Detection</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Bot Status', tag(isBot), 'Обнаружен бот', isBot ? 'danger' : false)}
+                        ${row('Bot Type', botd.bot?.type || 'N/A', 'Тип бота')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">VPN / Proxy</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('VPN Detected', tag(vpnDetected), 'Обнаружен VPN/Proxy', vpnDetected ? 'danger' : false)}
+                        ${row('Timezone Mismatch', tag(vpnMethods.timezoneMismatch), 'Несовпадение timezone')}
+                        ${row('Public VPN', tag(vpnMethods.publicVPN), 'Публичный VPN сервис')}
+                        ${row('Auxiliary Match', tag(vpnMethods.auxiliaryMatch), 'Дополнительные признаки')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Браузер и устройство</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Browser', browser.browserName + ' ' + (browser.browserFullVersion || ''), 'Браузер')}
+                        ${row('OS', browser.os + ' ' + (browser.osVersion || ''), 'Операционная система')}
+                        ${row('Device', browser.device || 'Desktop', 'Тип устройства')}
+                        ${row('Incognito', tag(incognito), 'Приватный режим')}
+                        ${row('Bot', browser.botProbability !== undefined ? (browser.botProbability * 100).toFixed(1) + '%' : 'N/A', 'Вероятность бота')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Сеть</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('IP Address', ip, 'IP адрес')}
+                        ${row('Country', ipLoc.country?.name || 'N/A', 'Страна')}
+                        ${row('City', ipLoc.city?.name || 'N/A', 'Город')}
+                        ${row('Timezone', ipLoc.timezone || 'N/A', 'Часовой пояс')}
+                        ${row('ISP', ipInfo.asn?.name || ipLoc.asn?.name || 'N/A', 'Провайдер')}
+                        ${row('Datacenter', tag(ipInfo.datacenter?.result, true), 'IP из датацентра')}
+                    </div>
+                </div>
+
+                ${Object.keys(rawDeviceAttributes).length > 0 ? `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Raw Device Attributes</span>
+                        <span class="card-badge">FINGERPRINTS</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Audio Hash', rawDeviceAttributes.audio?.value !== undefined ? rawDeviceAttributes.audio.value.toFixed(6) : 'N/A', 'Audio fingerprint', false, true)}
+                        ${row('Canvas Geometry', rawDeviceAttributes.canvas?.value?.Geometry || 'N/A', 'Canvas geometry hash', false, true)}
+                        ${row('Canvas Text', rawDeviceAttributes.canvas?.value?.Text || 'N/A', 'Canvas text hash', false, true)}
+                        ${row('Math Hash', rawDeviceAttributes.math?.value || 'N/A', 'Math operations hash', false, true)}
+                        ${row('Screen Resolution', rawDeviceAttributes.screenResolution?.value ? rawDeviceAttributes.screenResolution.value.join(' x ') : 'N/A', 'Разрешение экрана')}
+                        ${row('Screen Frame', rawDeviceAttributes.screenFrame?.value ? rawDeviceAttributes.screenFrame.value.join(', ') : 'N/A', 'Рамка экрана (top, right, bottom, left)')}
+                        ${row('Color Depth', rawDeviceAttributes.colorDepth?.value || 'N/A', 'Глубина цвета')}
+                        ${row('Color Gamut', rawDeviceAttributes.colorGamut?.value || 'N/A', 'Цветовая гамма')}
+                        ${row('HDR', tag(rawDeviceAttributes.hdr?.value, false), 'HDR поддержка')}
+                        ${row('Hardware Concurrency', rawDeviceAttributes.hardwareConcurrency?.value || 'N/A', 'Ядра CPU')}
+                        ${row('Device Memory', rawDeviceAttributes.deviceMemory?.value ? rawDeviceAttributes.deviceMemory.value + ' GB' : 'N/A', 'Память устройства')}
+                        ${row('Platform', rawDeviceAttributes.platform?.value || 'N/A', 'Платформа')}
+                        ${row('Timezone', rawDeviceAttributes.timezone?.value || 'N/A', 'Timezone браузера')}
+                        ${row('DateTime Locale', rawDeviceAttributes.dateTimeLocale?.value || 'N/A', 'Локаль даты/времени')}
+                        ${row('Languages', rawDeviceAttributes.languages?.value?.flat?.().join(', ') || 'N/A', 'Языки браузера')}
+                        ${row('Vendor', rawDeviceAttributes.vendor?.value || 'N/A', 'Vendor браузера')}
+                        ${row('Vendor Flavors', rawDeviceAttributes.vendorFlavors?.value?.join(', ') || 'N/A', 'Vendor flavors')}
+                        ${row('Fonts', rawDeviceAttributes.fonts?.value?.length ? rawDeviceAttributes.fonts.value.join(', ') : 'N/A', 'Установленные шрифты')}
+                        ${row('Plugins', rawDeviceAttributes.plugins?.value?.length || 0, 'Количество плагинов')}
+                        ${row('PDF Viewer', tag(rawDeviceAttributes.pdfViewerEnabled?.value, false), 'PDF Viewer')}
+                        ${row('Cookies Enabled', tag(rawDeviceAttributes.cookiesEnabled?.value, false), 'Cookies')}
+                        ${row('Local Storage', tag(rawDeviceAttributes.localStorage?.value, false), 'Local Storage')}
+                        ${row('Session Storage', tag(rawDeviceAttributes.sessionStorage?.value, false), 'Session Storage')}
+                        ${row('IndexedDB', tag(rawDeviceAttributes.indexedDB?.value, false), 'IndexedDB')}
+                        ${row('OpenDatabase', tag(rawDeviceAttributes.openDatabase?.value, false), 'OpenDatabase (deprecated)')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">WebGL</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Renderer', rawDeviceAttributes.webGlBasics?.value?.renderer || 'N/A', 'WebGL Renderer')}
+                        ${row('Renderer Unmasked', rawDeviceAttributes.webGlBasics?.value?.rendererUnmasked || 'N/A', 'Реальный GPU', false, false)}
+                        ${row('Vendor', rawDeviceAttributes.webGlBasics?.value?.vendor || 'N/A', 'WebGL Vendor')}
+                        ${row('Vendor Unmasked', rawDeviceAttributes.webGlBasics?.value?.vendorUnmasked || 'N/A', 'Реальный vendor')}
+                        ${row('Version', rawDeviceAttributes.webGlBasics?.value?.version || 'N/A', 'Версия WebGL')}
+                        ${row('Shading Language', rawDeviceAttributes.webGlBasics?.value?.shadingLanguageVersion || 'N/A', 'Версия GLSL')}
+                        ${row('Extensions Hash', rawDeviceAttributes.webGlExtensions?.value?.extensions || 'N/A', 'Hash расширений', false, true)}
+                        ${row('Parameters Hash', rawDeviceAttributes.webGlExtensions?.value?.parameters || 'N/A', 'Hash параметров', false, true)}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Touch & Input</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Max Touch Points', rawDeviceAttributes.touchSupport?.value?.maxTouchPoints ?? 'N/A', 'Макс. точек касания')}
+                        ${row('Touch Event', tag(rawDeviceAttributes.touchSupport?.value?.touchEvent, false), 'Touch Event API')}
+                        ${row('Touch Start', tag(rawDeviceAttributes.touchSupport?.value?.touchStart, false), 'ontouchstart')}
+                        ${row('Reduced Motion', tag(rawDeviceAttributes.reducedMotion?.value), 'Reduced Motion')}
+                        ${row('Forced Colors', tag(rawDeviceAttributes.forcedColors?.value), 'Forced Colors')}
+                        ${row('Contrast', rawDeviceAttributes.contrast?.value ?? 'N/A', 'Контраст')}
+                        ${row('Monochrome', rawDeviceAttributes.monochrome?.value ?? 'N/A', 'Монохром')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Velocity & Activity</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('High Activity', tag(highActivity.result), 'Высокая активность', highActivity.result ? 'danger' : false)}
+                        ${row('Daily Requests', highActivity.dailyRequests || 'N/A', 'Запросов за день')}
+                        ${row('Events (5m)', velocity.events?.intervals?.['5m'] || 'N/A', 'Событий за 5 минут')}
+                        ${row('Events (1h)', velocity.events?.intervals?.['1h'] || 'N/A', 'Событий за час')}
+                        ${row('Events (24h)', velocity.events?.intervals?.['24h'] || 'N/A', 'Событий за сутки')}
+                        ${row('Distinct IPs (5m)', velocity.distinctIp?.intervals?.['5m'] || 'N/A', 'Уникальных IP за 5 минут')}
+                        ${row('Distinct IPs (24h)', velocity.distinctIp?.intervals?.['24h'] || 'N/A', 'Уникальных IP за сутки')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Developer & Debug</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Developer Tools', tag(products.developerTools?.data?.result), 'DevTools открыты', products.developerTools?.data?.result ? 'danger' : false)}
+                        ${row('Location Spoofing', tag(locationSpoofing.result), 'Подмена геолокации', locationSpoofing.result ? 'danger' : false)}
+                        ${row('MITM Attack', tag(products.mitmAttack?.data?.result), 'MITM атака', products.mitmAttack?.data?.result ? 'danger' : false)}
+                    </div>
+                </div>
+
+                <div class="json-panel">
+                    <button class="json-toggle" onclick="toggleJson()">Показать полный JSON</button>
+                    <pre class="json-box" id="jsonBox">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+                </div>
+            `;
+        }
+
+        function toggleJson() {
+            const box = $('jsonBox');
+            const btn = document.querySelector('.json-toggle');
+            const isHidden = getComputedStyle(box).display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+
+            if (isHidden && jsonData) {
+                navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
+                    btn.textContent = 'JSON скопирован!';
+                    setTimeout(() => { btn.textContent = 'Скрыть JSON'; }, 1500);
+                });
+            } else {
+                btn.textContent = 'Показать полный JSON';
+            }
+        }
+
+        function showError() {
+            $('loading').classList.add('hidden');
+            $('error').classList.remove('hidden');
+        }
+
+        async function loadResult() {
+            if (!sessionId) {
+                showError();
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/extension/result/' + sessionId);
+                const data = await resp.json();
+
+                if (data.fingerprint) {
+                    render(data.fingerprint);
+                } else if (data.status === 'pending') {
+                    setTimeout(loadResult, 1000);
+                } else {
+                    showError();
+                }
+            } catch (e) {
+                showError();
+            }
+        }
+
+        loadResult();
+    </script>
+</body>
+</html>

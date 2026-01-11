@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "IPQS Fingerprint Checker",
-  "version": "1.2",
-  "description": "Автоматический сбор IPQS fingerprint с indeed.com",
+  "name": "Fingerprint Checker",
+  "version": "2.0",
+  "description": "Проверка fingerprint через IPQS (indeed.com) и Fingerprint Pro (fingerprint.com)",
   "permissions": [
     "activeTab",
     "tabs",
@@ -16,6 +16,8 @@
     "https://*.indeed.com/*",
     "https://fn.us.ipqscdn.com/*",
     "https://*.ipqscdn.com/*",
+    "https://fingerprint.com/*",
+    "https://*.fingerprint.com/*",
     "https://check-ipqs.farm-mafia.cash/*"
   ],
   "background": {
@@ -24,7 +26,12 @@
   "content_scripts": [
     {
       "matches": ["https://secure.indeed.com/*", "https://*.indeed.com/*"],
-      "js": ["content.js"],
+      "js": ["content-ipqs.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://fingerprint.com/*", "https://*.fingerprint.com/*"],
+      "js": ["content-fp.js"],
       "run_at": "document_start"
     }
   ],
@@ -36,7 +43,7 @@
       "48": "icon48.png",
       "128": "icon128.png"
     },
-    "default_title": "IPQS Checker"
+    "default_title": "Fingerprint Checker"
   },
   "icons": {
     "16": "icon16.png",
@@ -48,6 +55,10 @@
     {
       "resources": ["injected.js"],
       "matches": ["https://*.indeed.com/*"]
+    },
+    {
+      "resources": ["injected-fp.js"],
+      "matches": ["https://fingerprint.com/*", "https://*.fingerprint.com/*"]
     }
   ]
 }

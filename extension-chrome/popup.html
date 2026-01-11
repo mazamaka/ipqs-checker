@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body {
-            width: 320px;
+            width: 340px;
             padding: 15px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -16,6 +16,66 @@
             font-size: 16px;
             text-align: center;
         }
+
+        /* Service selector */
+        .service-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .service-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .service-btn:hover {
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.1);
+        }
+        .service-btn.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            color: white;
+        }
+        .service-btn .service-name {
+            font-weight: 600;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .service-btn .service-desc {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        .service-btn.active .service-desc {
+            opacity: 1;
+        }
+
+        /* Feature badge */
+        .feature-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .badge-antidetect {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ff6b6b;
+        }
+        .badge-fraud {
+            background: rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+        }
+
         .btn {
             width: 100%;
             padding: 12px;
@@ -91,10 +151,26 @@
             font-size: 11px;
             color: rgba(255,255,255,0.6);
         }
+        .last-check-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .last-service {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+        }
         .fraud-score {
             font-size: 24px;
             font-weight: bold;
-            margin: 8px 0;
         }
         .fraud-low { color: #2ed573; }
         .fraud-medium { color: #ffa502; }
@@ -160,21 +236,40 @@
     </style>
 </head>
 <body>
-    <h2>IPQS Fingerprint Checker</h2>
+    <h2>Fingerprint Checker</h2>
+
+    <div class="service-selector">
+        <button class="service-btn active" data-service="ipqs">
+            <span class="service-name">IPQS</span>
+            <span class="service-desc">indeed.com</span>
+            <span class="feature-badge badge-fraud">Fraud Score</span>
+        </button>
+        <button class="service-btn" data-service="fingerprint">
+            <span class="service-name">Fingerprint Pro</span>
+            <span class="service-desc">fingerprint.com</span>
+            <span class="feature-badge badge-antidetect">Anti-detect</span>
+        </button>
+    </div>
 
     <button class="btn btn-primary" id="checkBtn">
-        Проверить мой фингерпринт
+        Проверить фингерпринт
     </button>
 
     <div class="status" id="status"></div>
 
     <div class="hint" id="hint" style="display: none;">
-        Проверка может занять до 60 сек в зависимости от скорости прокси
+        Проверка может занять до 60 сек
     </div>
 
     <div class="last-check" id="lastCheck" style="display: none;">
-        <div>Последняя проверка:</div>
-        <div class="fraud-score" id="fraudScore"></div>
+        <div class="last-check-header">
+            <span>Последняя проверка:</span>
+            <span class="last-service" id="lastService"></span>
+        </div>
+        <div class="score-row">
+            <span id="scoreLabel">Fraud Score:</span>
+            <span class="fraud-score" id="fraudScore"></span>
+        </div>
         <div id="checkTime"></div>
     </div>
 

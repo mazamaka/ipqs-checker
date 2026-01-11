@@ -1,10 +1,11 @@
-// Popup script для Chrome
+// Popup script для Chrome - поддержка IPQS и Fingerprint Pro
 const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
 
 let logsVisible = false;
 let logsInterval = null;
 let currentLogs = [];
 let checkInProgress = false;
+let selectedService = 'ipqs';  // 'ipqs' или 'fingerprint'
 
 document.addEventListener('DOMContentLoaded', function() {
     const checkBtn = document.getElementById('checkBtn');
@@ -12,6 +13,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const debugToggle = document.getElementById('debugToggle');
     const copyBtn = document.getElementById('copyBtn');
     const debugLogs = document.getElementById('debugLogs');
+    const serviceBtns = document.querySelectorAll('.service-btn');
+
+    // Service selector
+    serviceBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (checkInProgress) return;
+
+            serviceBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedService = this.dataset.service;
+        });
+    });
 
     function setStatus(text, type = 'loading') {
         if (type === 'loading') {
@@ -24,9 +37,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setLoading(loading) {
         checkBtn.disabled = loading;
-        checkBtn.textContent = loading ? 'Проверка...' : 'Проверить мой фингерпринт';
+        checkBtn.textContent = loading ? 'Проверка...' : 'Проверить фингерпринт';
         checkInProgress = loading;
         document.getElementById('hint').style.display = loading ? 'block' : 'none';
+
+        // Disable service selector during check
+        serviceBtns.forEach(btn => {
+            btn.style.pointerEvents = loading ? 'none' : 'auto';
+            btn.style.opacity = loading ? '0.5' : '1';
+        });
     }
 
     async function updateLogs() {
@@ -98,7 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
         startLogsPolling();
 
         try {
-            chrome.runtime.sendMessage({ type: 'START_CHECK' }, function(response) {
+            chrome.runtime.sendMessage({
+                type: 'START_CHECK',
+                service: selectedService
+            }, function(response) {
                 if (chrome.runtime.lastError) {
                     setStatus('Ошибка: ' + chrome.runtime.lastError.message, 'error');
                     setLoading(false);
@@ -106,9 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (response && response.sessionId) {
-                    setStatus('Открыта вкладка indeed.com...', 'loading');
-                    // Start polling for completion
-                    pollForCompletion(response.sessionId);
+                    const siteName = selectedService === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                    setStatus(`Открыта вкладка ${siteName}...`, 'loading');
+                    pollForCompletion(response.sessionId, selectedService);
                 } else {
                     setStatus('Ошибка запуска', 'error');
                     setLoading(false);
@@ -122,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Poll for check completion via storage
-    async function pollForCompletion(sessionId) {
+    async function pollForCompletion(sessionId, service) {
         let attempts = 0;
         const maxAttempts = 120; // 60 seconds
 
@@ -130,16 +152,13 @@ document.addEventListener('DOMContentLoaded', function() {
             attempts++;
 
             try {
-                // Check storage for completion flag
-                const data = await chrome.storage.local.get(['checkComplete', 'checkError', 'lastFingerprint']);
+                const data = await chrome.storage.local.get(['checkComplete', 'checkError', 'lastFingerprint', 'lastService']);
 
                 if (data.checkComplete) {
                     if (data.checkError) {
                         setStatus('Ошибка: ' + data.checkError, 'error');
                     } else if (data.lastFingerprint) {
-                        const score = data.lastFingerprint.fraud_chance || 0;
-                        setStatus(`Готово! Fraud Score: ${score}%`, 'success');
-                        showLastCheck(data.lastFingerprint);
+                        showResult(data.lastFingerprint, data.lastService || service);
                     } else {
                         setStatus('Готово!', 'success');
                     }
@@ -156,19 +175,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update status based on logs
                 if (currentLogs.length > 0) {
                     const lastLog = currentLogs[currentLogs.length - 1];
-                    if (lastLog.includes('fingerprint')) {
+                    if (lastLog.includes('fingerprint') || lastLog.includes('Fingerprint')) {
                         setStatus('Получен fingerprint, отправка...', 'loading');
                     } else if (lastLog.includes('сервер')) {
                         setStatus('Отправка на сервер...', 'loading');
                     } else if (lastLog.includes('Открыта вкладка')) {
-                        setStatus('Ожидание загрузки indeed.com...', 'loading');
+                        const siteName = service === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                        setStatus(`Ожидание загрузки ${siteName}...`, 'loading');
                     }
                 }
 
                 if (attempts < maxAttempts) {
                     setTimeout(poll, 500);
                 } else {
-                    setStatus('Таймаут. Проверьте вкладку indeed.com', 'error');
+                    const siteName = service === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                    setStatus(`Таймаут. Проверьте вкладку ${siteName}`, 'error');
                     setLoading(false);
                 }
             } catch (e) {
@@ -182,14 +203,54 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(poll, 1000);
     }
 
-    function showLastCheck(fingerprint) {
+    function showResult(fingerprint, service) {
+        if (service === 'fingerprint') {
+            // Fingerprint Pro result
+            const identification = fingerprint.products?.identification?.data;
+            const suspectScore = fingerprint.products?.suspectScore?.data?.result;
+            const tampering = fingerprint.products?.tampering?.data;
+
+            const score = suspectScore || 0;
+            const antiDetect = tampering?.antiDetectBrowser;
+
+            let statusText = `Suspect Score: ${score}`;
+            if (antiDetect) {
+                statusText += ' | Anti-detect: YES!';
+                setStatus(statusText, 'error');
+            } else {
+                setStatus(statusText, 'success');
+            }
+            showLastCheck(fingerprint, service);
+        } else {
+            // IPQS result
+            const score = fingerprint.fraud_chance || 0;
+            setStatus(`Готово! Fraud Score: ${score}%`, 'success');
+            showLastCheck(fingerprint, service);
+        }
+    }
+
+    function showLastCheck(fingerprint, service) {
         const lastCheck = document.getElementById('lastCheck');
         const fraudScore = document.getElementById('fraudScore');
         const checkTime = document.getElementById('checkTime');
+        const lastServiceEl = document.getElementById('lastService');
+        const scoreLabelEl = document.getElementById('scoreLabel');
 
         if (fingerprint) {
-            const score = fingerprint.fraud_chance || 0;
-            fraudScore.textContent = score + '%';
+            let score, scoreLabel;
+
+            if (service === 'fingerprint') {
+                score = fingerprint.products?.suspectScore?.data?.result || 0;
+                scoreLabel = 'Suspect Score:';
+                lastServiceEl.textContent = 'Fingerprint Pro';
+            } else {
+                score = fingerprint.fraud_chance || 0;
+                scoreLabel = 'Fraud Score:';
+                lastServiceEl.textContent = 'IPQS';
+            }
+
+            scoreLabelEl.textContent = scoreLabel;
+            fraudScore.textContent = service === 'fingerprint' ? score : score + '%';
 
             if (score < 30) {
                 fraudScore.className = 'fraud-score fraud-low';
@@ -206,7 +267,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load last check on popup open
     async function loadLastCheck() {
-        const data = await chrome.storage.local.get(['lastFingerprint', 'lastCheck', 'checkComplete']);
+        const data = await chrome.storage.local.get(['lastFingerprint', 'lastCheck', 'lastService', 'checkComplete', 'currentService']);
+
+        // Set selected service from storage
+        if (data.currentService) {
+            selectedService = data.currentService;
+            serviceBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.service === selectedService);
+            });
+        }
 
         // If check is in progress, resume monitoring
         if (data.checkComplete === false) {
@@ -219,28 +288,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 copyBtn.style.display = 'block';
                 logsVisible = true;
                 startLogsPolling();
-                pollForCompletion(sessionData.sessionId);
+                pollForCompletion(sessionData.sessionId, data.currentService || 'ipqs');
             }
         }
 
         if (data.lastFingerprint && data.lastCheck) {
-            const lastCheck = document.getElementById('lastCheck');
-            const fraudScore = document.getElementById('fraudScore');
-            const checkTime = document.getElementById('checkTime');
-
-            const score = data.lastFingerprint.fraud_chance || 0;
-            fraudScore.textContent = score + '%';
-
-            if (score < 30) {
-                fraudScore.className = 'fraud-score fraud-low';
-            } else if (score < 70) {
-                fraudScore.className = 'fraud-score fraud-medium';
-            } else {
-                fraudScore.className = 'fraud-score fraud-high';
-            }
-
-            checkTime.textContent = new Date(data.lastCheck).toLocaleString('ru-RU');
-            lastCheck.style.display = 'block';
+            showLastCheck(data.lastFingerprint, data.lastService || 'ipqs');
         }
     }
 
