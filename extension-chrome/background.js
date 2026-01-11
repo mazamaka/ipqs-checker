@@ -110,13 +110,18 @@ async function clearFingerprintData() {
 
 // Обработка завершения проверки
 async function handleCheckComplete(sessionId, lastFingerprint, service) {
-    addLog('Открываю страницу результатов...');
+    addLog('Данные получены, закрываю вкладку...');
+
+    // Небольшая задержка перед закрытием (чтобы страница успела отрисоваться)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Закрываем вкладку проверки
     if (checkTabId) {
         chrome.tabs.remove(checkTabId).catch(() => {});
         checkTabId = null;
     }
+
+    addLog('Открываю страницу результатов...');
 
     // Очищаем данные после проверки
     if (service === 'ipqs') {
