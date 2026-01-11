@@ -6,6 +6,22 @@
     <p>Всего: {{ total }} проверок</p>
 </div>
 
+<!-- Service Filter -->
+<div class="card" style="margin-bottom: 24px; padding: 16px;">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <span style="color: var(--muted);">Фильтр:</span>
+        <a href="?page=1" class="btn btn-sm {% if not service %}btn-primary{% else %}btn-secondary{% endif %}">
+            Все
+        </a>
+        <a href="?page=1&service=ipqs" class="btn btn-sm {% if service == 'ipqs' %}btn-primary{% else %}btn-secondary{% endif %}" style="{% if service == 'ipqs' %}background: rgba(102, 126, 234, 0.8);{% endif %}">
+            IPQS
+        </a>
+        <a href="?page=1&service=fingerprint_pro" class="btn btn-sm {% if service == 'fingerprint_pro' %}btn-primary{% else %}btn-secondary{% endif %}" style="{% if service == 'fingerprint_pro' %}background: rgba(239, 68, 68, 0.8);{% endif %}">
+            Fingerprint Pro
+        </a>
+    </div>
+</div>
+
 <!-- Table -->
 <div class="card">
     <div class="table-wrap">
@@ -13,28 +29,50 @@
             <thead>
                 <tr>
                     <th>Время</th>
+                    <th>Сервис</th>
                     <th>IP</th>
                     <th>Страна</th>
-                    <th>Fraud Score</th>
+                    <th>Score</th>
                     <th>Proxy</th>
                     <th>VPN</th>
                     <th>Bot</th>
-                    <th>Профиль</th>
+                    <th>Детали</th>
                 </tr>
             </thead>
             <tbody>
                 {% for check in checks %}
                 <tr>
                     <td>{{ check.created_at|datetime }}</td>
+                    <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
+                        {% endif %}
+                    </td>
                     <td>{{ check.ip_address or 'N/A' }}</td>
                     <td>{{ check.country or 'N/A' }}</td>
                     <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                            {% if check.raw_response and check.raw_response.summary %}
+                                {% if check.raw_response.summary.anti_detect_browser %}
+                                <span class="badge badge-danger" title="Anti-detect browser detected">AD!</span>
+                                {% else %}
+                                <span class="badge badge-success">OK</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
+                        {% else %}
                         <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
                             {{ check.fraud_chance|fraud_score }}
                         </span>
+                        {% endif %}
                     </td>
                     <td>
-                        {% if check.proxy %}
+                        {% if check.service == 'fingerprint_pro' %}
+                        <span class="badge badge-muted">—</span>
+                        {% elif check.proxy %}
                         <span class="badge badge-danger">Yes</span>
                         {% else %}
                         <span class="badge badge-muted">No</span>
@@ -62,6 +100,8 @@
                             {% endif %}
                             #{{ check.profile_id }}
                         </a>
+                        {% elif check.service == 'fingerprint_pro' and check.guid %}
+                        <span class="badge badge-muted" title="Visitor ID: {{ check.guid }}">{{ check.guid[:8] }}...</span>
                         {% else %}
                         N/A
                         {% endif %}
@@ -69,7 +109,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" style="text-align: center; color: var(--muted); padding: 40px;">
+                    <td colspan="9" style="text-align: center; color: var(--muted); padding: 40px;">
                         Нет проверок
                     </td>
                 </tr>
@@ -83,14 +123,14 @@
 {% if pages > 1 %}
 <div class="pagination">
     {% if page > 1 %}
-    <a href="?page={{ page - 1 }}">&laquo; Назад</a>
+    <a href="?page={{ page - 1 }}{% if service %}&service={{ service }}{% endif %}">&laquo; Назад</a>
     {% endif %}
 
     {% for p in range(1, pages + 1) %}
         {% if p == page %}
         <span class="active">{{ p }}</span>
         {% elif p <= 3 or p >= pages - 2 or (p >= page - 1 and p <= page + 1) %}
-        <a href="?page={{ p }}">{{ p }}</a>
+        <a href="?page={{ p }}{% if service %}&service={{ service }}{% endif %}">{{ p }}</a>
         {% elif p == 4 and page > 5 %}
         <span>...</span>
         {% elif p == pages - 3 and page < pages - 4 %}
@@ -99,7 +139,7 @@
     {% endfor %}
 
     {% if page < pages %}
-    <a href="?page={{ page + 1 }}">Вперед &raquo;</a>
+    <a href="?page={{ page + 1 }}{% if service %}&service={{ service }}{% endif %}">Вперед &raquo;</a>
     {% endif %}
 </div>
 {% endif %}
