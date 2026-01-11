@@ -230,16 +230,24 @@ async def profile_detail(
 async def history_list(
     request: Request,
     page: int = Query(1, ge=1),
+    service: str = Query(None),
     _: bool = Depends(require_admin),
 ):
-    """All checks history"""
+    """All checks history with optional service filter"""
     limit = 50
     offset = (page - 1) * limit
 
+    # Validate service filter
+    valid_services = ["ipqs", "fingerprint_pro", None]
+    if service not in valid_services:
+        service = None
+
     try:
         async with db.session() as session:
-            checks = await check_service.get_recent_checks(session, limit=limit, offset=offset)
-            total = await check_service.get_checks_count(session)
+            checks = await check_service.get_recent_checks(
+                session, limit=limit, offset=offset, service=service
+            )
+            total = await check_service.get_checks_count(session, service=service)
 
             # Load profiles
             for check in checks:
@@ -256,6 +264,7 @@ async def history_list(
             "page": page,
             "pages": pages,
             "total": total,
+            "service": service,
             "page_title": "История проверок",
         })
     except Exception as e:
@@ -265,6 +274,7 @@ async def history_list(
             "page": 1,
             "pages": 0,
             "total": 0,
+            "service": service,
             "error": str(e),
             "page_title": "История проверок",
         })

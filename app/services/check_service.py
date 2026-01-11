@@ -110,20 +110,24 @@ async def get_recent_checks(
     session: AsyncSession,
     limit: int = 100,
     offset: int = 0,
+    service: str | None = None,
 ) -> list[Check]:
-    """Get recent checks"""
-    result = await session.execute(
-        select(Check)
-        .order_by(Check.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-    )
+    """Get recent checks with optional service filter"""
+    query = select(Check).order_by(Check.created_at.desc())
+
+    if service:
+        query = query.where(Check.service == service)
+
+    result = await session.execute(query.offset(offset).limit(limit))
     return list(result.scalars().all())
 
 
-async def get_checks_count(session: AsyncSession) -> int:
-    """Get total checks count"""
-    result = await session.execute(select(func.count(Check.id)))
+async def get_checks_count(session: AsyncSession, service: str | None = None) -> int:
+    """Get total checks count with optional service filter"""
+    query = select(func.count(Check.id))
+    if service:
+        query = query.where(Check.service == service)
+    result = await session.execute(query)
     return result.scalar() or 0
 
 
@@ -197,6 +201,32 @@ async def get_stats(session: AsyncSession) -> dict:
         select(func.count(Check.id)).where(Check.bot_status == True)
     )).scalar() or 0
 
+    # Stats by service
+    ipqs_count = (await session.execute(
+        select(func.count(Check.id)).where(Check.service == "ipqs")
+    )).scalar() or 0
+
+    fp_count = (await session.execute(
+        select(func.count(Check.id)).where(Check.service == "fingerprint_pro")
+    )).scalar() or 0
+
+    # FP Pro specific: anti-detect browser detected count
+    # We need to check raw_response for this
+    fp_antidetect_count = 0
+    try:
+        from sqlalchemy import cast, String
+        from sqlalchemy.dialects.postgresql import JSONB
+
+        fp_antidetect_result = await session.execute(
+            select(func.count(Check.id)).where(
+                Check.service == "fingerprint_pro",
+                Check.raw_response["summary"]["anti_detect_browser"].astext == "true"
+            )
+        )
+        fp_antidetect_count = fp_antidetect_result.scalar() or 0
+    except Exception:
+        pass  # Skip if JSON query fails
+
     return {
         "profiles_count": profiles_count,
         "checks_count": checks_count,
@@ -211,5 +241,10 @@ async def get_stats(session: AsyncSession) -> dict:
             "proxy": proxy_count,
             "vpn": vpn_count,
             "bot": bot_count,
+        },
+        "services": {
+            "ipqs": ipqs_count,
+            "fingerprint_pro": fp_count,
+            "fp_antidetect": fp_antidetect_count,
         },
     }

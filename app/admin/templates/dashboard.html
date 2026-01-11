@@ -3,18 +3,34 @@
 {% block content %}
 <div class="page-header">
     <h1>Dashboard</h1>
-    <p>Обзор всех проверок IPQS</p>
+    <p>Обзор проверок IPQS и Fingerprint Pro</p>
 </div>
 
-<!-- Stats -->
+<!-- Services Stats -->
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">{{ stats.profiles_count or 0 }}</div>
-        <div class="stat-label">Профилей</div>
+    <div class="stat-card" style="border-left: 3px solid #667eea;">
+        <div class="stat-value">{{ stats.services.ipqs if stats.services else 0 }}</div>
+        <div class="stat-label">IPQS проверок</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #ef4444;">
+        <div class="stat-value">{{ stats.services.fingerprint_pro if stats.services else 0 }}</div>
+        <div class="stat-label">FP Pro проверок</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+        <div class="stat-value danger">{{ stats.services.fp_antidetect if stats.services else 0 }}</div>
+        <div class="stat-label">Anti-detect детект</div>
     </div>
     <div class="stat-card">
         <div class="stat-value">{{ stats.checks_count or 0 }}</div>
-        <div class="stat-label">Проверок</div>
+        <div class="stat-label">Всего проверок</div>
+    </div>
+</div>
+
+<!-- Risk Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.profiles_count or 0 }}</div>
+        <div class="stat-label">Профилей IPQS</div>
     </div>
     <div class="stat-card">
         <div class="stat-value {% if stats.avg_fraud_score and stats.avg_fraud_score > 70 %}danger{% elif stats.avg_fraud_score and stats.avg_fraud_score > 30 %}warning{% else %}success{% endif %}">
@@ -34,6 +50,10 @@
         <div class="stat-value success">{{ stats.low_risk_profiles or 0 }}</div>
         <div class="stat-label">Низкий риск (<30%)</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-value danger">{{ stats.flagged_profiles or 0 }}</div>
+        <div class="stat-label">Помечено</div>
+    </div>
 </div>
 
 <!-- Detection Stats -->
@@ -51,8 +71,8 @@
         <div class="stat-label">VPN детектов</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value danger">{{ stats.flagged_profiles or 0 }}</div>
-        <div class="stat-label">Помечено</div>
+        <div class="stat-value">{{ stats.detections.bot or 0 if stats.detections else 0 }}</div>
+        <div class="stat-label">Bot детектов</div>
     </div>
 </div>
 
@@ -83,28 +103,48 @@
             <thead>
                 <tr>
                     <th>Время</th>
+                    <th>Сервис</th>
                     <th>IP</th>
                     <th>Страна</th>
-                    <th>Fraud Score</th>
-                    <th>Профиль</th>
+                    <th>Score</th>
+                    <th>Детали</th>
                 </tr>
             </thead>
             <tbody>
                 {% for check in recent_checks %}
                 <tr>
                     <td>{{ check.created_at|datetime }}</td>
+                    <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
+                        {% endif %}
+                    </td>
                     <td>{{ check.ip_address or 'N/A' }}</td>
                     <td>{{ check.country or 'N/A' }}</td>
                     <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                            {% if check.raw_response and check.raw_response.summary %}
+                                {% if check.raw_response.summary.anti_detect_browser %}
+                                <span class="badge badge-danger">Anti-detect!</span>
+                                {% else %}
+                                <span class="badge badge-success">Clean</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
+                        {% else %}
                         <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
                             {{ check.fraud_chance|fraud_score }}
                         </span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if check.profile_id %}
-                        <a href="/admin/profile/{{ check.profile_id }}">
-                            #{{ check.profile_id }}
-                        </a>
+                        <a href="/admin/profile/{{ check.profile_id }}">#{{ check.profile_id }}</a>
+                        {% elif check.service == 'fingerprint_pro' and check.guid %}
+                        <span class="badge badge-muted" title="{{ check.guid }}">{{ check.guid[:8] }}...</span>
                         {% else %}
                         N/A
                         {% endif %}
@@ -112,7 +152,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" style="text-align: center; color: var(--muted);">
+                    <td colspan="6" style="text-align: center; color: var(--muted);">
                         Нет данных
                     </td>
                 </tr>
