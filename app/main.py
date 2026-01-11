@@ -7,6 +7,7 @@ import io
 import json
 import zipfile
 import httpx
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -18,6 +19,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # App imports
 from app.config import SETTINGS
@@ -25,13 +29,24 @@ from app.db import db, get_db
 from app.services import profile_service, check_service
 from app.admin import admin_router
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Config from settings
 IPQS_API_KEY = SETTINGS.ipqs_api_key
 IPQS_DOMAIN = SETTINGS.ipqs_domain
 ADMIN_TOKEN = SETTINGS.admin_token
 
 if not IPQS_API_KEY:
-    print("[WARN] IPQS_API_KEY not set, some features will not work")
+    logger.warning("IPQS_API_KEY not set, some features will not work")
 
 # Data directory - /app/data in Docker, ./data locally
 if Path("/app/data").exists() or os.getenv("DOCKER"):
@@ -46,18 +61,18 @@ VISITORS_LOG = DATA_DIR / "visitors.jsonl"
 async def lifespan(app: FastAPI):
     """Application lifespan - startup and shutdown"""
     # Startup
-    print("[DB] Initializing database...")
+    logger.info("Initializing database...")
     try:
         await db.init_models()
-        print("[DB] Database initialized successfully")
+        logger.info("Database initialized successfully")
     except Exception as e:
-        print(f"[DB] Database initialization error: {e}")
-        print("[DB] Running without database - results will not be persisted")
+        logger.error(f"Database initialization error: {e}")
+        logger.warning("Running without database - results will not be persisted")
 
     yield
 
     # Shutdown
-    print("[DB] Closing database connections...")
+    logger.info("Closing database connections...")
     await db.dispose()
 
 
@@ -68,12 +83,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS for extension
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS for extension (limited to known origins)
+ALLOWED_ORIGINS = [
+    "https://check-ipqs.farm-mafia.cash",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^chrome-extension://.*$",  # Allow all Chrome extensions
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    allow_credentials=True,
 )
 
 # Static files
@@ -292,8 +319,11 @@ async def ipqs_proxy_post(path: str, request: Request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-# Store for extension reports (in-memory, use Redis in production)
-extension_reports = {}
+# Store for extension reports (TTLCache with auto-cleanup)
+from cachetools import TTLCache
+
+# Auto-delete after 5 minutes, max 1000 entries
+extension_reports: TTLCache = TTLCache(maxsize=1000, ttl=300)
 
 
 def count_device_visits(device_id: str, guid: str) -> int:
@@ -347,6 +377,7 @@ def is_fingerprint_unique(canvas_hash: str, webgl_hash: str, device_id: str) -> 
 
 
 @app.post("/api/extension/report")
+@limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
 async def extension_report(request: Request):
     """Receive fingerprint data from browser extension"""
     try:
@@ -400,9 +431,9 @@ async def extension_report(request: Request):
                 visit_count = profile.check_count
                 fingerprint_unique = profile.check_count == 1
 
-                print(f"[DB] Saved check {check_id} for profile {profile_id}")
+                logger.info(f"Saved check {check_id} for profile {profile_id}")
         except Exception as db_error:
-            print(f"[DB] Error saving to database: {db_error}")
+            logger.error(f"Error saving to database: {db_error}")
             # Fallback to file-based counting
             visit_count = count_device_visits(device_id, guid) if (device_id or guid) else 1
             fingerprint_unique = is_fingerprint_unique(canvas_hash, webgl_hash, device_id)
@@ -429,7 +460,7 @@ async def extension_report(request: Request):
         with open(VISITORS_LOG, "a") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
-        print(f"[EXT] Received fingerprint for session {session_id}, visit #{visit_count}")
+        logger.info(f"Received fingerprint for session {session_id}, visit #{visit_count}")
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
@@ -443,11 +474,12 @@ async def extension_result(session_id: str):
     return {"status": "pending"}
 
 
-# Store for Fingerprint Pro reports
-fingerprint_reports = {}
+# Store for Fingerprint Pro reports (TTLCache with auto-cleanup)
+fingerprint_reports: TTLCache = TTLCache(maxsize=1000, ttl=300)
 
 
 @app.post("/api/extension/report-fp")
+@limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
 async def extension_report_fp(request: Request):
     """Receive Fingerprint Pro data from browser extension"""
     try:
@@ -502,12 +534,12 @@ async def extension_report_fp(request: Request):
         with open(VISITORS_LOG, "a") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
-        print(f"[FP] Received Fingerprint Pro for session {session_id}")
-        print(f"[FP] Visitor ID: {visitor_id}, Anti-detect: {anti_detect}, Suspect: {suspect}")
+        logger.info(f"Received Fingerprint Pro for session {session_id}")
+        logger.info(f"Visitor ID: {visitor_id}, Anti-detect: {anti_detect}, Suspect: {suspect}")
 
         return {"status": "ok"}
     except Exception as e:
-        print(f"[FP] Error: {e}")
+        logger.error(f"Fingerprint Pro error: {e}")
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
@@ -542,7 +574,7 @@ async def log_visitor(request: Request):
 
         ip = data.get("ip_address", "?")
         fraud = data.get("fraud_chance", "?")
-        print(f"[LOG] {ip} - fraud: {fraud}%")
+        logger.info(f"Log received: {ip} - fraud: {fraud}%")
 
         return {"status": "ok"}
 

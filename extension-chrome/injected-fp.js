@@ -22,8 +22,6 @@
         if (dataSent) return;
         dataSent = true;
 
-        console.log('[FP Interceptor] Captured Fingerprint Pro data:', data);
-
         // Отправляем данные через CustomEvent
         window.dispatchEvent(new CustomEvent('fingerprint-data', {
             detail: data
@@ -84,6 +82,4 @@
         }
         return originalXHRSend.apply(this, args);
     };
-
-    console.log('[FP Interceptor] Initialized for fingerprint.com');
 })();
