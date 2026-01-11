@@ -71,6 +71,7 @@ async def create_check(
         timezone_mismatch=tz_mismatch,
         raw_response=data,
         source=data.get("source", "extension"),
+        service="ipqs",
     )
 
     session.add(check)
