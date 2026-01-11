@@ -36,6 +36,39 @@ class Database:
         async with self._engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
 
+    async def run_migrations(self) -> None:
+        """Run schema migrations (safe to run multiple times)"""
+        from sqlalchemy import text
+
+        migrations = [
+            # Add 'service' column to checks table
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'checks' AND column_name = 'service'
+                ) THEN
+                    ALTER TABLE checks ADD COLUMN service VARCHAR(50) DEFAULT 'ipqs';
+                    CREATE INDEX IF NOT EXISTS ix_checks_service ON checks(service);
+                END IF;
+            END $$;
+            """,
+            # Make profile_id nullable (for non-IPQS services)
+            """
+            DO $$
+            BEGIN
+                ALTER TABLE checks ALTER COLUMN profile_id DROP NOT NULL;
+            EXCEPTION
+                WHEN others THEN NULL;
+            END $$;
+            """,
+        ]
+
+        async with self._engine.begin() as conn:
+            for migration in migrations:
+                await conn.execute(text(migration))
+
     async def dispose(self) -> None:
         """Close all connections"""
         await self._engine.dispose()
