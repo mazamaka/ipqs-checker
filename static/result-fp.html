@@ -578,7 +578,7 @@
                         ${row('Confidence', (confidence * 100).toFixed(1) + '%', 'Уверенность идентификации')}
                         ${row('First Seen', identification.firstSeenAt?.global ? new Date(identification.firstSeenAt.global).toLocaleString('ru-RU') : 'N/A', 'Первое появление')}
                         ${row('Last Seen', identification.lastSeenAt?.global ? new Date(identification.lastSeenAt.global).toLocaleString('ru-RU') : 'N/A', 'Последнее появление')}
-                        ${row('Seen Count', identification.seenAt?.global?.length || 'N/A', 'Количество визитов')}
+                        ${row('Seen Count', velocity.events?.intervals?.['24h'] || 'N/A', 'Количество визитов за 24ч')}
                     </div>
                 </div>
 
@@ -599,7 +599,7 @@
                     </div>
                     <div class="card-body">
                         ${row('Bot Status', tag(isBot), 'Обнаружен бот', isBot ? 'danger' : false)}
-                        ${row('Bot Type', botd.bot?.type || 'N/A', 'Тип бота')}
+                        ${row('Bot Type', isBot ? (botd.bot?.type || 'Unknown') : 'Not detected', 'Тип бота')}
                     </div>
                 </div>
 
@@ -624,7 +624,6 @@
                         ${row('OS', browser.os + ' ' + (browser.osVersion || ''), 'Операционная система')}
                         ${row('Device', browser.device || 'Desktop', 'Тип устройства')}
                         ${row('Incognito', tag(incognito), 'Приватный режим')}
-                        ${row('Bot', browser.botProbability !== undefined ? (browser.botProbability * 100).toFixed(1) + '%' : 'N/A', 'Вероятность бота')}
                     </div>
                 </div>
 
@@ -637,8 +636,8 @@
                         ${row('Country', ipLoc.country?.name || 'N/A', 'Страна')}
                         ${row('City', ipLoc.city?.name || 'N/A', 'Город')}
                         ${row('Timezone', ipLoc.timezone || 'N/A', 'Часовой пояс')}
-                        ${row('ISP', ipInfo.asn?.name || ipLoc.asn?.name || 'N/A', 'Провайдер')}
-                        ${row('Datacenter', tag(ipInfo.datacenter?.result, true), 'IP из датацентра')}
+                        ${row('ISP', ipInfo.v4?.asn?.name || ipLoc.asn?.name || 'N/A', 'Провайдер')}
+                        ${row('Datacenter', tag(ipInfo.v4?.datacenter?.result, true), 'IP из датацентра')}
                     </div>
                 </div>
 
