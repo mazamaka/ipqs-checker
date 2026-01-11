@@ -268,10 +268,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             addLog(`Открываю ${checkUrl}...`);
             chrome.tabs.create({
                 url: checkUrl,
-                active: true  // Активная вкладка
+                active: true
             }, (tab) => {
                 checkTabId = tab.id;
                 addLog(`Открыта вкладка ID: ${tab.id}`);
+                // Принудительная активация для Octo Browser
+                setTimeout(() => {
+                    chrome.tabs.update(tab.id, { active: true });
+                    chrome.windows.update(tab.windowId, { focused: true });
+                }, 100);
             });
         });
 
