@@ -263,54 +263,16 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 setStatus(statusText, 'success');
             }
-            showLastCheck(fingerprint, service);
         } else {
             // IPQS result
             const score = fingerprint.fraud_chance || 0;
             setStatus(`Готово! Fraud Score: ${score}%`, 'success');
-            showLastCheck(fingerprint, service);
         }
     }
 
-    function showLastCheck(fingerprint, service) {
-        const lastCheck = document.getElementById('lastCheck');
-        const fraudScore = document.getElementById('fraudScore');
-        const checkTime = document.getElementById('checkTime');
-        const lastServiceEl = document.getElementById('lastService');
-        const scoreLabelEl = document.getElementById('scoreLabel');
-
-        if (fingerprint) {
-            let score, scoreLabel;
-
-            if (service === 'fingerprint') {
-                score = fingerprint.products?.suspectScore?.data?.result || 0;
-                scoreLabel = 'Suspect Score:';
-                lastServiceEl.textContent = 'Fingerprint Pro';
-            } else {
-                score = fingerprint.fraud_chance || 0;
-                scoreLabel = 'Fraud Score:';
-                lastServiceEl.textContent = 'IPQS';
-            }
-
-            scoreLabelEl.textContent = scoreLabel;
-            fraudScore.textContent = service === 'fingerprint' ? score : score + '%';
-
-            if (score < 30) {
-                fraudScore.className = 'fraud-score fraud-low';
-            } else if (score < 70) {
-                fraudScore.className = 'fraud-score fraud-medium';
-            } else {
-                fraudScore.className = 'fraud-score fraud-high';
-            }
-
-            checkTime.textContent = new Date().toLocaleString('ru-RU');
-            lastCheck.style.display = 'block';
-        }
-    }
-
-    // Load last check on popup open
-    async function loadLastCheck() {
-        const data = await chrome.storage.local.get(['lastFingerprint', 'lastCheck', 'lastService', 'checkComplete', 'currentService']);
+    // Load state on popup open
+    async function loadState() {
+        const data = await chrome.storage.local.get(['checkComplete', 'currentService']);
 
         // Set selected service from storage
         if (data.currentService) {
@@ -335,13 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        if (data.lastFingerprint && data.lastCheck) {
-            showLastCheck(data.lastFingerprint, data.lastService || 'ipqs');
-        }
-
         // Load history
         loadHistory();
     }
 
-    loadLastCheck();
+    loadState();
 });

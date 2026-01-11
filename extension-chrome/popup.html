@@ -10,6 +10,7 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #fff;
             margin: 0;
+            overflow-x: hidden;
         }
         h2 {
             margin: 0 0 15px 0;
@@ -144,38 +145,6 @@
             background: rgba(255, 71, 87, 0.2);
             border: 1px solid rgba(255, 71, 87, 0.5);
         }
-        .last-check {
-            margin-top: 15px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 11px;
-            color: rgba(255,255,255,0.6);
-        }
-        .last-check-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .last-service {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.1);
-        }
-        .score-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 8px 0;
-        }
-        .fraud-score {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .fraud-low { color: #2ed573; }
-        .fraud-medium { color: #ffa502; }
-        .fraud-high { color: #ff4757; }
-
         .debug-section {
             margin-top: 15px;
             padding-top: 12px;
@@ -265,6 +234,7 @@
         .history-list {
             max-height: 200px;
             overflow-y: auto;
+            overflow-x: hidden;
         }
         .history-item {
             display: flex;
@@ -275,13 +245,12 @@
             border-radius: 6px;
             margin-bottom: 6px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s;
             text-decoration: none;
             color: inherit;
         }
         .history-item:hover {
             background: rgba(102, 126, 234, 0.2);
-            transform: translateX(2px);
         }
         .history-item-left {
             display: flex;
@@ -337,26 +306,6 @@
         Проверка может занять до 60 сек
     </div>
 
-    <div class="last-check" id="lastCheck" style="display: none;">
-        <div class="last-check-header">
-            <span>Последняя проверка:</span>
-            <span class="last-service" id="lastService"></span>
-        </div>
-        <div class="score-row">
-            <span id="scoreLabel">Fraud Score:</span>
-            <span class="fraud-score" id="fraudScore"></span>
-        </div>
-        <div id="checkTime"></div>
-    </div>
-
-    <div class="debug-section">
-        <div class="debug-header">
-            <button class="debug-toggle" id="debugToggle">Показать логи</button>
-            <button class="copy-btn" id="copyBtn" style="display: none;">Копировать</button>
-        </div>
-        <div class="debug-logs" id="debugLogs"></div>
-    </div>
-
     <div class="history-section" id="historySection">
         <div class="history-header">
             <span class="history-title">История проверок</span>
@@ -365,6 +314,14 @@
         <div class="history-list" id="historyList">
             <div class="history-empty">Нет проверок</div>
         </div>
+    </div>
+
+    <div class="debug-section">
+        <div class="debug-header">
+            <button class="debug-toggle" id="debugToggle">Логи</button>
+            <button class="copy-btn" id="copyBtn" style="display: none;">Копировать</button>
+        </div>
+        <div class="debug-logs" id="debugLogs"></div>
     </div>
 
     <script src="popup.js"></script>
