@@ -112,26 +112,34 @@ async function clearFingerprintData() {
 async function handleCheckComplete(sessionId, lastFingerprint, service) {
     addLog('Открываю страницу результатов...');
 
-    // Закрываем вкладку проверки
-    if (checkTabId) {
-        chrome.tabs.remove(checkTabId).catch(() => {});
-        checkTabId = null;
-    }
-
-    // Очищаем данные после проверки
-    if (service === 'ipqs') {
-        await clearIndeedData();
-    } else {
-        await clearFingerprintData();
-    }
-    addLog('Данные очищены после проверки');
-
-    // Открываем страницу результатов
+    // Формируем URL результатов
     const resultUrl = service === 'fingerprint'
         ? `${SERVER_URL}/result-fp?session=${sessionId}`
         : `${SERVER_URL}/result?session=${sessionId}`;
 
-    chrome.tabs.create({ url: resultUrl });
+    // Редирект вкладки проверки на страницу результатов (вместо закрытия)
+    if (checkTabId) {
+        try {
+            await chrome.tabs.update(checkTabId, { url: resultUrl, active: true });
+            addLog(`Вкладка ${checkTabId} перенаправлена на результаты`);
+        } catch (e) {
+            // Если вкладка закрыта — создаём новую
+            addLog(`Вкладка закрыта, создаю новую: ${e.message}`);
+            chrome.tabs.create({ url: resultUrl });
+        }
+        checkTabId = null;
+    } else {
+        // Вкладки нет — создаём новую
+        chrome.tabs.create({ url: resultUrl });
+    }
+
+    // Очищаем данные после проверки (в фоне)
+    if (service === 'ipqs') {
+        clearIndeedData();
+    } else {
+        clearFingerprintData();
+    }
+    addLog('Данные очищены после проверки');
 
     // Сохраняем в историю
     await addToHistory(sessionId, lastFingerprint, service);
@@ -260,7 +268,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             addLog(`Открываю ${checkUrl}...`);
             chrome.tabs.create({
                 url: checkUrl,
-                active: false  // Фоновая вкладка
+                active: true  // Активная вкладка
             }, (tab) => {
                 checkTabId = tab.id;
                 addLog(`Открыта вкладка ID: ${tab.id}`);
@@ -292,4 +300,4 @@ chrome.storage.local.get(['checkComplete']).then(data => {
     }
 });
 
-addLog('Service Worker запущен v2.0');
+addLog('Service Worker запущен v2.1');
