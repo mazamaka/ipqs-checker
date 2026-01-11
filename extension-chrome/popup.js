@@ -1,13 +1,11 @@
 // Popup script для Chrome - поддержка IPQS и Fingerprint Pro
 const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
-const MAX_HISTORY_ITEMS = 10;
 
 let logsVisible = false;
 let logsInterval = null;
 let currentLogs = [];
 let checkInProgress = false;
 let selectedService = 'ipqs';  // 'ipqs' или 'fingerprint'
-let currentSessionId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     const checkBtn = document.getElementById('checkBtn');
@@ -61,34 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="history-item-score ${scoreClass}">${scoreLabel}</span>
             </a>`;
         }).join('');
-    }
-
-    async function addToHistory(sessionId, fingerprint, service) {
-        const data = await chrome.storage.local.get('checkHistory');
-        const history = data.checkHistory || [];
-
-        let score;
-        if (service === 'fingerprint') {
-            score = fingerprint.products?.suspectScore?.data?.result || 0;
-        } else {
-            score = fingerprint.fraud_chance || 0;
-        }
-
-        const newItem = {
-            sessionId: sessionId,
-            service: service,
-            score: score,
-            time: new Date().toLocaleString('ru-RU')
-        };
-
-        // Add to beginning, limit to MAX_HISTORY_ITEMS
-        history.unshift(newItem);
-        if (history.length > MAX_HISTORY_ITEMS) {
-            history.pop();
-        }
-
-        await chrome.storage.local.set({ checkHistory: history });
-        renderHistory(history);
     }
 
     // Clear history button
@@ -199,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (response && response.sessionId) {
-                    currentSessionId = response.sessionId;
                     const siteName = selectedService === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
                     setStatus(`Открыта вкладка ${siteName}...`, 'loading');
                     pollForCompletion(response.sessionId, selectedService);
@@ -231,10 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         setStatus('Ошибка: ' + data.checkError, 'error');
                     } else if (data.lastFingerprint) {
                         showResult(data.lastFingerprint, data.lastService || service);
-                        // Add to history
-                        if (sessionId) {
-                            await addToHistory(sessionId, data.lastFingerprint, data.lastService || service);
-                        }
+                        // Reload history (saved by background.js)
+                        loadHistory();
                     } else {
                         setStatus('Готово!', 'success');
                     }
