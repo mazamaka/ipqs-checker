@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPQS Fingerprint Checker</title>
+    <title>Fingerprint Checker — IPQS & Fingerprint Pro</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -178,13 +178,93 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .services {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .service {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+        }
+        .service-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .service-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .service-badge.ipqs {
+            background: rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+        }
+        .service-badge.fp {
+            background: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        .service-via {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+        }
+        .service-features {
+            list-style: none;
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+        }
+        .service-features li {
+            padding: 3px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+        .service-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>IPQS Fingerprint Checker</h1>
-            <p class="subtitle">Проверка Device Fingerprint через Indeed.com</p>
+            <h1>Fingerprint Checker</h1>
+            <p class="subtitle">Проверка антидетект-браузеров через IPQS и Fingerprint Pro</p>
+
+            <div class="services">
+                <div class="service">
+                    <div class="service-header">
+                        <span class="service-badge ipqs">IPQS</span>
+                        <span class="service-via">via indeed.com</span>
+                    </div>
+                    <ul class="service-features">
+                        <li>Fraud Score (0-100%)</li>
+                        <li>OS Mismatch детект</li>
+                        <li>VPN/Proxy/Tor детект</li>
+                        <li>Canvas/WebGL хеши</li>
+                    </ul>
+                </div>
+                <div class="service">
+                    <div class="service-header">
+                        <span class="service-badge fp">Fingerprint Pro</span>
+                        <span class="service-via">via fingerprint.com</span>
+                    </div>
+                    <ul class="service-features">
+                        <li>Anti-detect браузер детект</li>
+                        <li>Suspect Score</li>
+                        <li>Bot Detection</li>
+                        <li>Tampering детект</li>
+                    </ul>
+                </div>
+            </div>
 
             <div class="step">
                 <div class="step-title">
@@ -192,27 +272,27 @@
                     Установите расширение
                 </div>
                 <div class="step-desc">
-                    Скачайте и установите расширение для вашего браузера
+                    Скачайте и установите для Chrome/Octo Browser
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-title">
                     <span class="step-number">2</span>
-                    Нажмите на иконку расширения
+                    Выберите сервис и проверьте
                 </div>
                 <div class="step-desc">
-                    Откроется popup с кнопкой "Проверить"
+                    В popup выберите IPQS или Fingerprint Pro и нажмите "Проверить"
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-title">
                     <span class="step-number">3</span>
-                    Получите результат
+                    Получите детальный отчёт
                 </div>
                 <div class="step-desc">
-                    Автоматически откроется страница с вашим Fraud Score
+                    Откроется страница с полным анализом вашего fingerprint
                 </div>
             </div>
 
