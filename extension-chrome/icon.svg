@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5b4fc"/>
+      <stop offset="100%" style="stop-color:#c4b5fd"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
+
+  <!-- Fingerprint lines -->
+  <g fill="none" stroke="url(#glow)" stroke-width="4" stroke-linecap="round">
+    <!-- Center dot -->
+    <circle cx="64" cy="68" r="4" fill="url(#glow)"/>
+
+    <!-- Inner arcs -->
+    <path d="M 52 68 Q 52 56 64 56 Q 76 56 76 68"/>
+    <path d="M 46 72 Q 46 52 64 52 Q 82 52 82 72"/>
+
+    <!-- Middle arcs -->
+    <path d="M 40 78 Q 40 46 64 46 Q 88 46 88 78"/>
+
+    <!-- Outer arcs -->
+    <path d="M 34 84 Q 34 40 64 40 Q 94 40 94 84"/>
+
+    <!-- Bottom curves -->
+    <path d="M 52 80 Q 52 88 64 88"/>
+    <path d="M 76 80 Q 76 92 58 94"/>
+  </g>
+
+  <!-- Check mark / shield accent -->
+  <circle cx="92" cy="96" r="18" fill="#10b981"/>
+  <path d="M 84 96 L 90 102 L 102 88" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
