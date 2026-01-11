@@ -37,15 +37,19 @@
         const url = args[0]?.url || args[0];
 
         if (typeof url === 'string' && FP_EVENT_PATTERN.test(url)) {
-            try {
-                const clone = response.clone();
-                const data = await clone.json();
+            // Проверяем Content-Type перед парсингом
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                try {
+                    const clone = response.clone();
+                    const data = await clone.json();
 
-                if (isFingerprintResponse(data)) {
-                    sendFingerprintData(data);
+                    if (isFingerprintResponse(data)) {
+                        sendFingerprintData(data);
+                    }
+                } catch (e) {
+                    // Игнорируем ошибки парсинга - не все ответы JSON
                 }
-            } catch (e) {
-                console.error('[FP Interceptor] Parse error:', e);
             }
         }
         return response;
@@ -63,6 +67,10 @@
     XMLHttpRequest.prototype.send = function(...args) {
         if (this._fpUrl && FP_EVENT_PATTERN.test(this._fpUrl)) {
             this.addEventListener('load', function() {
+                // Проверяем Content-Type перед парсингом
+                const contentType = this.getResponseHeader('content-type') || '';
+                if (!contentType.includes('application/json')) return;
+
                 try {
                     const data = JSON.parse(this.responseText);
 
@@ -70,7 +78,7 @@
                         sendFingerprintData(data);
                     }
                 } catch (e) {
-                    console.error('[FP Interceptor] XHR parse error:', e);
+                    // Игнорируем ошибки парсинга
                 }
             });
         }
