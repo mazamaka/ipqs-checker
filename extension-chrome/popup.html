@@ -233,6 +233,82 @@
             margin-bottom: 4px;
             word-break: break-all;
         }
+
+        /* History section */
+        .history-section {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .history-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+        }
+        .clear-history {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        .clear-history:hover {
+            color: #ff4757;
+        }
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        .history-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateX(2px);
+        }
+        .history-item-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .history-item-service {
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+        }
+        .history-item-time {
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+        }
+        .history-item-score {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .history-item-score.low { color: #2ed573; }
+        .history-item-score.medium { color: #ffa502; }
+        .history-item-score.high { color: #ff4757; }
+        .history-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 11px;
+            padding: 15px;
+        }
     </style>
 </head>
 <body>
@@ -279,6 +355,14 @@
             <button class="copy-btn" id="copyBtn" style="display: none;">Копировать</button>
         </div>
         <div class="debug-logs" id="debugLogs"></div>
+    </div>
+
+    <div class="history-section" id="historySection" style="display: none;">
+        <div class="history-header">
+            <span class="history-title">История проверок</span>
+            <button class="clear-history" id="clearHistory">Очистить</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
     </div>
 
     <script src="popup.js"></script>

@@ -17,6 +17,7 @@
             --danger: #ef4444;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
@@ -213,11 +214,20 @@
             border-radius: 8px;
             font-size: 0.85em;
             position: relative;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .alert-item:hover {
+            background: rgba(59, 130, 246, 0.15);
+            transform: translateX(4px);
         }
         .alert-item.danger { border-left: 3px solid var(--danger); }
         .alert-item.warning { border-left: 3px solid var(--warning); }
         .alert-item.unknown { border-left: 3px solid var(--muted); opacity: 0.7; }
         .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+        .alert-item.ok:hover { opacity: 1; }
         .alert-item[title]:hover::after {
             content: attr(title);
             position: absolute;
@@ -633,15 +643,15 @@
 
             // bad = реальный детект (красный), unknown = нет данных (серый), ok = всё хорошо (зелёный)
             const alerts = [
-                { text: 'OS Mismatch', bad: osMismatch, unknown: false, hint: 'TCP стек выдаёт реальную ОС (TTL, Window Size)' },
-                { text: 'Timezone Mismatch', bad: tzMismatch, unknown: false, hint: 'Несовпадение часовых поясов' },
-                { text: 'Tunnel/VPN (TCP)', bad: tunnelDetected, unknown: false, hint: 'Детект туннеля на уровне TCP пакетов' },
-                { text: 'Proxy/VPN (API)', bad: d.proxy || d.vpn || d.active_vpn, unknown: false, hint: 'Детект прокси через IP базы данных' },
-                { text: 'Canvas Hash', bad: false, unknown: !d.canvas_hash, hint: 'Уникальный отпечаток Canvas' },
-                { text: 'WebGL Hash', bad: false, unknown: !d.webgl_hash, hint: 'Уникальный отпечаток WebGL' },
-                { text: 'Memory', bad: false, unknown: !d.memory || d.memory === 0, hint: 'Объём RAM устройства' },
-                { text: 'Audio Hash', bad: false, unknown: !d.audio_hash, hint: 'Уникальный аудио отпечаток' },
-                { text: 'Bot Detection', bad: d.bot_status, unknown: false, hint: 'Обнаружен бот/автоматизация' }
+                { text: 'OS Mismatch', bad: osMismatch, unknown: false, hint: 'TCP стек выдаёт реальную ОС (TTL, Window Size)', anchor: 'card-device' },
+                { text: 'Timezone Mismatch', bad: tzMismatch, unknown: false, hint: 'Несовпадение часовых поясов', anchor: 'card-hardware' },
+                { text: 'Tunnel/VPN (TCP)', bad: tunnelDetected, unknown: false, hint: 'Детект туннеля на уровне TCP пакетов', anchor: 'card-network' },
+                { text: 'Proxy/VPN (API)', bad: d.proxy || d.vpn || d.active_vpn, unknown: false, hint: 'Детект прокси через IP базы данных', anchor: 'card-detections' },
+                { text: 'Canvas Hash', bad: false, unknown: !d.canvas_hash, hint: 'Уникальный отпечаток Canvas', anchor: 'card-fingerprints' },
+                { text: 'WebGL Hash', bad: false, unknown: !d.webgl_hash, hint: 'Уникальный отпечаток WebGL', anchor: 'card-fingerprints' },
+                { text: 'Memory', bad: false, unknown: !d.memory || d.memory === 0, hint: 'Объём RAM устройства', anchor: 'card-hardware' },
+                { text: 'Audio Hash', bad: false, unknown: !d.audio_hash, hint: 'Уникальный аудио отпечаток', anchor: 'card-fingerprints' },
+                { text: 'Bot Detection', bad: d.bot_status, unknown: false, hint: 'Обнаружен бот/автоматизация', anchor: 'card-detections' }
             ];
 
             const res = d.resolution
@@ -703,12 +713,12 @@
                                 cls = 'ok';
                                 icon = '✓';
                             }
-                            return `<div class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</div>`;
+                            return `<a href="#${a.anchor}" class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</a>`;
                         }).join('')}
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-detections">
                     <div class="card-header">
                         <span class="card-title">Детекции</span>
                     </div>
@@ -724,7 +734,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-fingerprints">
                     <div class="card-header">
                         <span class="card-title">
                             <span class="critical-marker"></span>
@@ -742,7 +752,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-hardware">
                     <div class="card-header">
                         <span class="card-title">Железо и окружение</span>
                     </div>
@@ -758,7 +768,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-network">
                     <div class="card-header">
                         <span class="card-title">Сеть</span>
                     </div>
@@ -774,7 +784,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="card-device">
                     <div class="card-header">
                         <span class="card-title">Устройство</span>
                     </div>
