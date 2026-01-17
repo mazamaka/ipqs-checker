@@ -66,7 +66,7 @@ After merging to main:
 2. Select **Deploy to Production** workflow
 3. Click **Run workflow** (manual trigger)
 4. Watch the workflow run
-5. Verify production: https://check-ipqs.farm-mafia.cash/health
+5. Verify production: https://check.maxbob.xyz/health
 
 ## How It Works
 
@@ -117,10 +117,10 @@ jobs:
 ### Health Check Failed
 - Wait 30-60 seconds for container to start
 - Check Portainer logs for errors
-- Verify production URL: https://check-ipqs.farm-mafia.cash/health
+- Verify production URL: https://check.maxbob.xyz/health
 
 ## Production URLs
 
-- **Health Check**: https://check-ipqs.farm-mafia.cash/health
-- **Main App**: https://check-ipqs.farm-mafia.cash/
+- **Health Check**: https://check.maxbob.xyz/health
+- **Main App**: https://check.maxbob.xyz/
 - **Portainer**: https://portainer.farm-mafia.cash

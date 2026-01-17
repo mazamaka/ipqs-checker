@@ -15,7 +15,7 @@
     "https://*.indeed.com/*",
     "https://fn.us.ipqscdn.com/*",
     "https://*.ipqscdn.com/*",
-    "https://check-ipqs.farm-mafia.cash/*"
+    "https://check.maxbob.xyz/*"
   ],
   "background": {
     "scripts": ["background.js"]

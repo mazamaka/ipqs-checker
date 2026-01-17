@@ -1,6 +1,6 @@
 // Background script - intercept IPQS responses via webRequest
 
-const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
+const SERVER_URL = 'https://check.maxbob.xyz';
 const api = typeof browser !== 'undefined' ? browser : chrome;
 
 // Generate unique session ID for this browser

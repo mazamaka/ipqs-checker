@@ -162,7 +162,7 @@ def main():
 
         print()
         print("Step 4: Verifying production health...")
-        health_url = "https://check-ipqs.farm-mafia.cash/health"
+        health_url = "https://check.maxbob.xyz/health"
         max_retries = 5
         for attempt in range(max_retries):
             try:

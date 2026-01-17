@@ -18,7 +18,7 @@
     "https://*.ipqscdn.com/*",
     "https://fingerprint.com/*",
     "https://*.fingerprint.com/*",
-    "https://check-ipqs.farm-mafia.cash/*"
+    "https://check.maxbob.xyz/*"
   ],
   "background": {
     "service_worker": "background.js"

@@ -1,6 +1,6 @@
 // Background Service Worker для Chrome MV3
 // Поддержка IPQS (indeed.com) и Fingerprint Pro (fingerprint.com)
-const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
+const SERVER_URL = 'https://check.maxbob.xyz';
 
 let currentSessionId = null;
 let checkTabId = null;  // ID вкладки проверки

@@ -1,5 +1,5 @@
 const api = typeof browser !== 'undefined' ? browser : chrome;
-const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
+const SERVER_URL = 'https://check.maxbob.xyz';
 
 let logsVisible = false;
 let logsInterval = null;

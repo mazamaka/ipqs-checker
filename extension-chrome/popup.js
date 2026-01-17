@@ -1,5 +1,5 @@
 // Popup script для Chrome - поддержка IPQS и Fingerprint Pro
-const SERVER_URL = 'https://check-ipqs.farm-mafia.cash';
+const SERVER_URL = 'https://check.maxbob.xyz';
 
 let logsVisible = false;
 let logsInterval = null;

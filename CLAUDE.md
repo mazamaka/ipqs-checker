@@ -396,15 +396,36 @@ WORKERS=1
 ## Деплой
 
 - **Сервер**: 94.156.232.242 (admin)
-- **Домен**: check-ipqs.farm-mafia.cash
-- **Portainer**: stack ipqs-checker
+- **Домен**: check.maxbob.xyz
+- **Portainer**: stack ipqs-checker (ID: 95, endpoint: 3)
 - **SSL**: Nginx Proxy Manager
 - **БД**: PostgreSQL 16 в контейнере
+
+### Быстрый деплой через API
+
+```bash
+# 1. Получить JWT и сделать redeploy одной командой
+JWT=$(curl -s -X POST 'https://portainer.farm-mafia.cash/api/auth' \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"***REMOVED***"}' | jq -r '.jwt')
+
+# 2. Получить текущие env и сделать redeploy
+ENV=$(curl -s "https://portainer.farm-mafia.cash/api/stacks/95?endpointId=3" \
+  -H "Authorization: Bearer $JWT" | jq '.Env')
+
+curl -s -X PUT "https://portainer.farm-mafia.cash/api/stacks/95/git/redeploy?endpointId=3" \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d "{\"env\":$ENV,\"prune\":false,\"RepositoryReferenceName\":\"refs/heads/main\",\"RepositoryAuthentication\":true,\"RepositoryUsername\":\"mazamaka603@gmail.com\",\"RepositoryPassword\":\"\",\"PullImage\":true}"
+
+# 3. Проверить health
+sleep 10 && curl -s https://check.maxbob.xyz/health
+```
 
 ### Процесс
 
 1. Закоммитить и запушить изменения
-2. Редеплой через Portainer (пользователь делает сам)
+2. Выполнить команды деплоя выше ИЛИ через Portainer UI
 
 ---
 
@@ -450,7 +471,7 @@ WORKERS=1
 
 ### Доступ
 
-- **URL**: https://check-ipqs.farm-mafia.cash/admin
+- **URL**: https://check.maxbob.xyz/admin
 - **Авторизация**: только пароль (ADMIN_PASSWORD)
 - **JWT**: 24h expiration, cookie `ipqs_admin_token`
 
@@ -611,7 +632,7 @@ Fingerprint Pro использует динамические короткие �
 
 1. Убедись что indeed.com открывается
 2. Проверь консоль расширения (chrome://extensions → Inspect)
-3. Проверь что сервер доступен: `curl https://check-ipqs.farm-mafia.cash/health`
+3. Проверь что сервер доступен: `curl https://check.maxbob.xyz/health`
 
 ### Service Worker "засыпает" (Chrome)
 
