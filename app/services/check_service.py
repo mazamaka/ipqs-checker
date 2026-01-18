@@ -143,6 +143,12 @@ async def get_stats(session: AsyncSession) -> dict:
         select(func.count(Check.id))
     )).scalar() or 0
 
+    # Last check time
+    last_check_result = await session.execute(
+        select(Check.created_at).order_by(Check.created_at.desc()).limit(1)
+    )
+    last_check_time = last_check_result.scalar()
+
     # Avg fraud score
     avg_fraud = (await session.execute(
         select(func.avg(Check.fraud_chance))
@@ -234,6 +240,7 @@ async def get_stats(session: AsyncSession) -> dict:
     return {
         "profiles_count": profiles_count,
         "checks_count": checks_count,
+        "last_check_time": last_check_time,
         "avg_fraud_score": round(avg_fraud, 1) if avg_fraud else 0,
         "high_risk_profiles": high_risk,
         "medium_risk_profiles": medium_risk,

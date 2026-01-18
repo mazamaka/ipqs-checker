@@ -567,6 +567,7 @@ async def extension_report_fp(request: Request):
 
         # Save to PostgreSQL for persistent storage
         check_id = None
+        profile_id = None
         try:
             async with db.session() as db_session:
                 from app.models.check import Check
@@ -576,7 +577,17 @@ async def extension_report_fp(request: Request):
                 v6 = ip_info.get("v6", {})
                 ip_data = v4 if v4.get("address") else v6
 
+                # Get or create profile using visitor_id as device_id
+                profile = await profile_service.get_or_create_profile(
+                    db_session,
+                    canvas_hash=None,
+                    webgl_hash=None,
+                    device_id=f"fp:{visitor_id}" if visitor_id else None,
+                )
+                profile_id = profile.id
+
                 check = Check(
+                    profile_id=profile_id,
                     session_id=session_id,
                     service="fingerprint_pro",
                     source=source,
@@ -592,8 +603,17 @@ async def extension_report_fp(request: Request):
                 await db_session.commit()
                 await db_session.refresh(check)
                 check_id = check.id
+
+                # Update profile stats
+                profile.check_count += 1
+                profile.last_seen = datetime.utcnow()
+                profile.last_ip = ip_data.get("address")
+                profile.last_country = ip_data.get("geolocation", {}).get("country", {}).get("name")
+                await db_session.commit()
+
                 response_data["check_id"] = check_id
-                logger.info(f"Saved FP Pro check {check_id} to database")
+                response_data["profile_id"] = profile_id
+                logger.info(f"Saved FP Pro check {check_id} for profile {profile_id}")
         except Exception as db_error:
             logger.error(f"Error saving FP Pro to database: {db_error}")
 
@@ -672,11 +692,22 @@ async def extension_report_creep(request: Request):
 
         # Save to PostgreSQL for persistent storage
         check_id = None
+        profile_id = None
         try:
             async with db.session() as db_session:
                 from app.models.check import Check
 
+                # Get or create profile using fp_id as device_id
+                profile = await profile_service.get_or_create_profile(
+                    db_session,
+                    canvas_hash=None,
+                    webgl_hash=None,
+                    device_id=f"creep:{fp_id}" if fp_id else None,
+                )
+                profile_id = profile.id
+
                 check = Check(
+                    profile_id=profile_id,
                     session_id=session_id,
                     service="creepjs",
                     source=source,
@@ -687,8 +718,15 @@ async def extension_report_creep(request: Request):
                 await db_session.commit()
                 await db_session.refresh(check)
                 check_id = check.id
+
+                # Update profile stats
+                profile.check_count += 1
+                profile.last_seen = datetime.utcnow()
+                await db_session.commit()
+
                 response_data["check_id"] = check_id
-                logger.info(f"Saved CreepJS check {check_id} to database")
+                response_data["profile_id"] = profile_id
+                logger.info(f"Saved CreepJS check {check_id} for profile {profile_id}")
         except Exception as db_error:
             logger.error(f"Error saving CreepJS to database: {db_error}")
 

@@ -28,6 +28,16 @@
         <div class="stat-value">{{ stats.checks_count or 0 }}</div>
         <div class="stat-label">Всего проверок</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-value" style="font-size: 1em;">
+            {% if stats.last_check_time %}
+            {{ stats.last_check_time|datetime }}
+            {% else %}
+            —
+            {% endif %}
+        </div>
+        <div class="stat-label">Последняя проверка</div>
+    </div>
 </div>
 
 <!-- Risk Stats -->
@@ -111,7 +121,8 @@
                     <th>IP</th>
                     <th>Страна</th>
                     <th>Score</th>
-                    <th>Детали</th>
+                    <th>Профиль</th>
+                    <th>Ссылка</th>
                     <th>JSON</th>
                 </tr>
             </thead>
@@ -168,13 +179,27 @@
                             {% endif %}
                             #{{ check.profile_id }}
                         </a>
+                        {% else %}
+                        <span class="badge badge-muted">—</span>
                         {% endif %}
-                        {% if check.service == 'fingerprint_pro' and check.guid %}
-                        <span class="badge badge-muted" title="Visitor ID: {{ check.guid }}" style="{% if check.profile_id %}margin-left: 6px;{% endif %}">{{ check.guid[:8] }}...</span>
-                        {% elif check.service == 'creepjs' and check.guid %}
-                        <span class="badge badge-muted" title="FP ID: {{ check.guid }}" style="{% if check.profile_id %}margin-left: 6px;{% endif %}">{{ check.guid[:8] }}...</span>
-                        {% elif not check.profile_id %}
-                        N/A
+                    </td>
+                    <td>
+                        {% if check.session_id %}
+                            {% if check.service == 'fingerprint_pro' %}
+                            <a href="/result-fp?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">
+                                FP
+                            </a>
+                            {% elif check.service == 'creepjs' %}
+                            <a href="/result-creep?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">
+                                Creep
+                            </a>
+                            {% else %}
+                            <a href="/result?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">
+                                IPQS
+                            </a>
+                            {% endif %}
+                        {% else %}
+                        <span class="badge badge-muted">—</span>
                         {% endif %}
                     </td>
                     <td>
@@ -189,7 +214,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: var(--muted);">
+                    <td colspan="8" style="text-align: center; color: var(--muted);">
                         Нет данных
                     </td>
                 </tr>
