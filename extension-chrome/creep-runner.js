@@ -4,8 +4,6 @@
 
     const CREEP_JS_URL = 'https://abrahamjuliot.github.io/creepjs/creep.js';
     const CREEP_CSS_URL = 'https://abrahamjuliot.github.io/creepjs/style.min.css';
-    const CACHE_KEY = 'creepjs_cache';
-    const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 часа
 
     const statusBar = document.getElementById('statusBar');
     const statusText = document.getElementById('statusText');
@@ -24,66 +22,30 @@
         }
     }
 
-    // Получить CreepJS код (из кэша, с сервера или bundled)
-    async function getCreepJSCode() {
-        // 1. Проверяем кэш
+    // Получить URL для загрузки CreepJS (remote или bundled)
+    async function getCreepJSUrl() {
+        // Проверяем доступность remote версии
         try {
-            const data = await chrome.storage.local.get(CACHE_KEY);
-            if (data[CACHE_KEY]) {
-                const cached = data[CACHE_KEY];
-                const age = Date.now() - cached.timestamp;
-                if (age < CACHE_EXPIRY) {
-                    console.log('[CreepJS] Используем кэшированную версию');
-                    isFromCache = true;
-                    creepJSVersion = cached.version || 'cached';
-                    return cached.code;
-                }
-            }
-        } catch (e) {
-            console.log('[CreepJS] Ошибка чтения кэша:', e);
-        }
-
-        // 2. Пробуем загрузить свежую версию
-        try {
-            setStatus('Загрузка свежей версии CreepJS...', 'loading');
+            setStatus('Проверка свежей версии CreepJS...', 'loading');
             const response = await fetch(CREEP_JS_URL, {
+                method: 'HEAD',
                 cache: 'no-cache',
-                signal: AbortSignal.timeout(10000)
+                signal: AbortSignal.timeout(5000)
             });
 
             if (response.ok) {
-                const code = await response.text();
-                const version = new Date().toISOString().split('T')[0];
-
-                // Сохраняем в кэш
-                await chrome.storage.local.set({
-                    [CACHE_KEY]: {
-                        code: code,
-                        timestamp: Date.now(),
-                        version: version
-                    }
-                });
-
-                console.log('[CreepJS] Загружена свежая версия');
-                creepJSVersion = version;
-                return code;
+                console.log('[CreepJS] Используем remote версию');
+                creepJSVersion = new Date().toISOString().split('T')[0];
+                return { url: CREEP_JS_URL, type: 'remote' };
             }
         } catch (e) {
-            console.log('[CreepJS] Не удалось загрузить с сервера:', e);
+            console.log('[CreepJS] Remote недоступен:', e.message);
         }
 
-        // 3. Fallback на bundled версию
-        try {
-            setStatus('Загрузка встроенной версии...', 'loading');
-            const bundledUrl = chrome.runtime.getURL('creep-bundled.js');
-            const response = await fetch(bundledUrl);
-            const code = await response.text();
-            creepJSVersion = 'bundled';
-            console.log('[CreepJS] Используем bundled версию');
-            return code;
-        } catch (e) {
-            throw new Error('Не удалось загрузить CreepJS');
-        }
+        // Fallback на bundled версию
+        console.log('[CreepJS] Используем bundled версию');
+        creepJSVersion = 'bundled';
+        return { url: chrome.runtime.getURL('creep-bundled.js'), type: 'bundled' };
     }
 
     // Загрузить CSS стили CreepJS
@@ -245,44 +207,11 @@
         });
     }
 
-    // Обновить CreepJS вручную
-    async function forceUpdate() {
+    // Обновить CreepJS вручную (просто перезагружает страницу)
+    function forceUpdate() {
         updateBtn.disabled = true;
-        updateBtn.textContent = 'Обновление...';
-
-        try {
-            const response = await fetch(CREEP_JS_URL, {
-                cache: 'no-cache',
-                signal: AbortSignal.timeout(15000)
-            });
-
-            if (response.ok) {
-                const code = await response.text();
-                const version = new Date().toISOString().split('T')[0];
-
-                await chrome.storage.local.set({
-                    [CACHE_KEY]: {
-                        code: code,
-                        timestamp: Date.now(),
-                        version: version
-                    }
-                });
-
-                versionText.textContent = `CreepJS: ${version} (обновлено)`;
-                updateBtn.textContent = 'Обновлено!';
-                updateBtn.style.background = 'rgba(46, 213, 115, 0.3)';
-
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            }
-        } catch (e) {
-            updateBtn.textContent = 'Ошибка';
-            setTimeout(() => {
-                updateBtn.textContent = 'Обновить';
-                updateBtn.disabled = false;
-            }, 2000);
-        }
+        updateBtn.textContent = 'Перезагрузка...';
+        location.reload();
     }
 
     // Главная функция
@@ -290,24 +219,28 @@
         try {
             setStatus('Загрузка CreepJS...', 'loading');
 
-            // Загружаем CSS и JS параллельно
-            const [creepCode] = await Promise.all([
-                getCreepJSCode(),
+            // Загружаем CSS и получаем URL для JS
+            const [creepInfo] = await Promise.all([
+                getCreepJSUrl(),
                 loadCreepCSS()
             ]);
 
             // Показываем версию
-            const cacheLabel = isFromCache ? ' (из кэша)' : '';
-            versionText.textContent = `CreepJS: ${creepJSVersion}${cacheLabel}`;
+            const typeLabel = creepInfo.type === 'bundled' ? ' (встроенный)' : '';
+            versionText.textContent = `CreepJS: ${creepJSVersion}${typeLabel}`;
             updateBtn.style.display = 'inline-block';
             updateBtn.onclick = forceUpdate;
 
             setStatus('Выполнение fingerprint...', 'loading');
 
-            // Выполняем CreepJS
-            const script = document.createElement('script');
-            script.textContent = creepCode;
-            document.body.appendChild(script);
+            // Загружаем CreepJS через script.src (не inline!)
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = creepInfo.url;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('Не удалось загрузить скрипт'));
+                document.body.appendChild(script);
+            });
 
             // Ждём результат
             const results = await waitForCompletion();
