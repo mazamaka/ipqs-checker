@@ -491,9 +491,9 @@
                 const textMetricsMatch = canvasText.match(/textMetrics:\s*\n*([0-9.-]+)/i);
                 if (textMetricsMatch) results.fingerprints.canvasTextMetrics = textMetricsMatch[1];
 
-                // Emoji pattern
-                const emojiMatch = canvasText.match(/textMetrics:[\s\S]*?([😀-🙏🤵][^\n]*)/i);
-                if (emojiMatch) results.fingerprints.canvasEmoji = emojiMatch[1].trim();
+                // Emoji pattern - ищем строку с emoji после textMetrics (содержит Unicode символы > U+1F000)
+                const emojiLineMatch = canvasText.match(/textMetrics:[\s\S]*?\n([^\n]*[\u{1F300}-\u{1F9FF}][^\n]*)/u);
+                if (emojiLineMatch) results.fingerprints.canvasEmoji = emojiLineMatch[1].trim();
             }
 
             // === WebGL ===
