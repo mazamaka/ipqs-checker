@@ -272,18 +272,22 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px 20px;
+            padding: 14px 32px;
             color: var(--text);
             cursor: pointer;
-            width: 100%;
-            text-align: left;
             font-size: 0.9em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: block;
+            margin: 0 auto;
+            text-align: center;
+            transition: all 0.2s ease;
         }
         .raw-toggle:hover {
             border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .raw-toggle.copied {
+            border-color: var(--success);
+            color: var(--success);
         }
         .raw-content {
             display: none;
@@ -983,9 +987,8 @@
 
             <!-- Raw Data -->
             <div class="raw-section">
-                <button class="raw-toggle" onclick="toggleRaw()">
-                    <span>Raw Data</span>
-                    <span id="rawArrow">+</span>
+                <button class="raw-toggle" id="rawToggle" onclick="toggleRaw()">
+                    <span id="rawBtnText">Показать JSON</span>
                 </button>
                 <div class="raw-content" id="rawContent">
                     <pre id="rawJson"></pre>
@@ -1003,11 +1006,32 @@
     </div>
 
     <script>
-        function toggleRaw() {
+        let jsonData = null;
+
+        async function toggleRaw() {
             const content = document.getElementById('rawContent');
-            const arrow = document.getElementById('rawArrow');
+            const btn = document.getElementById('rawToggle');
+            const btnText = document.getElementById('rawBtnText');
+            const isHidden = !content.classList.contains('show');
+
             content.classList.toggle('show');
-            arrow.textContent = content.classList.contains('show') ? '-' : '+';
+
+            if (isHidden && jsonData) {
+                // Копируем JSON при открытии
+                try {
+                    await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2));
+                    btn.classList.add('copied');
+                    btnText.textContent = 'JSON скопирован!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btnText.textContent = 'Скрыть JSON';
+                    }, 1500);
+                } catch (e) {
+                    btnText.textContent = 'Скрыть JSON';
+                }
+            } else {
+                btnText.textContent = 'Показать JSON';
+            }
         }
 
         function getScoreClass(score) {
@@ -1279,6 +1303,7 @@
                 setText('timestamp', formatTimestamp(data.timestamp));
 
                 // Raw JSON
+                jsonData = data;
                 document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
 
             } catch (e) {
