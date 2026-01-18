@@ -593,23 +593,37 @@
             }
 
             // === Window ===
-            // Window секция может быть без хеша после названия, хеш идёт в keys
-            // Формат: "Window\nkeys (1283): 996adf46" или "Window[hash]\nkeys (count): [keysHash]"
+            // Window секция может быть в разных форматах:
+            // 1. "1.10msWindow243e46a1\nkeys (1196):" - hash в заголовке, без hash после keys
+            // 2. "Window\nkeys (1283): 996adf46" - hash после keys
+            // 3. "Window996adf46\nkeys (1283):" - hash в заголовке, без hash после keys
             const windowSection = fullText.match(/\nWindow([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+HTMLElement|$)/i);
             if (windowSection) {
                 const winText = windowSection[2];
 
-                // keys формат: "keys (count): hash"
-                const keysMatch = winText.match(/keys\s*\((\d+)\):\s*([a-f0-9]+)/i);
+                // Сначала пробуем формат с hash после keys: "keys (count): hash"
+                let keysMatch = winText.match(/keys\s*\((\d+)\):\s*([a-f0-9]+)/i);
+
                 if (keysMatch) {
                     results.windowData.keysCount = parseInt(keysMatch[1]);
-                    // Если секция Window не имела хеша, то hash из keys - это и есть Window hash
+                    // Если секция Window имела хеша в заголовке, используем его
                     if (windowSection[1]) {
                         results.windowData.hash = windowSection[1];
                         results.windowData.keys = keysMatch[2].trim();
                     } else {
+                        // Иначе hash из keys - это и есть Window hash
                         results.windowData.hash = keysMatch[2].trim();
                         results.windowData.keys = null;
+                    }
+                } else {
+                    // Формат без hash после keys: "keys (count):" или "keys (count)"
+                    keysMatch = winText.match(/keys\s*\((\d+)\)/i);
+                    if (keysMatch) {
+                        results.windowData.keysCount = parseInt(keysMatch[1]);
+                        // Hash берём из заголовка Window секции
+                        if (windowSection[1]) {
+                            results.windowData.hash = windowSection[1];
+                        }
                     }
                 }
             }
