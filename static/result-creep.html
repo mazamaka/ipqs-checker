@@ -805,6 +805,82 @@
                 </div>
             </div>
 
+            <!-- Audio (Full) -->
+            <h3 class="section-title">Audio Fingerprint</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Audio Values</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="audioFullHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Sum</span>
+                        <span class="info-value" id="audioSum">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Gain</span>
+                        <span class="info-value" id="audioGain">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Freq</span>
+                        <span class="info-value" id="audioFreq">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Time</span>
+                        <span class="info-value" id="audioTime">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Audio Data</h3>
+                    <div class="info-row">
+                        <span class="info-label">Trap</span>
+                        <span class="info-value" id="audioTrap">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Unique</span>
+                        <span class="info-value" id="audioUnique">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Data</span>
+                        <span class="info-value mono" id="audioData" style="font-size: 0.7em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Copy</span>
+                        <span class="info-value mono" id="audioCopy" style="font-size: 0.7em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Values</span>
+                        <span class="info-value mono" id="audioValues" style="font-size: 0.7em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intl -->
+            <h3 class="section-title">Intl (Internationalization)</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Intl Data</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="intlHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Locale</span>
+                        <span class="info-value" id="intlLocale">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Date Format</span>
+                        <span class="info-value" id="intlDateFormat" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Number Format</span>
+                        <span class="info-value" id="intlNumberFormat">-</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Speech & Media -->
             <h3 class="section-title">Speech & Media</h3>
             <div class="info-grid">
@@ -815,12 +891,32 @@
                         <span class="info-value mono" id="speechHash">-</span>
                     </div>
                     <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="speechStatus">-</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label">Voices Count</span>
                         <span class="info-value" id="speechVoicesCount">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Voices</span>
                         <span class="info-value" id="speechVoices" style="font-size: 0.75em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Local</span>
+                        <span class="info-value" id="speechLocal" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Remote</span>
+                        <span class="info-value" id="speechRemote" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Lang</span>
+                        <span class="info-value" id="speechLang">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Default</span>
+                        <span class="info-value" id="speechDefault">-</span>
                     </div>
                 </div>
 
@@ -837,6 +933,22 @@
                     <div class="info-row">
                         <span class="info-label">Devices</span>
                         <span class="info-value" id="mediaDevices" style="font-size: 0.75em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Audio Input</span>
+                        <span class="info-value" id="mediaAudioInput">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Audio Output</span>
+                        <span class="info-value" id="mediaAudioOutput">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Video Input</span>
+                        <span class="info-value" id="mediaVideoInput">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Types</span>
+                        <span class="info-value" id="mediaTypes" style="font-size: 0.8em;">-</span>
                     </div>
                 </div>
             </div>
@@ -886,7 +998,7 @@
         </div>
 
         <div class="version-info">
-            CreepJS Fingerprint Checker v4.1
+            CreepJS Fingerprint Checker v4.2
         </div>
     </div>
 
@@ -1114,17 +1226,49 @@
                 setText('htmlElemKeysCount', htmlElement.keysCount);
                 setText('htmlElemKeys', htmlElement.keys);
 
+                // Audio (Full)
+                const audio = fp.audio || {};
+                setText('audioFullHash', audio.hash);
+                setText('audioSum', audio.sum);
+                setText('audioGain', audio.gain);
+                setText('audioFreq', audio.freq);
+                setText('audioTime', audio.time);
+                setText('audioTrap', audio.trap);
+                setText('audioUnique', audio.unique);
+                setText('audioData', audio.data);
+                setText('audioCopy', audio.copy);
+                setText('audioValues', audio.values);
+
+                // Intl
+                const intl = fp.intl || {};
+                setText('intlHash', intl.hash);
+                setText('intlLocale', intl.locale);
+                setText('intlDateFormat', intl.dateFormat);
+                setText('intlNumberFormat', intl.numberFormat);
+
                 // Speech
                 const speech = fp.speech || {};
                 setText('speechHash', speech.hash);
+                setText('speechStatus', speech.blocked ? 'BLOCKED' : 'Available');
+                if (speech.blocked) {
+                    document.getElementById('speechStatus').classList.add('true');
+                }
                 setText('speechVoicesCount', speech.voicesCount);
                 setText('speechVoices', speech.voices);
+                setText('speechLocal', speech.local);
+                setText('speechRemote', speech.remote);
+                setText('speechLang', speech.lang);
+                setText('speechDefault', speech.default);
 
                 // Media
                 const media = fp.media || {};
                 setText('mediaHash', media.hash);
                 setText('mediaDevicesCount', media.devicesCount);
                 setText('mediaDevices', media.devices);
+                setText('mediaAudioInput', media.audioinput);
+                setText('mediaAudioOutput', media.audiooutput);
+                setText('mediaVideoInput', media.videoinput);
+                setText('mediaTypes', media.types);
 
                 // Worker & Technical
                 const worker = fp.worker || {};

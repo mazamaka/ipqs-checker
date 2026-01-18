@@ -212,12 +212,21 @@
             speech: {
                 hash: null,
                 voices: null,
-                voicesCount: null
+                voicesCount: null,
+                local: null,
+                remote: null,
+                lang: null,
+                default: null,
+                blocked: null
             },
             media: {
                 hash: null,
                 devices: null,
-                devicesCount: null
+                devicesCount: null,
+                audioinput: null,
+                audiooutput: null,
+                videoinput: null,
+                types: null
             },
             rawSections: {}
         };
@@ -331,13 +340,33 @@
                 results.network.webrtcHash = webrtcSection[1];
                 const rtcText = webrtcSection[2];
 
-                const ipMatch = rtcText.match(/ip:\s*([0-9a-f.:]+)/i);
+                // IP - ищем реальный IP после "ip:" (не foundation)
+                const ipMatch = rtcText.match(/\nip:\s*([0-9.]+)/i);
                 if (ipMatch) results.network.ip = ipMatch[1];
 
                 const devicesMatch = rtcText.match(/devices\s*\((\d+)\):\s*\n*([^\n]+)/i);
                 if (devicesMatch) {
                     results.network.webrtc = `devices: ${devicesMatch[1]} (${devicesMatch[2].trim()})`;
                 }
+
+                // SDP capabilities
+                const sdpMatch = rtcText.match(/sdp capabilities:\s*([a-f0-9]+)/i);
+                if (sdpMatch) results.network.sdpCapabilities = sdpMatch[1];
+            }
+
+            // === Intl ===
+            const intlSection = fullText.match(/Intl([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Headless|$)/i);
+            if (intlSection) {
+                results.intl = {
+                    hash: intlSection[1],
+                    locale: null,
+                    dateFormat: null,
+                    numberFormat: null
+                };
+                const intlText = intlSection[2];
+                const lines = intlText.split('\n').filter(l => l.trim());
+                if (lines[0]) results.intl.locale = lines[0].trim();
+                if (lines.length > 1) results.intl.dateFormat = lines.slice(1, 4).join(', ').trim();
             }
 
             // === CANVAS 2D ===
@@ -363,16 +392,54 @@
             }
 
             // === AUDIO ===
-            const audioSection = fullText.match(/Audio([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Speech|$)/i);
+            const audioSection = fullText.match(/Audio([a-f0-9]*)\s*([\s\S]*?)(?=Speech|$)/i);
             if (audioSection) {
                 results.fingerprints.audioHash = audioSection[1];
                 const audioText = audioSection[2];
 
-                const sumMatch = audioText.match(/sum:\s*([0-9.-]+)/i);
-                if (sumMatch) results.fingerprints.audio = `sum: ${sumMatch[1]}`;
+                // Собираем все аудио параметры
+                results.audio = {
+                    hash: audioSection[1],
+                    sum: null,
+                    gain: null,
+                    freq: null,
+                    time: null,
+                    trap: null,
+                    unique: null,
+                    data: null,
+                    copy: null,
+                    values: null
+                };
 
-                const copyMatch = audioText.match(/copy:\s*([0-9.-]+)/i);
-                if (copyMatch) results.fingerprints.audio += `, copy: ${copyMatch[1]}`;
+                const sumMatch = audioText.match(/sum:\s*([0-9.-]+)/i);
+                if (sumMatch) results.audio.sum = parseFloat(sumMatch[1]);
+
+                const gainMatch = audioText.match(/gain:\s*([0-9.-]+)/i);
+                if (gainMatch) results.audio.gain = parseFloat(gainMatch[1]);
+
+                const freqMatch = audioText.match(/freq:\s*([0-9.-]+)/i);
+                if (freqMatch) results.audio.freq = parseFloat(freqMatch[1]);
+
+                const timeMatch = audioText.match(/time:\s*([0-9.-]+)/i);
+                if (timeMatch) results.audio.time = parseFloat(timeMatch[1]);
+
+                const trapMatch = audioText.match(/trap:\s*([0-9.-]+)/i);
+                if (trapMatch) results.audio.trap = parseFloat(trapMatch[1]);
+
+                const uniqueMatch = audioText.match(/unique:\s*(\d+)/i);
+                if (uniqueMatch) results.audio.unique = parseInt(uniqueMatch[1]);
+
+                const dataMatch = audioText.match(/data:([a-f0-9]+)/i);
+                if (dataMatch) results.audio.data = dataMatch[1];
+
+                const copyMatch = audioText.match(/copy:([a-f0-9]+)/i);
+                if (copyMatch) results.audio.copy = copyMatch[1];
+
+                const valuesMatch = audioText.match(/values:\s*([a-f0-9]+)/i);
+                if (valuesMatch) results.audio.values = valuesMatch[1];
+
+                // Краткая строка для fingerprints
+                results.fingerprints.audio = `sum: ${results.audio.sum || 'N/A'}`;
             }
 
             // === FONTS ===
@@ -447,22 +514,24 @@
             if (featuresSection) {
                 const featText = featuresSection[2];
 
-                const jsdomMatch = featText.match(/JS\/DOM:\s*(\d+)(?:\s*v?(\d+))?/i);
+                // Формат может быть: "JS/DOM: 317 v131" или "JS/DOM:\n317\nv131"
+                // Или просто "JS/DOM:\n317" с числом на следующей строке
+                const jsdomMatch = featText.match(/JS\s*\/\s*DOM:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (jsdomMatch) {
                     results.features.jsdom = parseInt(jsdomMatch[1]);
                     if (jsdomMatch[2]) results.features.jsdomVersion = parseInt(jsdomMatch[2]);
                 }
 
-                const cssMatch = featText.match(/CSS:\s*(\d+)(?:\s*v?(\d+))?/i);
+                const cssMatch = featText.match(/CSS:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (cssMatch) {
                     results.features.css = parseInt(cssMatch[1]);
                     if (cssMatch[2]) results.features.cssVersion = parseInt(cssMatch[2]);
                 }
 
-                const windowMatch = featText.match(/Window:\s*(\d+)(?:\s*v?(\d+))?/i);
-                if (windowMatch) {
-                    results.features.window = parseInt(windowMatch[1]);
-                    if (windowMatch[2]) results.features.windowVersion = parseInt(windowMatch[2]);
+                const windowFeatMatch = featText.match(/Window:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                if (windowFeatMatch) {
+                    results.features.window = parseInt(windowFeatMatch[1]);
+                    if (windowFeatMatch[2]) results.features.windowVersion = parseInt(windowFeatMatch[2]);
                 }
             }
 
@@ -650,10 +719,29 @@
                 results.speech.hash = speechSection[1];
                 const speechText = speechSection[2];
 
-                const voicesMatch = speechText.match(/voices\s*\((\d+)\):\s*([^\n]+)/i);
-                if (voicesMatch) {
-                    results.speech.voicesCount = parseInt(voicesMatch[1]);
-                    results.speech.voices = voicesMatch[2].trim();
+                // Проверяем blocked статус
+                if (speechText.toLowerCase().includes('blocked')) {
+                    results.speech.blocked = true;
+                } else {
+                    results.speech.blocked = false;
+
+                    const voicesMatch = speechText.match(/voices\s*\((\d+)\):\s*([^\n]+)/i);
+                    if (voicesMatch) {
+                        results.speech.voicesCount = parseInt(voicesMatch[1]);
+                        results.speech.voices = voicesMatch[2].trim();
+                    }
+
+                    const localMatch = speechText.match(/local:\s*([^\n]+)/i);
+                    if (localMatch) results.speech.local = localMatch[1].trim();
+
+                    const remoteMatch = speechText.match(/remote:\s*([^\n]+)/i);
+                    if (remoteMatch) results.speech.remote = remoteMatch[1].trim();
+
+                    const langMatch = speechText.match(/lang:\s*([^\n]+)/i);
+                    if (langMatch) results.speech.lang = langMatch[1].trim();
+
+                    const defaultMatch = speechText.match(/default:\s*([^\n]+)/i);
+                    if (defaultMatch) results.speech.default = defaultMatch[1].trim();
                 }
             }
 
@@ -668,6 +756,20 @@
                     results.media.devicesCount = parseInt(devicesMatch[1]);
                     results.media.devices = devicesMatch[2].trim();
                 }
+
+                // Парсим типы устройств: audioinput, audiooutput, videoinput
+                const audioInputMatch = mediaText.match(/audioinput:\s*(\d+)/i);
+                if (audioInputMatch) results.media.audioinput = parseInt(audioInputMatch[1]);
+
+                const audioOutputMatch = mediaText.match(/audiooutput:\s*(\d+)/i);
+                if (audioOutputMatch) results.media.audiooutput = parseInt(audioOutputMatch[1]);
+
+                const videoInputMatch = mediaText.match(/videoinput:\s*(\d+)/i);
+                if (videoInputMatch) results.media.videoinput = parseInt(videoInputMatch[1]);
+
+                // types - может быть строкой через запятую
+                const typesMatch = mediaText.match(/types?:\s*([^\n]+)/i);
+                if (typesMatch) results.media.types = typesMatch[1].trim();
             }
 
             // === LIES ===
