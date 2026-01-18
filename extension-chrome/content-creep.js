@@ -174,12 +174,15 @@
                 text: null
             },
             features: {
-                jsdom: null,
-                jsdomVersion: null,
-                css: null,
-                cssVersion: null,
-                window: null,
-                windowVersion: null
+                range: null,
+                rangeMin: null,
+                rangeMax: null,
+                jsdomHash: null,
+                jsdomVersionRange: null,
+                cssHash: null,
+                cssVersionRange: null,
+                windowHash: null,
+                windowVersionRange: null
             },
             cssMedia: {
                 media: null,
@@ -220,13 +223,10 @@
                 dnt: null,
                 gpc: null,
                 lang: null,
-                mimeTypes: null,
                 mimeTypesCount: null,
                 mimeTypesHash: null,
-                permissions: null,
                 permissionsCount: null,
                 permissionsHash: null,
-                plugins: null,
                 pluginsCount: null,
                 pluginsHash: null,
                 vendor: null,
@@ -288,8 +288,7 @@
                 mimesCount: null,
                 mimesTotal: null,
                 mimesHash: null
-            },
-            rawSections: {}
+            }
         };
 
         try {
@@ -698,48 +697,30 @@
                     results.features.range = `${featRangeMatch[1]}-${featRangeMatch[2]}`;
                 }
 
-                // JS/DOM может быть в формате:
-                // 1. "JS/DOM:\n317\nv131" - значение после заголовка
-                // 2. "JS/DOM:  \n...\n(v114-115)" - version range в конце секции
-                const jsdomMatch = featText.match(/JS\s*[\/\\]\s*DOM[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // JS/DOM: hash (v114-115) - формат "JS/DOM: df08a511 (v114-115)"
+                const jsdomMatch = featText.match(/JS\s*[\/\\]\s*DOM[:\s]*\n?\s*([a-f0-9]{8})(?:\s*\(v(\d+)-(\d+)\))?/i);
                 if (jsdomMatch) {
-                    results.features.jsdom = parseInt(jsdomMatch[1]);
-                    if (jsdomMatch[2]) results.features.jsdomVersion = parseInt(jsdomMatch[2]);
-                }
-                // Парсим version range формат "(v114-115)"
-                const jsdomVersionMatch = featText.match(/JS\s*[\/\\]\s*DOM[\s\S]*?\(v(\d+)-(\d+)\)/i);
-                if (jsdomVersionMatch) {
-                    results.features.jsdomVersionRange = `v${jsdomVersionMatch[1]}-${jsdomVersionMatch[2]}`;
-                    if (!results.features.jsdomVersion) {
-                        results.features.jsdomVersion = parseInt(jsdomVersionMatch[2]);
+                    results.features.jsdomHash = jsdomMatch[1];
+                    if (jsdomMatch[2] && jsdomMatch[3]) {
+                        results.features.jsdomVersionRange = `v${jsdomMatch[2]}-${jsdomMatch[3]}`;
                     }
                 }
 
-                // CSS - аналогично
-                const cssMatch = featText.match(/\nCSS[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // CSS: hash (v114-115) - формат "CSS: 379baeb6 (v114-115)"
+                const cssMatch = featText.match(/\nCSS[:\s]*\n?\s*([a-f0-9]{8})(?:\s*\(v(\d+)-(\d+)\))?/i);
                 if (cssMatch) {
-                    results.features.css = parseInt(cssMatch[1]);
-                    if (cssMatch[2]) results.features.cssVersion = parseInt(cssMatch[2]);
-                }
-                const cssVersionMatch = featText.match(/\nCSS[\s\S]*?\(v(\d+)-(\d+)\)/i);
-                if (cssVersionMatch) {
-                    results.features.cssVersionRange = `v${cssVersionMatch[1]}-${cssVersionMatch[2]}`;
-                    if (!results.features.cssVersion) {
-                        results.features.cssVersion = parseInt(cssVersionMatch[2]);
+                    results.features.cssHash = cssMatch[1];
+                    if (cssMatch[2] && cssMatch[3]) {
+                        results.features.cssVersionRange = `v${cssMatch[2]}-${cssMatch[3]}`;
                     }
                 }
 
-                // Window (в Features секции)
-                const windowFeatMatch = featText.match(/\nWindow[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // Window: hash (v113-115) - формат "Window: 3e4205d3 (v113-115)"
+                const windowFeatMatch = featText.match(/\nWindow[:\s]*\n?\s*([a-f0-9]{8})(?:\s*\(v(\d+)-(\d+)\))?/i);
                 if (windowFeatMatch) {
-                    results.features.window = parseInt(windowFeatMatch[1]);
-                    if (windowFeatMatch[2]) results.features.windowVersion = parseInt(windowFeatMatch[2]);
-                }
-                const windowVersionMatch = featText.match(/\nWindow[\s\S]*?\(v(\d+)-(\d+)\)/i);
-                if (windowVersionMatch) {
-                    results.features.windowVersionRange = `v${windowVersionMatch[1]}-${windowVersionMatch[2]}`;
-                    if (!results.features.windowVersion) {
-                        results.features.windowVersion = parseInt(windowVersionMatch[2]);
+                    results.features.windowHash = windowFeatMatch[1];
+                    if (windowFeatMatch[2] && windowFeatMatch[3]) {
+                        results.features.windowVersionRange = `v${windowFeatMatch[2]}-${windowFeatMatch[3]}`;
                     }
                 }
             }
@@ -802,38 +783,19 @@
             }
 
             // === Window ===
-            // Window секция может быть в разных форматах:
-            // 1. "1.20msWindow243e46a1\nkeys (1196):" - время + hash в заголовке, без hash после keys
-            // 2. "Window\nkeys (1283): 996adf46" - hash после keys
-            // 3. "Window996adf46\nkeys (1283):" - hash в заголовке, без hash после keys
-            // Важно: перед Window может быть время (например "1.20ms")
+            // Window секция: "1.20msWindow243e46a1\nkeys (1196):" - hash в заголовке, keys count без hash
             const windowSection = fullText.match(/(?:\d+\.\d+ms\s*)?Window([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms\s*HTMLElement|$)/i);
             if (windowSection) {
+                results.windowData.hash = windowSection[1];
                 const winText = windowSection[2];
 
-                // Сначала пробуем формат с hash после keys: "keys (count): hash"
-                let keysMatch = winText.match(/keys\s*\((\d+)\):\s*([a-f0-9]+)/i);
-
+                // Формат: "keys (1196):" или "keys (1196): hash"
+                const keysMatch = winText.match(/keys\s*\((\d+)\)(?::\s*([a-f0-9]{8}))?/i);
                 if (keysMatch) {
                     results.windowData.keysCount = parseInt(keysMatch[1]);
-                    // Если секция Window имела хеша в заголовке, используем его
-                    if (windowSection[1]) {
-                        results.windowData.hash = windowSection[1];
-                        results.windowData.keys = keysMatch[2].trim();
-                    } else {
-                        // Иначе hash из keys - это и есть Window hash
-                        results.windowData.hash = keysMatch[2].trim();
-                        results.windowData.keys = null;
-                    }
-                } else {
-                    // Формат без hash после keys: "keys (count):" или "keys (count)"
-                    keysMatch = winText.match(/keys\s*\((\d+)\)/i);
-                    if (keysMatch) {
-                        results.windowData.keysCount = parseInt(keysMatch[1]);
-                        // Hash берём из заголовка Window секции
-                        if (windowSection[1]) {
-                            results.windowData.hash = windowSection[1];
-                        }
+                    // keys hash только если это валидный 8-символьный hex
+                    if (keysMatch[2] && /^[a-f0-9]{8}$/i.test(keysMatch[2])) {
+                        results.windowData.keys = keysMatch[2];
                     }
                 }
             }
@@ -874,45 +836,24 @@
                 if (langMatch) results.navigator.lang = langMatch[1].trim();
 
                 // mimeTypes (count): hash
-                const mimeTypesFullMatch = navText.match(/mimeTypes\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
-                if (mimeTypesFullMatch) {
-                    results.navigator.mimeTypesCount = parseInt(mimeTypesFullMatch[1]);
-                    results.navigator.mimeTypesHash = mimeTypesFullMatch[2];
-                    results.navigator.mimeTypes = mimeTypesFullMatch[1];
-                } else {
-                    const mimeTypesCountMatch = navText.match(/mimeTypes\s*\((\d+)\)/i);
-                    if (mimeTypesCountMatch) {
-                        results.navigator.mimeTypes = mimeTypesCountMatch[1];
-                        results.navigator.mimeTypesCount = parseInt(mimeTypesCountMatch[1]);
-                    }
+                const mimeTypesMatch = navText.match(/mimeTypes\s*\((\d+)\)(?::\s*\n*([a-f0-9]{8}))?/i);
+                if (mimeTypesMatch) {
+                    results.navigator.mimeTypesCount = parseInt(mimeTypesMatch[1]);
+                    if (mimeTypesMatch[2]) results.navigator.mimeTypesHash = mimeTypesMatch[2];
                 }
 
                 // permissions (count): hash
-                const permissionsFullMatch = navText.match(/permissions\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
-                if (permissionsFullMatch) {
-                    results.navigator.permissionsCount = parseInt(permissionsFullMatch[1]);
-                    results.navigator.permissionsHash = permissionsFullMatch[2];
-                    results.navigator.permissions = permissionsFullMatch[1];
-                } else {
-                    const permissionsCountMatch = navText.match(/permissions\s*\((\d+)\)/i);
-                    if (permissionsCountMatch) {
-                        results.navigator.permissions = permissionsCountMatch[1];
-                        results.navigator.permissionsCount = parseInt(permissionsCountMatch[1]);
-                    }
+                const permissionsMatch = navText.match(/permissions\s*\((\d+)\)(?::\s*\n*([a-f0-9]{8}))?/i);
+                if (permissionsMatch) {
+                    results.navigator.permissionsCount = parseInt(permissionsMatch[1]);
+                    if (permissionsMatch[2]) results.navigator.permissionsHash = permissionsMatch[2];
                 }
 
                 // plugins (count): hash
-                const pluginsFullMatch = navText.match(/plugins\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
-                if (pluginsFullMatch) {
-                    results.navigator.pluginsCount = parseInt(pluginsFullMatch[1]);
-                    results.navigator.pluginsHash = pluginsFullMatch[2];
-                    results.navigator.plugins = pluginsFullMatch[2];
-                } else {
-                    const pluginsMatch = navText.match(/plugins\s*\((\d+)\):\s*([^\n]+)/i);
-                    if (pluginsMatch) {
-                        results.navigator.pluginsCount = parseInt(pluginsMatch[1]);
-                        results.navigator.plugins = pluginsMatch[2].trim();
-                    }
+                const pluginsMatch = navText.match(/plugins\s*\((\d+)\)(?::\s*\n*([a-f0-9]{8}))?/i);
+                if (pluginsMatch) {
+                    results.navigator.pluginsCount = parseInt(pluginsMatch[1]);
+                    if (pluginsMatch[2]) results.navigator.pluginsHash = pluginsMatch[2];
                 }
 
                 const vendorMatch = navText.match(/vendor:\s*([^\n]+)/i);
@@ -1129,20 +1070,11 @@
                     }
                 });
             }
-
-            // === Собираем все секции с ID для raw данных ===
-            document.querySelectorAll('[id]').forEach(el => {
-                const id = el.id;
-                if (id && el.innerText.length > 10 && el.innerText.length < 5000) {
-                    results.rawSections[id] = el.innerText.substring(0, 3000);
-                }
-            });
-
         } catch (e) {
             console.error('[CreepJS Content] Ошибка парсинга:', e);
         }
 
-        console.log('[CreepJS Content] Результаты собраны, секций:', Object.keys(results.rawSections).length);
+        console.log('[CreepJS Content] Результаты собраны');
         return results;
     }
 

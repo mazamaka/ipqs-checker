@@ -845,9 +845,9 @@
                     </div>
                     <div class="card-body">
                         ${row('Features Range', fp.features?.range || 'N/A', 'Диапазон версий')}
-                        ${row('JS/DOM', fp.features?.jsdomVersionRange || (fp.features?.jsdom ? `${fp.features.jsdom} (v${fp.features.jsdomVersion || '?'})` : null) || 'N/A', 'JS/DOM версия')}
-                        ${row('CSS', fp.features?.cssVersionRange || (fp.features?.css ? `${fp.features.css} (v${fp.features.cssVersion || '?'})` : null) || 'N/A', 'CSS версия')}
-                        ${row('Window', fp.features?.windowVersionRange || (fp.features?.window ? `${fp.features.window} (v${fp.features.windowVersion || '?'})` : null) || 'N/A', 'Window версия')}
+                        ${row('JS/DOM', fp.features?.jsdomHash ? `${fp.features.jsdomHash} ${fp.features.jsdomVersionRange || ''}`.trim() : 'N/A', 'JS/DOM hash и версия', false, true)}
+                        ${row('CSS', fp.features?.cssHash ? `${fp.features.cssHash} ${fp.features.cssVersionRange || ''}`.trim() : 'N/A', 'CSS hash и версия', false, true)}
+                        ${row('Window', fp.features?.windowHash ? `${fp.features.windowHash} ${fp.features.windowVersionRange || ''}`.trim() : 'N/A', 'Window hash и версия', false, true)}
                         ${row('CSS Media Hash', fp.cssMedia?.hash || 'N/A', 'CSS Media Queries', false, true)}
                         ${row('@media', fp.cssMedia?.media, 'Media queries')}
                         ${row('matchMedia', fp.cssMedia?.matchMedia, 'matchMedia')}
