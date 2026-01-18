@@ -2,8 +2,8 @@
 (async function() {
     'use strict';
 
-    const CREEP_JS_URL = 'https://abrahamjuliot.github.io/creepjs/creep.js';
     const CREEP_CSS_URL = 'https://abrahamjuliot.github.io/creepjs/style.min.css';
+    // Примечание: MV3 не позволяет загружать внешние скрипты, только CSS
 
     const statusBar = document.getElementById('statusBar');
     const statusText = document.getElementById('statusText');
@@ -22,27 +22,10 @@
         }
     }
 
-    // Получить URL для загрузки CreepJS (remote или bundled)
-    async function getCreepJSUrl() {
-        // Проверяем доступность remote версии
-        try {
-            setStatus('Проверка свежей версии CreepJS...', 'loading');
-            const response = await fetch(CREEP_JS_URL, {
-                method: 'HEAD',
-                cache: 'no-cache',
-                signal: AbortSignal.timeout(5000)
-            });
-
-            if (response.ok) {
-                console.log('[CreepJS] Используем remote версию');
-                creepJSVersion = new Date().toISOString().split('T')[0];
-                return { url: CREEP_JS_URL, type: 'remote' };
-            }
-        } catch (e) {
-            console.log('[CreepJS] Remote недоступен:', e.message);
-        }
-
-        // Fallback на bundled версию
+    // Получить URL для загрузки CreepJS (только bundled из-за CSP в MV3)
+    function getCreepJSUrl() {
+        // MV3 не позволяет загружать внешние скрипты на страницах расширения
+        // Используем только bundled версию
         console.log('[CreepJS] Используем bundled версию');
         creepJSVersion = 'bundled';
         return { url: chrome.runtime.getURL('creep-bundled.js'), type: 'bundled' };
