@@ -593,15 +593,24 @@
             }
 
             // === Window ===
-            const windowSection = fullText.match(/Window([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+HTMLElement|$)/i);
+            // Window секция может быть без хеша после названия, хеш идёт в keys
+            // Формат: "Window\nkeys (1283): 996adf46" или "Window[hash]\nkeys (count): [keysHash]"
+            const windowSection = fullText.match(/\nWindow([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+HTMLElement|$)/i);
             if (windowSection) {
-                results.windowData.hash = windowSection[1];
                 const winText = windowSection[2];
 
-                const keysMatch = winText.match(/keys\s*\((\d+)\):\s*([^\n]+)/i);
+                // keys формат: "keys (count): hash"
+                const keysMatch = winText.match(/keys\s*\((\d+)\):\s*([a-f0-9]+)/i);
                 if (keysMatch) {
                     results.windowData.keysCount = parseInt(keysMatch[1]);
-                    results.windowData.keys = keysMatch[2].trim();
+                    // Если секция Window не имела хеша, то hash из keys - это и есть Window hash
+                    if (windowSection[1]) {
+                        results.windowData.hash = windowSection[1];
+                        results.windowData.keys = keysMatch[2].trim();
+                    } else {
+                        results.windowData.hash = keysMatch[2].trim();
+                        results.windowData.keys = null;
+                    }
                 }
             }
 
@@ -719,7 +728,8 @@
             }
 
             // === Speech ===
-            const speechSection = fullText.match(/Speech([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Media|$)/i);
+            // Speech секция часто идёт без хеша: "Speech\nlocal (0): blocked"
+            const speechSection = fullText.match(/\nSpeech([a-f0-9]*)\s*\n([\s\S]*?)(?=\d+\.\d+ms\s*\n*Media|Media[a-f0-9]|$)/i);
             if (speechSection) {
                 results.speech.hash = speechSection[1] || null;
                 const speechText = speechSection[2];
@@ -752,7 +762,7 @@
             }
 
             // === Media ===
-            // Media идёт ПЕРЕД Audio, ищем правильно
+            // Media секция: "Media[hash]\nmimes (10/12): [hash]"
             const mediaSection = fullText.match(/Media([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms|$)/i);
             if (mediaSection) {
                 results.media.hash = mediaSection[1];
@@ -766,7 +776,7 @@
                     results.media.mimesHash = mimesMatch[3];
                 }
 
-                // devices если есть
+                // devices если есть в Media секции
                 const devicesMatch = mediaText.match(/devices\s*\((\d+)\):\s*([^\n]+)/i);
                 if (devicesMatch) {
                     results.media.devicesCount = parseInt(devicesMatch[1]);
@@ -782,6 +792,19 @@
 
                 const videoInputMatch = mediaText.match(/videoinput:\s*(\d+)/i);
                 if (videoInputMatch) results.media.videoinput = parseInt(videoInputMatch[1]);
+            }
+
+            // Если media devices не найдены, попробуем получить из WebRTC
+            if (!results.media.devicesCount && results.network.webrtc) {
+                // webrtc уже в формате "devices: 3 (mic, audio, webcam)"
+                const webrtcDevicesMatch = results.network.webrtc.match(/devices:\s*(\d+)/i);
+                if (webrtcDevicesMatch) {
+                    results.media.devicesCount = parseInt(webrtcDevicesMatch[1]);
+                }
+                // Подсчитываем типы из текста
+                if (results.network.webrtc.includes('mic')) results.media.audioinput = 1;
+                if (results.network.webrtc.includes('audio')) results.media.audiooutput = 1;
+                if (results.network.webrtc.includes('webcam')) results.media.videoinput = 1;
             }
 
             // === LIES ===
