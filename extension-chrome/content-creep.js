@@ -24,18 +24,20 @@
             if (fpMatch) {
                 console.log('[CreepJS Content] Найден FP ID:', fpMatch[1].substring(0, 16) + '...');
 
-                // Ждём пока ВСЕ секции загрузятся (Status обычно последний)
-                const statusLoaded = text.includes('Status') && text.includes('available:');
-                const navigatorLoaded = text.includes('Navigator') && text.includes('permissions:');
+                // Проверяем основные секции (Headless обычно загружается последним из важных)
+                const headlessLoaded = text.includes('Headless') && (text.includes('chromium:') || text.includes('like headless'));
+                const elapsed = Date.now() - startTime;
 
-                if ((!statusLoaded || !navigatorLoaded) && Date.now() - startTime < 60000) {
-                    console.log('[CreepJS Content] Ждём загрузки всех секций...');
-                    await new Promise(r => setTimeout(r, 3000));
+                // Ждём минимум 10 секунд после появления FP ID для полной загрузки
+                if (!headlessLoaded && elapsed < 30000) {
+                    console.log('[CreepJS Content] Ждём загрузки Headless секции...');
+                    await new Promise(r => setTimeout(r, 2000));
                     continue;
                 }
 
-                // Даём время для полного рендера
-                await new Promise(r => setTimeout(r, 5000));
+                // После 30 сек или если Headless загружен - даём ещё 3 сек на финальный рендер
+                console.log('[CreepJS Content] Секции загружены, финальное ожидание...');
+                await new Promise(r => setTimeout(r, 3000));
 
                 const results = parseResults();
                 sendResults(results);
