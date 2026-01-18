@@ -709,6 +709,7 @@
                         <span class="card-title">Navigator</span>
                     </div>
                     <div class="card-body">
+                        ${row('Navigator Hash', nav.hash || 'N/A', 'Хэш Navigator', false, true)}
                         ${row('DNT', nav.dnt, 'Do Not Track')}
                         ${row('GPC', nav.gpc, 'Global Privacy Control')}
                         ${row('Language', nav.lang, 'Язык навигатора')}
@@ -724,6 +725,8 @@
                         ${row('Permissions', nav.permissions, 'Разрешения')}
                         ${row('WebGPU', nav.webgpu, 'WebGPU')}
                         ${row('UserAgentData', nav.userAgentData, 'UA Client Hints')}
+                        ${row('UA Parsed', nav.uaParsed, 'Распарсенный UA')}
+                        ${row('App Version', nav.appVersion, 'Версия приложения')}
                     </div>
                 </div>
 
@@ -732,8 +735,10 @@
                         <span class="card-title">Network & Status</span>
                     </div>
                     <div class="card-body">
+                        ${row('WebRTC Hash', network.webrtcHash || 'N/A', 'Хэш WebRTC', false, true)}
                         ${row('WebRTC IP', network.ip, 'IP через WebRTC')}
                         ${row('WebRTC Devices', network.webrtc, 'Устройства WebRTC')}
+                        ${row('SDP Capabilities', network.sdpCapabilities || 'N/A', 'SDP возможности', false, true)}
                         ${row('RTT', status.network?.rtt ? status.network.rtt + ' ms' : 'N/A', 'Round Trip Time')}
                         ${row('Downlink', status.network?.downlink ? status.network.downlink + ' Mbps' : 'N/A', 'Скорость')}
                         ${row('Effective Type', status.network?.effectiveType, 'Тип соединения')}
@@ -741,6 +746,8 @@
                         ${row('Charging', status.battery?.charging !== null && status.battery?.charging !== undefined ? String(status.battery.charging) : 'N/A', 'Заряжается')}
                         ${row('Storage', status.available?.storage, 'Доступное хранилище')}
                         ${row('Memory', status.available?.memory, 'Доступная память')}
+                        ${row('Timing Res', status.available?.timingRes, 'Разрешение таймера')}
+                        ${row('Stack', status.available?.stack, 'Размер стека')}
                     </div>
                 </div>
 
@@ -755,6 +762,7 @@
                     <div class="card-body">
                         ${row('Canvas Hash', fingerprints.canvasHash || 'N/A', 'Отпечаток Canvas', false, true)}
                         ${row('WebGL Hash', fingerprints.webglHash || 'N/A', 'Отпечаток WebGL', false, true)}
+                        ${row('Screen Hash', fingerprints.screenHash || 'N/A', 'Отпечаток экрана', false, true)}
                         ${row('Screen', fingerprints.screen, 'Параметры экрана')}
                         ${row('Fonts Hash', fingerprints.fontsHash || 'N/A', 'Отпечаток шрифтов', false, true)}
                         ${row('Fonts', fingerprints.fonts, 'Количество шрифтов')}
@@ -773,6 +781,9 @@
                         ${row('Time', fp.audio?.time, 'Time')}
                         ${row('Trap', fp.audio?.trap, 'Trap')}
                         ${row('Unique', fp.audio?.unique, 'Уникальность')}
+                        ${row('Data Hash', fp.audio?.data || 'N/A', 'Хэш данных', false, true)}
+                        ${row('Copy Hash', fp.audio?.copy || 'N/A', 'Хэш копии', false, true)}
+                        ${row('Values Hash', fp.audio?.values || 'N/A', 'Хэш значений', false, true)}
                     </div>
                 </div>
 
@@ -784,8 +795,13 @@
                         ${row('DOMRect Hash', fp.domRect?.hash || 'N/A', 'Отпечаток DOMRect', false, true)}
                         ${row('DOMRect Elems A', fp.domRect?.elemsA, 'Elements A')}
                         ${row('DOMRect Elems B', fp.domRect?.elemsB, 'Elements B')}
+                        ${row('DOMRect Range A', fp.domRect?.rangeA, 'Range A')}
+                        ${row('DOMRect Range B', fp.domRect?.rangeB, 'Range B')}
                         ${row('SVGRect Hash', fp.svgRect?.hash || 'N/A', 'Отпечаток SVGRect', false, true)}
                         ${row('SVGRect bBox', fp.svgRect?.bBox, 'Bounding Box')}
+                        ${row('SVGRect Char', fp.svgRect?.char, 'Character')}
+                        ${row('SVGRect Subs', fp.svgRect?.subs, 'Substrings')}
+                        ${row('SVGRect Text', fp.svgRect?.text, 'Text')}
                     </div>
                 </div>
 
@@ -801,6 +817,7 @@
                         ${row('@media', fp.cssMedia?.media, 'Media queries')}
                         ${row('matchMedia', fp.cssMedia?.matchMedia, 'matchMedia')}
                         ${row('Touch Device', fp.cssMedia?.touchDevice, 'Touch устройство')}
+                        ${row('Screen Query', fp.cssMedia?.screenQuery, 'Разрешение экрана')}
                     </div>
                 </div>
 
