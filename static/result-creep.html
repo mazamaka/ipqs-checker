@@ -323,6 +323,60 @@
             text-align: center;
             color: var(--danger);
         }
+
+        /* Quick Nav Menu */
+        .quick-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .quick-nav a {
+            padding: 8px 14px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: all 0.2s ease;
+        }
+        .quick-nav a:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent);
+        }
+        .quick-nav a.danger {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: var(--danger);
+        }
+        .quick-nav a.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: var(--warning);
+        }
+        .quick-nav a.ok {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: var(--success);
+        }
+
+        /* Clickable values */
+        .info-value.clickable {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .info-value.clickable:hover {
+            color: var(--accent);
+        }
+        .info-value.copied {
+            color: var(--success) !important;
+        }
     </style>
 </head>
 <body>
@@ -358,8 +412,21 @@
                 <p id="headlessDesc">Браузер выглядит как обычный пользователь</p>
             </div>
 
+            <!-- Quick Nav Menu -->
+            <div class="quick-nav" id="quickNav">
+                <a href="#section-scores">Scores</a>
+                <a href="#section-detection">Detection</a>
+                <a href="#section-hardware">Hardware</a>
+                <a href="#section-navigator">Navigator</a>
+                <a href="#section-network">Network</a>
+                <a href="#section-fingerprints">Fingerprints</a>
+                <a href="#section-audio">Audio</a>
+                <a href="#section-speech">Speech & Media</a>
+                <a href="#section-technical">Technical</a>
+            </div>
+
             <!-- Score Cards -->
-            <div class="score-section">
+            <div class="score-section" id="section-scores">
                 <div class="score-card">
                     <div class="score-value low" id="stealthScore">0%</div>
                     <div class="score-label">Stealth Score</div>
@@ -378,7 +445,7 @@
             </div>
 
             <!-- Resistance & Detection -->
-            <h3 class="section-title">Detection & Resistance</h3>
+            <h3 class="section-title" id="section-detection">Detection & Resistance</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Resistance Detection</h3>
@@ -418,7 +485,7 @@
             </div>
 
             <!-- Hardware & Browser -->
-            <h3 class="section-title">Hardware & Browser</h3>
+            <h3 class="section-title" id="section-hardware">Hardware & Browser</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Hardware</h3>
@@ -470,7 +537,7 @@
             </div>
 
             <!-- Navigator (Full) -->
-            <h3 class="section-title">Navigator</h3>
+            <h3 class="section-title" id="section-navigator">Navigator</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Navigator Properties</h3>
@@ -542,7 +609,7 @@
             </div>
 
             <!-- Network & Status -->
-            <h3 class="section-title">Network & Status</h3>
+            <h3 class="section-title" id="section-network">Network & Status</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>WebRTC / Network</h3>
@@ -598,7 +665,7 @@
             </div>
 
             <!-- Fingerprints -->
-            <h3 class="section-title">Fingerprints</h3>
+            <h3 class="section-title" id="section-fingerprints">Fingerprints</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Canvas & WebGL</h3>
@@ -810,7 +877,7 @@
             </div>
 
             <!-- Audio (Full) -->
-            <h3 class="section-title">Audio Fingerprint</h3>
+            <h3 class="section-title" id="section-audio">Audio Fingerprint</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Audio Values</h3>
@@ -886,7 +953,7 @@
             </div>
 
             <!-- Speech & Media -->
-            <h3 class="section-title">Speech & Media</h3>
+            <h3 class="section-title" id="section-speech">Speech & Media</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Speech</h3>
@@ -962,7 +1029,7 @@
             </div>
 
             <!-- Technical Details -->
-            <h3 class="section-title">Technical Details</h3>
+            <h3 class="section-title" id="section-technical">Technical Details</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Worker & Timing</h3>
@@ -1005,7 +1072,7 @@
         </div>
 
         <div class="version-info">
-            CreepJS Fingerprint Checker v4.3
+            CreepJS Fingerprint Checker v4.4
         </div>
     </div>
 
@@ -1050,9 +1117,29 @@
             return d.toLocaleString('ru-RU');
         }
 
-        function setText(id, value) {
+        async function copyToClipboard(text, el) {
+            if (!text || text === '-' || text === 'N/A') return;
+            try {
+                await navigator.clipboard.writeText(text);
+                el.classList.add('copied');
+                setTimeout(() => { el.classList.remove('copied'); }, 1000);
+            } catch (e) {
+                console.error('Copy failed:', e);
+            }
+        }
+
+        function setText(id, value, clickable = true) {
             const el = document.getElementById(id);
-            if (el) el.textContent = value ?? '-';
+            if (!el) return;
+            const displayValue = value ?? '-';
+            el.textContent = displayValue;
+
+            // Делаем значения кликабельными для копирования
+            if (clickable && value && value !== '-' && value !== 'N/A') {
+                el.classList.add('clickable');
+                el.title = 'Клик для копирования';
+                el.onclick = function() { copyToClipboard(String(value), this); };
+            }
         }
 
         async function loadResults() {
@@ -1081,8 +1168,25 @@
                 const summary = data.summary || {};
 
                 // FP ID
-                setText('fpIdValue', summary.fp_id || fp.fpId);
-                setText('fuzzyHash', `Fuzzy: ${summary.fuzzy_hash || fp.fuzzyHash || '-'}`);
+                const fpIdVal = summary.fp_id || fp.fpId;
+                const fpIdEl = document.getElementById('fpIdValue');
+                if (fpIdEl && fpIdVal) {
+                    fpIdEl.textContent = fpIdVal;
+                    fpIdEl.style.cursor = 'pointer';
+                    fpIdEl.title = 'Клик для копирования';
+                    fpIdEl.onclick = function() { copyToClipboard(fpIdVal, this); };
+                }
+
+                const fuzzyVal = summary.fuzzy_hash || fp.fuzzyHash;
+                const fuzzyEl = document.getElementById('fuzzyHash');
+                if (fuzzyEl) {
+                    fuzzyEl.textContent = `Fuzzy: ${fuzzyVal || '-'}`;
+                    if (fuzzyVal) {
+                        fuzzyEl.style.cursor = 'pointer';
+                        fuzzyEl.title = 'Клик для копирования';
+                        fuzzyEl.onclick = function() { copyToClipboard(fuzzyVal, this); };
+                    }
+                }
 
                 // Scores
                 const stealth = summary.stealth_score ?? fp.headless?.stealth ?? 0;

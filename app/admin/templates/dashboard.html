@@ -8,6 +8,10 @@
 
 <!-- Services Stats -->
 <div class="stats-grid">
+    <div class="stat-card" style="border-left: 3px solid #8b5cf6;">
+        <div class="stat-value">{{ stats.checks_count or 0 }}</div>
+        <div class="stat-label">Всего проверок</div>
+    </div>
     <div class="stat-card" style="border-left: 3px solid #667eea;">
         <div class="stat-value">{{ stats.services.ipqs if stats.services else 0 }}</div>
         <div class="stat-label">IPQS проверок</div>
@@ -23,10 +27,6 @@
     <div class="stat-card" style="border-left: 3px solid #f59e0b;">
         <div class="stat-value danger">{{ stats.services.fp_antidetect if stats.services else 0 }}</div>
         <div class="stat-label">Anti-detect детект</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ stats.checks_count or 0 }}</div>
-        <div class="stat-label">Всего проверок</div>
     </div>
     <div class="stat-card">
         <div class="stat-value" style="font-size: 1em;">
