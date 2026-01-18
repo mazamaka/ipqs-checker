@@ -226,7 +226,9 @@
                 audioinput: null,
                 audiooutput: null,
                 videoinput: null,
-                types: null
+                mimesCount: null,
+                mimesTotal: null,
+                mimesHash: null
             },
             rawSections: {}
         };
@@ -278,7 +280,7 @@
             if (extensionMatch) results.resistance.extension = extensionMatch[1];
 
             // === WORKER ===
-            const workerSection = fullText.match(/Worker([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+WebGL|$)/i);
+            const workerSection = fullText.match(/Worker([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms\s+WebGL|$)/i);
             if (workerSection) {
                 results.worker.hash = workerSection[1];
                 const workerText = workerSection[2];
@@ -392,7 +394,7 @@
             }
 
             // === AUDIO ===
-            const audioSection = fullText.match(/Audio([a-f0-9]*)\s*([\s\S]*?)(?=Speech|$)/i);
+            const audioSection = fullText.match(/Audio([a-f0-9]+)\s*([\s\S]*?)(?=\d*\.?\d+ms\s*Speech|Speech|$)/i);
             if (audioSection) {
                 results.fingerprints.audioHash = audioSection[1];
                 const audioText = audioSection[2];
@@ -716,41 +718,52 @@
             // === Speech ===
             const speechSection = fullText.match(/Speech([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Media|$)/i);
             if (speechSection) {
-                results.speech.hash = speechSection[1];
+                results.speech.hash = speechSection[1] || null;
                 const speechText = speechSection[2];
 
+                // Парсим local, remote, lang, default - формат: "local (0): blocked" или "local: value"
+                const localMatch = speechText.match(/local\s*\(?(\d*)\)?:\s*([^\n]+)/i);
+                if (localMatch) {
+                    results.speech.local = localMatch[2].trim();
+                    if (localMatch[1]) results.speech.voicesCount = parseInt(localMatch[1]);
+                }
+
+                const remoteMatch = speechText.match(/remote\s*\(?(\d*)\)?:\s*([^\n]+)/i);
+                if (remoteMatch) results.speech.remote = remoteMatch[2].trim();
+
+                const langMatch = speechText.match(/lang\s*\(?(\d*)\)?:\s*([^\n]+)/i);
+                if (langMatch) results.speech.lang = langMatch[2].trim();
+
+                const defaultMatch = speechText.match(/default:\s*\n?([^\n]+)/i);
+                if (defaultMatch) results.speech.default = defaultMatch[1].trim();
+
                 // Проверяем blocked статус
-                if (speechText.toLowerCase().includes('blocked')) {
-                    results.speech.blocked = true;
-                } else {
-                    results.speech.blocked = false;
+                results.speech.blocked = speechText.toLowerCase().includes('blocked');
 
-                    const voicesMatch = speechText.match(/voices\s*\((\d+)\):\s*([^\n]+)/i);
-                    if (voicesMatch) {
-                        results.speech.voicesCount = parseInt(voicesMatch[1]);
-                        results.speech.voices = voicesMatch[2].trim();
-                    }
-
-                    const localMatch = speechText.match(/local:\s*([^\n]+)/i);
-                    if (localMatch) results.speech.local = localMatch[1].trim();
-
-                    const remoteMatch = speechText.match(/remote:\s*([^\n]+)/i);
-                    if (remoteMatch) results.speech.remote = remoteMatch[1].trim();
-
-                    const langMatch = speechText.match(/lang:\s*([^\n]+)/i);
-                    if (langMatch) results.speech.lang = langMatch[1].trim();
-
-                    const defaultMatch = speechText.match(/default:\s*([^\n]+)/i);
-                    if (defaultMatch) results.speech.default = defaultMatch[1].trim();
+                // Альтернативный парсинг voices если есть
+                const voicesMatch = speechText.match(/voices\s*\((\d+)\):\s*([^\n]+)/i);
+                if (voicesMatch) {
+                    results.speech.voicesCount = parseInt(voicesMatch[1]);
+                    results.speech.voices = voicesMatch[2].trim();
                 }
             }
 
             // === Media ===
-            const mediaSection = fullText.match(/Media([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Audio|$)/i);
+            // Media идёт ПЕРЕД Audio, ищем правильно
+            const mediaSection = fullText.match(/Media([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms|$)/i);
             if (mediaSection) {
                 results.media.hash = mediaSection[1];
                 const mediaText = mediaSection[2];
 
+                // Парсим mimes - формат: "mimes (10/12): 9e5a765a"
+                const mimesMatch = mediaText.match(/mimes\s*\((\d+)\/(\d+)\):\s*([a-f0-9]+)/i);
+                if (mimesMatch) {
+                    results.media.mimesCount = parseInt(mimesMatch[1]);
+                    results.media.mimesTotal = parseInt(mimesMatch[2]);
+                    results.media.mimesHash = mimesMatch[3];
+                }
+
+                // devices если есть
                 const devicesMatch = mediaText.match(/devices\s*\((\d+)\):\s*([^\n]+)/i);
                 if (devicesMatch) {
                     results.media.devicesCount = parseInt(devicesMatch[1]);
@@ -766,10 +779,6 @@
 
                 const videoInputMatch = mediaText.match(/videoinput:\s*(\d+)/i);
                 if (videoInputMatch) results.media.videoinput = parseInt(videoInputMatch[1]);
-
-                // types - может быть строкой через запятую
-                const typesMatch = mediaText.match(/types?:\s*([^\n]+)/i);
-                if (typesMatch) results.media.types = typesMatch[1].trim();
             }
 
             // === LIES ===

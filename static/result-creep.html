@@ -951,8 +951,12 @@
                         <span class="info-value" id="mediaVideoInput">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Types</span>
-                        <span class="info-value" id="mediaTypes" style="font-size: 0.8em;">-</span>
+                        <span class="info-label">Mimes</span>
+                        <span class="info-value" id="mediaMimes">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Mimes Hash</span>
+                        <span class="info-value mono" id="mediaMimesHash" style="font-size: 0.8em;">-</span>
                     </div>
                 </div>
             </div>
@@ -1001,7 +1005,7 @@
         </div>
 
         <div class="version-info">
-            CreepJS Fingerprint Checker v4.2
+            CreepJS Fingerprint Checker v4.3
         </div>
     </div>
 
@@ -1292,7 +1296,8 @@
                 setText('mediaAudioInput', media.audioinput);
                 setText('mediaAudioOutput', media.audiooutput);
                 setText('mediaVideoInput', media.videoinput);
-                setText('mediaTypes', media.types);
+                setText('mediaMimes', media.mimesCount && media.mimesTotal ? `${media.mimesCount}/${media.mimesTotal}` : null);
+                setText('mediaMimesHash', media.mimesHash);
 
                 // Worker & Technical
                 const worker = fp.worker || {};
