@@ -297,14 +297,14 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (service === 'creepjs') {
             // CreepJS result
             const fpId = fingerprint.fpId;
-            const stealth = fingerprint.headless?.stealth || 0;
+            const likeHeadless = fingerprint.headless?.likeHeadless || 0;
 
             let statusText = `FP: ${fpId?.substring(0, 8)}...`;
-            if (stealth > 30) {
-                statusText += ` | Stealth: ${stealth}%`;
+            if (likeHeadless > 30) {
+                statusText += ` | Like Headless: ${likeHeadless}%`;
                 setStatus(statusText, 'error');
             } else {
-                statusText += ` | Stealth: ${stealth}%`;
+                statusText += ` | Like Headless: ${likeHeadless}%`;
                 setStatus(statusText, 'success');
             }
         } else {

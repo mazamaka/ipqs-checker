@@ -212,8 +212,8 @@ async function addToHistory(sessionId, fingerprint, service) {
     if (service === 'fingerprint') {
         score = fingerprint.products?.suspectScore?.data?.result || 0;
     } else if (service === 'creepjs') {
-        // CreepJS не имеет единого score, используем headless.stealth как индикатор
-        score = fingerprint.headless?.stealth || 0;
+        // CreepJS: используем likeHeadless как основной индикатор (самый показательный)
+        score = fingerprint.headless?.likeHeadless || fingerprint.headless?.stealth || 0;
     } else {
         score = fingerprint.fraud_chance || 0;
     }
