@@ -717,12 +717,13 @@
                         ${row('Cores', nav.cores, 'Ядра CPU')}
                         ${row('Memory', nav.memory, 'Память')}
                         ${row('Max Touch Points', nav.maxTouchPoints, 'Точки касания')}
+                        ${row('Touch', nav.touch !== null && nav.touch !== undefined ? String(nav.touch) : 'N/A', 'Touch (из hardware)')}
                         ${row('Cookies Enabled', nav.cookieEnabled !== null && nav.cookieEnabled !== undefined ? String(nav.cookieEnabled) : 'N/A', 'Cookies включены')}
                         ${row('PDF Viewer', nav.pdfViewerEnabled !== null && nav.pdfViewerEnabled !== undefined ? String(nav.pdfViewerEnabled) : 'N/A', 'PDF Viewer')}
                         ${row('Vendor', nav.vendor, 'Вендор')}
                         ${row('Plugins', nav.plugins ? `(${nav.pluginsCount || '?'}) ${nav.plugins}` : 'N/A', 'Плагины')}
-                        ${row('MimeTypes', nav.mimeTypes, 'MIME типы')}
-                        ${row('Permissions', nav.permissions, 'Разрешения')}
+                        ${row('MimeTypes', nav.mimeTypes ? (nav.mimeTypesCount !== undefined ? `(${nav.mimeTypesCount})` : nav.mimeTypes) : 'N/A', 'MIME типы (кол-во)')}
+                        ${row('Permissions', nav.permissions ? (nav.permissionsCount !== undefined ? `(${nav.permissionsCount})` : nav.permissions) : 'N/A', 'Разрешения (кол-во)')}
                         ${row('WebGPU', nav.webgpu, 'WebGPU')}
                         ${row('UserAgentData', nav.userAgentData, 'UA Client Hints')}
                         ${row('UA Parsed', nav.uaParsed, 'Распарсенный UA')}
@@ -810,9 +811,10 @@
                         <span class="card-title">Features & CSS</span>
                     </div>
                     <div class="card-body">
-                        ${row('JS/DOM', fp.features?.jsdom ? `${fp.features.jsdom} (v${fp.features.jsdomVersion || '?'})` : 'N/A', 'JS/DOM features')}
-                        ${row('CSS', fp.features?.css ? `${fp.features.css} (v${fp.features.cssVersion || '?'})` : 'N/A', 'CSS features')}
-                        ${row('Window', fp.features?.window ? `${fp.features.window} (v${fp.features.windowVersion || '?'})` : 'N/A', 'Window features')}
+                        ${row('Features Range', fp.features?.range || 'N/A', 'Диапазон версий')}
+                        ${row('JS/DOM', fp.features?.jsdomVersionRange || (fp.features?.jsdom ? `${fp.features.jsdom} (v${fp.features.jsdomVersion || '?'})` : null) || 'N/A', 'JS/DOM версия')}
+                        ${row('CSS', fp.features?.cssVersionRange || (fp.features?.css ? `${fp.features.css} (v${fp.features.cssVersion || '?'})` : null) || 'N/A', 'CSS версия')}
+                        ${row('Window', fp.features?.windowVersionRange || (fp.features?.window ? `${fp.features.window} (v${fp.features.windowVersion || '?'})` : null) || 'N/A', 'Window версия')}
                         ${row('CSS Media Hash', fp.cssMedia?.hash || 'N/A', 'CSS Media Queries', false, true)}
                         ${row('@media', fp.cssMedia?.media, 'Media queries')}
                         ${row('matchMedia', fp.cssMedia?.matchMedia, 'matchMedia')}

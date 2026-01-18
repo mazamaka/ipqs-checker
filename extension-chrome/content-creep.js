@@ -512,31 +512,64 @@
             }
 
             // === Features ===
-            // Формат: Features[hash]\nJS/DOM:\n317\nv131\nCSS:\n379\nv131\nWindow:\n3\nv131
+            // Формат может быть:
+            // 1. "Features[hash]\nJS/DOM:\n317\nv131" - старый формат
+            // 2. "Features: 113-115+\nJS/DOM:  \n...\n(v114-115)" - новый формат с version range
             const featuresSection = fullText.match(/Features([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+CSS Media|CSS Media Queries|$)/i);
             if (featuresSection) {
                 const featText = featuresSection[2];
 
+                // Парсим Features range из заголовка: "Features: 113-115+"
+                const featRangeMatch = fullText.match(/Features[a-f0-9]*:\s*(\d+)-(\d+)\+?/i);
+                if (featRangeMatch) {
+                    results.features.rangeMin = parseInt(featRangeMatch[1]);
+                    results.features.rangeMax = parseInt(featRangeMatch[2]);
+                    results.features.range = `${featRangeMatch[1]}-${featRangeMatch[2]}`;
+                }
+
                 // JS/DOM может быть в формате:
-                // "JS/DOM:\n317\nv131" или "JS/DOM: 317 v131" или просто "JS/DOM\n317"
+                // 1. "JS/DOM:\n317\nv131" - значение после заголовка
+                // 2. "JS/DOM:  \n...\n(v114-115)" - version range в конце секции
                 const jsdomMatch = featText.match(/JS\s*[\/\\]\s*DOM[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (jsdomMatch) {
                     results.features.jsdom = parseInt(jsdomMatch[1]);
                     if (jsdomMatch[2]) results.features.jsdomVersion = parseInt(jsdomMatch[2]);
                 }
+                // Парсим version range формат "(v114-115)"
+                const jsdomVersionMatch = featText.match(/JS\s*[\/\\]\s*DOM[\s\S]*?\(v(\d+)-(\d+)\)/i);
+                if (jsdomVersionMatch) {
+                    results.features.jsdomVersionRange = `v${jsdomVersionMatch[1]}-${jsdomVersionMatch[2]}`;
+                    if (!results.features.jsdomVersion) {
+                        results.features.jsdomVersion = parseInt(jsdomVersionMatch[2]);
+                    }
+                }
 
-                // CSS
+                // CSS - аналогично
                 const cssMatch = featText.match(/\nCSS[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (cssMatch) {
                     results.features.css = parseInt(cssMatch[1]);
                     if (cssMatch[2]) results.features.cssVersion = parseInt(cssMatch[2]);
                 }
+                const cssVersionMatch = featText.match(/\nCSS[\s\S]*?\(v(\d+)-(\d+)\)/i);
+                if (cssVersionMatch) {
+                    results.features.cssVersionRange = `v${cssVersionMatch[1]}-${cssVersionMatch[2]}`;
+                    if (!results.features.cssVersion) {
+                        results.features.cssVersion = parseInt(cssVersionMatch[2]);
+                    }
+                }
 
-                // Window (в Features секции, не путать с Window секцией)
+                // Window (в Features секции)
                 const windowFeatMatch = featText.match(/\nWindow[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (windowFeatMatch) {
                     results.features.window = parseInt(windowFeatMatch[1]);
                     if (windowFeatMatch[2]) results.features.windowVersion = parseInt(windowFeatMatch[2]);
+                }
+                const windowVersionMatch = featText.match(/\nWindow[\s\S]*?\(v(\d+)-(\d+)\)/i);
+                if (windowVersionMatch) {
+                    results.features.windowVersionRange = `v${windowVersionMatch[1]}-${windowVersionMatch[2]}`;
+                    if (!results.features.windowVersion) {
+                        results.features.windowVersion = parseInt(windowVersionMatch[2]);
+                    }
                 }
             }
 
@@ -656,11 +689,25 @@
                 const langMatch = navText.match(/lang:\s*([^\n]+)/i);
                 if (langMatch) results.navigator.lang = langMatch[1].trim();
 
-                const mimeTypesMatch = navText.match(/mimeTypes:\s*([^\n]+)/i);
-                if (mimeTypesMatch) results.navigator.mimeTypes = mimeTypesMatch[1].trim();
+                // mimeTypes может быть в формате "mimeTypes (2):" или "mimeTypes: value"
+                const mimeTypesCountMatch = navText.match(/mimeTypes\s*\((\d+)\)/i);
+                if (mimeTypesCountMatch) {
+                    results.navigator.mimeTypes = mimeTypesCountMatch[1];
+                    results.navigator.mimeTypesCount = parseInt(mimeTypesCountMatch[1]);
+                } else {
+                    const mimeTypesMatch = navText.match(/mimeTypes:\s*([^\n]+)/i);
+                    if (mimeTypesMatch) results.navigator.mimeTypes = mimeTypesMatch[1].trim();
+                }
 
-                const permissionsMatch = navText.match(/permissions:\s*\n*([^\n]+)/i);
-                if (permissionsMatch) results.navigator.permissions = permissionsMatch[1].trim();
+                // permissions может быть в формате "permissions (6):" или "permissions: value"
+                const permissionsCountMatch = navText.match(/permissions\s*\((\d+)\)/i);
+                if (permissionsCountMatch) {
+                    results.navigator.permissions = permissionsCountMatch[1];
+                    results.navigator.permissionsCount = parseInt(permissionsCountMatch[1]);
+                } else {
+                    const permissionsMatch = navText.match(/permissions:\s*\n*([^\n]+)/i);
+                    if (permissionsMatch) results.navigator.permissions = permissionsMatch[1].trim();
+                }
 
                 const pluginsMatch = navText.match(/plugins\s*\((\d+)\):\s*([^\n]+)/i);
                 if (pluginsMatch) {
@@ -692,8 +739,16 @@
                 const coresMatch = navText.match(/cores:\s*(\d+)/i);
                 if (coresMatch) results.navigator.cores = parseInt(coresMatch[1]);
 
+                // RAM может быть как "memory:" так и "ram:" в комбинированной строке
                 const memoryMatch = navText.match(/memory:\s*([0-9.]+)/i);
                 if (memoryMatch) results.navigator.memory = parseFloat(memoryMatch[1]);
+
+                const ramMatch = navText.match(/ram:\s*(\d+)/i);
+                if (ramMatch && !results.navigator.memory) results.navigator.memory = parseFloat(ramMatch[1]);
+
+                // Touch из комбинированной строки "cores: X, ram: Y, touch: Z"
+                const touchMatch = navText.match(/touch:\s*(\d+)/i);
+                if (touchMatch) results.navigator.touch = parseInt(touchMatch[1]);
 
                 const cookieMatch = navText.match(/cookieEnabled:\s*(\w+)/i);
                 if (cookieMatch) results.navigator.cookieEnabled = cookieMatch[1] === 'true';
