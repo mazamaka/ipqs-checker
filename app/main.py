@@ -28,6 +28,7 @@ from app.config import SETTINGS
 from app.db import db, get_db
 from app.services import profile_service, check_service
 from app.admin import admin_router
+from app.utils import get_country_by_timezone
 
 # Configure logging
 logging.basicConfig(
@@ -714,23 +715,8 @@ async def extension_report_creep(request: Request):
                 )
                 profile_id = profile.id
 
-                # Simple timezone to country mapping for common cases
-                tz_country_map = {
-                    "Europe/Budapest": "Hungary",
-                    "Europe/Moscow": "Russia",
-                    "Europe/London": "United Kingdom",
-                    "Europe/Paris": "France",
-                    "Europe/Berlin": "Germany",
-                    "Europe/Kiev": "Ukraine",
-                    "Europe/Warsaw": "Poland",
-                    "America/New_York": "United States",
-                    "America/Los_Angeles": "United States",
-                    "America/Chicago": "United States",
-                    "Asia/Tokyo": "Japan",
-                    "Asia/Shanghai": "China",
-                    "Australia/Sydney": "Australia",
-                }
-                creep_country = tz_country_map.get(timezone)
+                # Get country from timezone (131 timezones supported)
+                creep_country = get_country_by_timezone(timezone)
 
                 check = Check(
                     profile_id=profile_id,
