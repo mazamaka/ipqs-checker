@@ -90,7 +90,7 @@
             75% { transform: translate(-30px, -20px) scale(1.02); }
         }
 
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header {
             text-align: center;
             padding: 40px 0 30px;
@@ -157,17 +157,6 @@
             margin-top: 4px;
             opacity: 0.7;
         }
-        .verdict {
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-            margin-top: 12px;
-            font-size: 0.85em;
-        }
-        .verdict.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
-        .verdict.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 
         /* FP ID card */
         .fp-id-card {
@@ -261,9 +250,19 @@
         }
         .info-row:last-child { border-bottom: none; }
         .info-label { color: var(--muted); font-size: 0.9em; }
-        .info-value { font-weight: 500; }
+        .info-value { font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
         .info-value.true { color: var(--danger); }
         .info-value.false { color: var(--success); }
+        .info-value.mono { font-family: 'Fira Code', monospace; font-size: 0.75em; }
+
+        /* Section titles */
+        .section-title {
+            color: var(--accent);
+            font-size: 1.2em;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
 
         /* Raw data */
         .raw-section {
@@ -374,7 +373,8 @@
                 </div>
             </div>
 
-            <!-- Info Cards -->
+            <!-- Resistance & Detection -->
+            <h3 class="section-title">Detection & Resistance</h3>
             <div class="info-grid">
                 <div class="info-card">
                     <h3>Resistance Detection</h3>
@@ -401,10 +401,30 @@
                 </div>
 
                 <div class="info-card">
+                    <h3>Lies & Trash</h3>
+                    <div class="info-row">
+                        <span class="info-label">Lies Count</span>
+                        <span class="info-value" id="liesCount">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Trash Count</span>
+                        <span class="info-value" id="trashCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hardware & Browser -->
+            <h3 class="section-title">Hardware & Browser</h3>
+            <div class="info-grid">
+                <div class="info-card">
                     <h3>Hardware</h3>
                     <div class="info-row">
+                        <span class="info-label">GPU Vendor</span>
+                        <span class="info-value" id="gpuVendor">-</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label">GPU</span>
-                        <span class="info-value" id="gpuInfo" style="font-size: 0.8em; word-break: break-word;">-</span>
+                        <span class="info-value" id="gpuInfo" style="font-size: 0.8em;">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">CPU Cores</span>
@@ -418,13 +438,17 @@
                         <span class="info-label">Platform</span>
                         <span class="info-value" id="platformInfo">-</span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Device</span>
+                        <span class="info-value" id="deviceInfo">-</span>
+                    </div>
                 </div>
 
                 <div class="info-card">
                     <h3>Browser</h3>
                     <div class="info-row">
                         <span class="info-label">User Agent</span>
-                        <span class="info-value" id="userAgentInfo" style="font-size: 0.75em; word-break: break-word;">-</span>
+                        <span class="info-value" id="userAgentInfo" style="font-size: 0.7em;">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Language</span>
@@ -434,10 +458,90 @@
                         <span class="info-label">Timezone</span>
                         <span class="info-value" id="timezoneInfo">-</span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Vendor</span>
+                        <span class="info-value" id="browserVendor">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigator (Full) -->
+            <h3 class="section-title">Navigator</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Navigator Properties</h3>
+                    <div class="info-row">
+                        <span class="info-label">DNT</span>
+                        <span class="info-value" id="navDnt">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">GPC</span>
+                        <span class="info-value" id="navGpc">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Lang</span>
+                        <span class="info-value" id="navLang">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Platform</span>
+                        <span class="info-value" id="navPlatform">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cores</span>
+                        <span class="info-value" id="navCores">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Memory</span>
+                        <span class="info-value" id="navMemory">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Max Touch Points</span>
+                        <span class="info-value" id="navTouchPoints">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cookie Enabled</span>
+                        <span class="info-value" id="navCookieEnabled">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">PDF Viewer</span>
+                        <span class="info-value" id="navPdfViewer">-</span>
+                    </div>
                 </div>
 
                 <div class="info-card">
-                    <h3>Network</h3>
+                    <h3>Navigator Data</h3>
+                    <div class="info-row">
+                        <span class="info-label">Vendor</span>
+                        <span class="info-value" id="navVendor">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Plugins</span>
+                        <span class="info-value" id="navPlugins" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">MimeTypes</span>
+                        <span class="info-value" id="navMimeTypes" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Permissions</span>
+                        <span class="info-value" id="navPermissions" style="font-size: 0.75em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">WebGPU</span>
+                        <span class="info-value" id="navWebgpu">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">UserAgentData</span>
+                        <span class="info-value" id="navUaData" style="font-size: 0.75em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network & Status -->
+            <h3 class="section-title">Network & Status</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>WebRTC / Network</h3>
                     <div class="info-row">
                         <span class="info-label">IP (WebRTC)</span>
                         <span class="info-value" id="webrtcIp">-</span>
@@ -446,41 +550,313 @@
                         <span class="info-label">Devices</span>
                         <span class="info-value" id="webrtcDevices">-</span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">RTT</span>
+                        <span class="info-value" id="statusRtt">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Downlink</span>
+                        <span class="info-value" id="statusDownlink">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Effective Type</span>
+                        <span class="info-value" id="statusEffectiveType">-</span>
+                    </div>
                 </div>
 
                 <div class="info-card">
-                    <h3>Fingerprints</h3>
+                    <h3>Status (Battery & Available)</h3>
+                    <div class="info-row">
+                        <span class="info-label">Battery Level</span>
+                        <span class="info-value" id="batteryLevel">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Charging</span>
+                        <span class="info-value" id="batteryCharging">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Storage</span>
+                        <span class="info-value" id="availStorage">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Memory</span>
+                        <span class="info-value" id="availMemory">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Timing Resolution</span>
+                        <span class="info-value" id="availTimingRes">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Stack</span>
+                        <span class="info-value" id="availStack">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fingerprints -->
+            <h3 class="section-title">Fingerprints</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Canvas & WebGL</h3>
+                    <div class="info-row">
+                        <span class="info-label">Canvas Hash</span>
+                        <span class="info-value mono" id="canvasHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">WebGL Hash</span>
+                        <span class="info-value mono" id="webglHash">-</span>
+                    </div>
                     <div class="info-row">
                         <span class="info-label">Screen</span>
                         <span class="info-value" id="screenInfo">-</span>
                     </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Audio & Fonts</h3>
                     <div class="info-row">
-                        <span class="info-label">Canvas</span>
-                        <span class="info-value" id="canvasHash" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">WebGL</span>
-                        <span class="info-value" id="webglHash" style="font-size: 0.8em;">-</span>
+                        <span class="info-label">Audio Hash</span>
+                        <span class="info-value mono" id="audioHash">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Audio</span>
-                        <span class="info-value" id="audioInfo" style="font-size: 0.8em;">-</span>
+                        <span class="info-value" id="audioInfo">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Fonts Hash</span>
+                        <span class="info-value mono" id="fontsHash">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Fonts</span>
-                        <span class="info-value" id="fontsInfo" style="font-size: 0.8em;">-</span>
+                        <span class="info-value" id="fontsInfo">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOMRect & SVGRect -->
+            <h3 class="section-title">DOMRect & SVGRect</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>DOMRect</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="domRectHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Elems A</span>
+                        <span class="info-value" id="domRectElemsA" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Elems B</span>
+                        <span class="info-value" id="domRectElemsB" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Range A</span>
+                        <span class="info-value" id="domRectRangeA" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Range B</span>
+                        <span class="info-value" id="domRectRangeB" style="font-size: 0.8em;">-</span>
                     </div>
                 </div>
 
                 <div class="info-card">
-                    <h3>Technical Details</h3>
+                    <h3>SVGRect</h3>
                     <div class="info-row">
-                        <span class="info-label">Calculation Time</span>
-                        <span class="info-value" id="calcTime">-</span>
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="svgRectHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">bBox</span>
+                        <span class="info-value" id="svgRectBbox" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">char</span>
+                        <span class="info-value" id="svgRectChar" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">subs</span>
+                        <span class="info-value" id="svgRectSubs" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">text</span>
+                        <span class="info-value" id="svgRectText" style="font-size: 0.8em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features & CSS Media -->
+            <h3 class="section-title">Features & CSS</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Features</h3>
+                    <div class="info-row">
+                        <span class="info-label">JS/DOM</span>
+                        <span class="info-value" id="featJsdom">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CSS</span>
+                        <span class="info-value" id="featCss">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Window</span>
+                        <span class="info-value" id="featWindow">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>CSS Media Queries</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="cssMediaHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">@media</span>
+                        <span class="info-value" id="cssMediaMedia" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">matchMedia</span>
+                        <span class="info-value" id="cssMediaMatchMedia" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Touch Device</span>
+                        <span class="info-value" id="cssMediaTouch">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Screen Query</span>
+                        <span class="info-value" id="cssMediaScreen" style="font-size: 0.8em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Computed Style, Math, Error -->
+            <h3 class="section-title">Computed Style, Math, Error</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Computed Style</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="compStyleHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Keys</span>
+                        <span class="info-value" id="compStyleKeys">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">System</span>
+                        <span class="info-value" id="compStyleSystem" style="font-size: 0.8em;">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Math & Error</h3>
+                    <div class="info-row">
+                        <span class="info-label">Math Hash</span>
+                        <span class="info-value mono" id="mathHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Math Results</span>
+                        <span class="info-value" id="mathResults" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Error Hash</span>
+                        <span class="info-value mono" id="errorHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Error Results</span>
+                        <span class="info-value" id="errorResults" style="font-size: 0.8em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Window & HTMLElement -->
+            <h3 class="section-title">Window & HTMLElement</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Window</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="windowHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Keys Count</span>
+                        <span class="info-value" id="windowKeysCount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Keys</span>
+                        <span class="info-value" id="windowKeys" style="font-size: 0.75em;">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>HTMLElement</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="htmlElemHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Keys Count</span>
+                        <span class="info-value" id="htmlElemKeysCount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Keys</span>
+                        <span class="info-value" id="htmlElemKeys" style="font-size: 0.75em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speech & Media -->
+            <h3 class="section-title">Speech & Media</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Speech</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="speechHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Voices Count</span>
+                        <span class="info-value" id="speechVoicesCount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Voices</span>
+                        <span class="info-value" id="speechVoices" style="font-size: 0.75em;">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Media Devices</h3>
+                    <div class="info-row">
+                        <span class="info-label">Hash</span>
+                        <span class="info-value mono" id="mediaHash">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Devices Count</span>
+                        <span class="info-value" id="mediaDevicesCount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Devices</span>
+                        <span class="info-value" id="mediaDevices" style="font-size: 0.75em;">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Details -->
+            <h3 class="section-title">Technical Details</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Worker & Timing</h3>
+                    <div class="info-row">
+                        <span class="info-label">Worker Hash</span>
+                        <span class="info-value mono" id="workerHash">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Confidence</span>
                         <span class="info-value" id="confidenceInfo">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Calculation Time</span>
+                        <span class="info-value" id="calcTime">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Source</span>
@@ -510,7 +886,7 @@
         </div>
 
         <div class="version-info">
-            CreepJS Fingerprint Checker
+            CreepJS Fingerprint Checker v4.1
         </div>
     </div>
 
@@ -532,6 +908,11 @@
             if (!ts) return '-';
             const d = new Date(ts);
             return d.toLocaleString('ru-RU');
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value ?? '-';
         }
 
         async function loadResults() {
@@ -560,12 +941,12 @@
                 const summary = data.summary || {};
 
                 // FP ID
-                document.getElementById('fpIdValue').textContent = summary.fp_id || fp.fpId || '-';
-                document.getElementById('fuzzyHash').textContent = `Fuzzy: ${summary.fuzzy_hash || fp.fuzzyHash || '-'}`;
+                setText('fpIdValue', summary.fp_id || fp.fpId);
+                setText('fuzzyHash', `Fuzzy: ${summary.fuzzy_hash || fp.fuzzyHash || '-'}`);
 
                 // Scores
                 const stealth = summary.stealth_score ?? fp.headless?.stealth ?? 0;
-                const headless = summary.headless_percent ?? fp.headless?.headless ?? 0;
+                const headless = summary.headless_percent ?? fp.headless?.headlessPercent ?? 0;
                 const likeHeadless = summary.like_headless ?? fp.headless?.likeHeadless ?? 0;
 
                 document.getElementById('stealthScore').textContent = stealth + '%';
@@ -603,44 +984,155 @@
                 // Resistance
                 const resistance = fp.resistance || {};
                 const headlessData = fp.headless || {};
-                document.getElementById('privacyMode').textContent = summary.privacy || resistance.privacy || '-';
-                document.getElementById('securityMode').textContent = summary.security || resistance.security || '-';
-                document.getElementById('browserMode').textContent = summary.mode || resistance.mode || '-';
-                document.getElementById('extensionDetected').textContent = resistance.extension || '-';
-                document.getElementById('chromiumDetected').textContent = headlessData.chromium !== null ? (headlessData.chromium ? 'true' : 'false') : '-';
+                setText('privacyMode', summary.privacy || resistance.privacy);
+                setText('securityMode', summary.security || resistance.security);
+                setText('browserMode', summary.mode || resistance.mode);
+                setText('extensionDetected', resistance.extension);
+                setText('chromiumDetected', headlessData.chromium !== null && headlessData.chromium !== undefined ? String(headlessData.chromium) : null);
+
+                // Lies & Trash
+                setText('liesCount', fp.lies?.count ?? 0);
+                setText('trashCount', fp.trash?.count ?? 0);
 
                 // Hardware
                 const hardware = fp.hardware || {};
-                document.getElementById('gpuInfo').textContent = hardware.gpu || hardware.gpuVendor || '-';
-                document.getElementById('cpuCores').textContent = hardware.cpuCores || '-';
-                document.getElementById('ramInfo').textContent = hardware.memory ? hardware.memory + ' GB' : '-';
-                document.getElementById('platformInfo').textContent = hardware.platform || hardware.device || '-';
+                setText('gpuVendor', hardware.gpuVendor);
+                setText('gpuInfo', hardware.gpu);
+                setText('cpuCores', hardware.cpuCores);
+                setText('ramInfo', hardware.memory ? hardware.memory + ' GB' : null);
+                setText('platformInfo', hardware.platform);
+                setText('deviceInfo', hardware.device);
 
                 // Browser
                 const browser = fp.browser || {};
-                document.getElementById('userAgentInfo').textContent = browser.userAgent || '-';
-                document.getElementById('languageInfo').textContent = browser.language || '-';
-                document.getElementById('timezoneInfo').textContent = browser.timezone || '-';
+                setText('userAgentInfo', browser.userAgent);
+                setText('languageInfo', browser.language);
+                setText('timezoneInfo', browser.timezone);
+                setText('browserVendor', browser.vendor);
 
-                // Network
+                // Navigator
+                const nav = fp.navigator || {};
+                setText('navDnt', nav.dnt);
+                setText('navGpc', nav.gpc);
+                setText('navLang', nav.lang);
+                setText('navPlatform', nav.platform);
+                setText('navCores', nav.cores);
+                setText('navMemory', nav.memory);
+                setText('navTouchPoints', nav.maxTouchPoints);
+                setText('navCookieEnabled', nav.cookieEnabled !== null && nav.cookieEnabled !== undefined ? String(nav.cookieEnabled) : null);
+                setText('navPdfViewer', nav.pdfViewerEnabled !== null && nav.pdfViewerEnabled !== undefined ? String(nav.pdfViewerEnabled) : null);
+                setText('navVendor', nav.vendor);
+                setText('navPlugins', nav.plugins ? `(${nav.pluginsCount}) ${nav.plugins}` : null);
+                setText('navMimeTypes', nav.mimeTypes);
+                setText('navPermissions', nav.permissions);
+                setText('navWebgpu', nav.webgpu);
+                setText('navUaData', nav.userAgentData);
+
+                // Network / WebRTC
                 const network = fp.network || {};
-                document.getElementById('webrtcIp').textContent = network.ip || '-';
-                document.getElementById('webrtcDevices').textContent = network.webrtc || '-';
+                setText('webrtcIp', network.ip);
+                setText('webrtcDevices', network.webrtc);
+
+                // Status
+                const status = fp.status || {};
+                const statusNet = status.network || {};
+                const statusBattery = status.battery || {};
+                const statusAvail = status.available || {};
+                setText('statusRtt', statusNet.rtt ? statusNet.rtt + ' ms' : null);
+                setText('statusDownlink', statusNet.downlink ? statusNet.downlink + ' Mbps' : null);
+                setText('statusEffectiveType', statusNet.effectiveType);
+                setText('batteryLevel', statusBattery.level !== null && statusBattery.level !== undefined ? (statusBattery.level * 100).toFixed(0) + '%' : null);
+                setText('batteryCharging', statusBattery.charging !== null && statusBattery.charging !== undefined ? String(statusBattery.charging) : null);
+                setText('availStorage', statusAvail.storage);
+                setText('availMemory', statusAvail.memory);
+                setText('availTimingRes', statusAvail.timingRes);
+                setText('availStack', statusAvail.stack);
 
                 // Fingerprints
                 const fingerprints = fp.fingerprints || {};
-                document.getElementById('screenInfo').textContent = fingerprints.screen || '-';
-                document.getElementById('canvasHash').textContent = fingerprints.canvasHash || '-';
-                document.getElementById('webglHash').textContent = fingerprints.webglHash || '-';
-                document.getElementById('audioInfo').textContent = fingerprints.audio || fingerprints.audioHash || '-';
-                document.getElementById('fontsInfo').textContent = fingerprints.fonts || fingerprints.fontsHash || '-';
+                setText('canvasHash', fingerprints.canvasHash);
+                setText('webglHash', fingerprints.webglHash);
+                setText('screenInfo', fingerprints.screen);
+                setText('audioHash', fingerprints.audioHash);
+                setText('audioInfo', fingerprints.audio);
+                setText('fontsHash', fingerprints.fontsHash);
+                setText('fontsInfo', fingerprints.fonts);
 
-                // Technical
+                // DOMRect
+                const domRect = fp.domRect || {};
+                setText('domRectHash', domRect.hash);
+                setText('domRectElemsA', domRect.elemsA);
+                setText('domRectElemsB', domRect.elemsB);
+                setText('domRectRangeA', domRect.rangeA);
+                setText('domRectRangeB', domRect.rangeB);
+
+                // SVGRect
+                const svgRect = fp.svgRect || {};
+                setText('svgRectHash', svgRect.hash);
+                setText('svgRectBbox', svgRect.bBox);
+                setText('svgRectChar', svgRect.char);
+                setText('svgRectSubs', svgRect.subs);
+                setText('svgRectText', svgRect.text);
+
+                // Features
+                const features = fp.features || {};
+                setText('featJsdom', features.jsdom ? `${features.jsdom} (v${features.jsdomVersion || '?'})` : null);
+                setText('featCss', features.css ? `${features.css} (v${features.cssVersion || '?'})` : null);
+                setText('featWindow', features.window ? `${features.window} (v${features.windowVersion || '?'})` : null);
+
+                // CSS Media
+                const cssMedia = fp.cssMedia || {};
+                setText('cssMediaHash', cssMedia.hash);
+                setText('cssMediaMedia', cssMedia.media);
+                setText('cssMediaMatchMedia', cssMedia.matchMedia);
+                setText('cssMediaTouch', cssMedia.touchDevice);
+                setText('cssMediaScreen', cssMedia.screenQuery);
+
+                // Computed Style
+                const compStyle = fp.computedStyle || {};
+                setText('compStyleHash', compStyle.hash);
+                setText('compStyleKeys', compStyle.keys);
+                setText('compStyleSystem', compStyle.system);
+
+                // Math & Error
+                const math = fp.math || {};
+                const errorData = fp.errorData || {};
+                setText('mathHash', math.hash);
+                setText('mathResults', math.results);
+                setText('errorHash', errorData.hash);
+                setText('errorResults', errorData.results);
+
+                // Window
+                const windowData = fp.windowData || {};
+                setText('windowHash', windowData.hash);
+                setText('windowKeysCount', windowData.keysCount);
+                setText('windowKeys', windowData.keys);
+
+                // HTMLElement
+                const htmlElement = fp.htmlElement || {};
+                setText('htmlElemHash', htmlElement.hash);
+                setText('htmlElemKeysCount', htmlElement.keysCount);
+                setText('htmlElemKeys', htmlElement.keys);
+
+                // Speech
+                const speech = fp.speech || {};
+                setText('speechHash', speech.hash);
+                setText('speechVoicesCount', speech.voicesCount);
+                setText('speechVoices', speech.voices);
+
+                // Media
+                const media = fp.media || {};
+                setText('mediaHash', media.hash);
+                setText('mediaDevicesCount', media.devicesCount);
+                setText('mediaDevices', media.devices);
+
+                // Worker & Technical
                 const worker = fp.worker || {};
-                document.getElementById('calcTime').textContent = (summary.time_ms || fp.timeMs || 0) + ' ms';
-                document.getElementById('confidenceInfo').textContent = worker.confidence || '-';
-                document.getElementById('source').textContent = data.source || '-';
-                document.getElementById('timestamp').textContent = formatTimestamp(data.timestamp);
+                setText('workerHash', worker.hash);
+                setText('confidenceInfo', worker.confidence);
+                setText('calcTime', (summary.time_ms || fp.timeMs || 0) + ' ms');
+                setText('source', data.source);
+                setText('timestamp', formatTimestamp(data.timestamp));
 
                 // Raw JSON
                 document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
