@@ -665,6 +665,14 @@ async def extension_report_creep(request: Request):
         resistance = fingerprint.get("resistance", {})
         version = fingerprint.get("version", "unknown")
 
+        # Network info
+        network = fingerprint.get("network", {})
+        creep_ip = network.get("ip")
+
+        # Get timezone for approximate country (Europe/Budapest -> Hungary, etc.)
+        browser_info = fingerprint.get("browser", {})
+        timezone = browser_info.get("timezone", "")
+
         # Headless detection metrics
         stealth_score = headless.get("stealth", 0)
         like_headless = headless.get("likeHeadless", 0)
@@ -706,12 +714,33 @@ async def extension_report_creep(request: Request):
                 )
                 profile_id = profile.id
 
+                # Simple timezone to country mapping for common cases
+                tz_country_map = {
+                    "Europe/Budapest": "Hungary",
+                    "Europe/Moscow": "Russia",
+                    "Europe/London": "United Kingdom",
+                    "Europe/Paris": "France",
+                    "Europe/Berlin": "Germany",
+                    "Europe/Kiev": "Ukraine",
+                    "Europe/Warsaw": "Poland",
+                    "America/New_York": "United States",
+                    "America/Los_Angeles": "United States",
+                    "America/Chicago": "United States",
+                    "Asia/Tokyo": "Japan",
+                    "Asia/Shanghai": "China",
+                    "Australia/Sydney": "Australia",
+                }
+                creep_country = tz_country_map.get(timezone)
+
                 check = Check(
                     profile_id=profile_id,
                     session_id=session_id,
                     service="creepjs",
                     source=source,
                     guid=fp_id,
+                    ip_address=creep_ip,
+                    country=creep_country,
+                    timezone=timezone,
                     raw_response=response_data,  # Store full response
                 )
                 db_session.add(check)
