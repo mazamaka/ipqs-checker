@@ -6,25 +6,34 @@
 
     // Ждём завершения CreepJS и парсим результаты
     async function waitAndParse() {
-        const maxWait = 60000; // 60 секунд максимум
-        const checkInterval = 500;
+        const maxWait = 90000; // 90 секунд максимум (CreepJS может долго считать)
+        const checkInterval = 1000;
         const startTime = Date.now();
 
         while (Date.now() - startTime < maxWait) {
-            // Ищем FP ID - главный индикатор завершения
-            const fpEl = document.querySelector('#fingerprint-data .visitor-id, .fingerprint-header .ellipsis-all');
-            const fpMatch = fpEl?.textContent?.match(/([a-f0-9]{64})/i);
+            // Ищем FP ID в заголовке - главный индикатор завершения
+            const fpApp = document.getElementById('fp-app');
+            if (!fpApp) {
+                await new Promise(r => setTimeout(r, checkInterval));
+                continue;
+            }
 
-            // Также проверяем наличие секции headless
-            const headlessSection = document.getElementById('headless-detection') ||
-                                   document.querySelector('[data-type="headless"]') ||
-                                   document.querySelector('.headless-detection');
+            const text = fpApp.innerText || '';
+            const fpMatch = text.match(/FP ID:\s*([a-f0-9]{64})/i);
 
             if (fpMatch) {
                 console.log('[CreepJS Content] Найден FP ID:', fpMatch[1].substring(0, 16) + '...');
 
-                // Даём ещё немного времени для рендера всех секций
-                await new Promise(r => setTimeout(r, 2000));
+                // Ждём пока все секции загрузятся (Worker обычно последний)
+                const workerLoaded = text.includes('Worker') && text.includes('gpu:');
+                if (!workerLoaded && Date.now() - startTime < 30000) {
+                    console.log('[CreepJS Content] Ждём загрузки Worker секции...');
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue;
+                }
+
+                // Даём ещё немного времени для рендера
+                await new Promise(r => setTimeout(r, 3000));
 
                 const results = parseResults();
                 sendResults(results);
@@ -49,10 +58,10 @@
             fuzzyHash: null,
             timeMs: null,
             headless: {
+                chromium: null,
                 stealth: null,
                 likeHeadless: null,
-                headlessPercent: null,
-                stealthRating: null
+                headlessPercent: null
             },
             resistance: {
                 privacy: null,
@@ -70,235 +79,276 @@
             },
             fingerprints: {
                 canvas: null,
+                canvasHash: null,
                 webgl: null,
+                webglHash: null,
                 audio: null,
+                audioHash: null,
                 fonts: null,
+                fontsHash: null,
                 screen: null,
-                cssMedia: null
+                screenHash: null
             },
             hardware: {
                 gpu: null,
+                gpuVendor: null,
                 cpuCores: null,
                 memory: null,
-                platform: null
+                platform: null,
+                device: null
             },
             browser: {
                 userAgent: null,
                 vendor: null,
                 language: null,
-                timezone: null
+                timezone: null,
+                timezoneOffset: null
             },
             network: {
                 webrtc: null,
-                connection: null
+                webrtcHash: null,
+                ip: null
+            },
+            worker: {
+                hash: null,
+                confidence: null
             },
             rawSections: {}
         };
 
         try {
-            // FP ID (главный идентификатор)
-            const fpEl = document.querySelector('#fingerprint-data .visitor-id, .fingerprint-header .ellipsis-all, [class*="fingerprint"] [class*="id"]');
-            const fpMatch = fpEl?.textContent?.match(/([a-f0-9]{64})/i);
+            const fpApp = document.getElementById('fp-app');
+            if (!fpApp) {
+                console.error('[CreepJS Content] fp-app не найден');
+                return results;
+            }
+
+            const fullText = fpApp.innerText || '';
+
+            // === FP ID и Fuzzy ===
+            const fpMatch = fullText.match(/FP ID:\s*([a-f0-9]{64})/i);
             if (fpMatch) results.fpId = fpMatch[1];
 
-            // Visitor ID (если отличается)
-            const visitorEl = document.querySelector('.visitor-id, [data-visitor-id]');
-            if (visitorEl) {
-                const vMatch = visitorEl.textContent.match(/([a-f0-9]{32,64})/i);
-                if (vMatch) results.visitorId = vMatch[1];
-            }
+            const fuzzyMatch = fullText.match(/Fuzzy:\s*([a-f0-9]{64})/i);
+            if (fuzzyMatch) results.fuzzyHash = fuzzyMatch[1];
 
-            // Fuzzy hash
-            const fuzzyEl = document.querySelector('.fuzzy-fingerprint, [class*="fuzzy"], .trust-score');
-            if (fuzzyEl) {
-                const fMatch = fuzzyEl.textContent.match(/([a-f0-9]{64})/i);
-                if (fMatch) results.fuzzyHash = fMatch[1];
-            }
-
-            // Time
-            const timeEl = document.querySelector('.fingerprint-time, [class*="time"], .perf-time');
-            if (timeEl) {
-                const tMatch = timeEl.textContent.match(/(\d+)\s*ms/i);
-                if (tMatch) results.timeMs = parseInt(tMatch[1]);
-            }
+            // === Total Time ===
+            const timeMatch = fullText.match(/(\d+(?:\.\d+)?)\s*ms\s*\n*WebRTC/i);
+            if (timeMatch) results.timeMs = parseFloat(timeMatch[1]);
 
             // === HEADLESS DETECTION ===
-            const headlessSection = document.getElementById('headless-detection') ||
-                                   document.querySelector('[id*="headless"]');
-            if (headlessSection) {
-                // Stealth rating
-                const stealthEl = headlessSection.querySelector('[class*="stealth"], .stealth-rating');
-                if (stealthEl) {
-                    const sMatch = stealthEl.textContent.match(/(\d+(?:\.\d+)?)/);
-                    if (sMatch) results.headless.stealth = parseFloat(sMatch[1]);
-                }
+            const headlessMatch = fullText.match(/Headless[a-f0-9]*\s*\n*chromium:\s*(true|false)/i);
+            if (headlessMatch) results.headless.chromium = headlessMatch[1] === 'true';
 
-                // Like headless %
-                const likeEl = headlessSection.querySelector('[class*="like-headless"], .like-headless');
-                if (likeEl) {
-                    const lMatch = likeEl.textContent.match(/(\d+(?:\.\d+)?)/);
-                    if (lMatch) results.headless.likeHeadless = parseFloat(lMatch[1]);
-                }
+            const likeHeadlessMatch = fullText.match(/(\d+)%\s*like headless/i);
+            if (likeHeadlessMatch) results.headless.likeHeadless = parseInt(likeHeadlessMatch[1]);
 
-                // Headless %
-                const hpEl = headlessSection.querySelector('[class*="headless-percent"], .headless-rating');
-                if (hpEl) {
-                    const hMatch = hpEl.textContent.match(/(\d+(?:\.\d+)?)/);
-                    if (hMatch) results.headless.headlessPercent = parseFloat(hMatch[1]);
-                }
+            const headlessPercentMatch = fullText.match(/(\d+)%\s*headless:/i);
+            if (headlessPercentMatch) results.headless.headlessPercent = parseInt(headlessPercentMatch[1]);
 
-                results.rawSections.headless = headlessSection.innerText.substring(0, 2000);
-            }
+            const stealthMatch = fullText.match(/(\d+)%\s*stealth:/i);
+            if (stealthMatch) results.headless.stealth = parseInt(stealthMatch[1]);
 
             // === RESISTANCE ===
-            const resistanceSection = document.getElementById('resistance') ||
-                                      document.querySelector('[id*="resistance"]');
-            if (resistanceSection) {
-                const text = resistanceSection.innerText.toLowerCase();
+            const privacyMatch = fullText.match(/privacy:\s*(\w+)/i);
+            if (privacyMatch) results.resistance.privacy = privacyMatch[1];
 
-                // Privacy
-                if (text.includes('privacy')) {
-                    const privacyMatch = text.match(/privacy[:\s]+([a-z]+)/i);
-                    if (privacyMatch) results.resistance.privacy = privacyMatch[1];
+            const securityMatch = fullText.match(/security:\s*(\w+)/i);
+            if (securityMatch) results.resistance.security = securityMatch[1];
+
+            const modeMatch = fullText.match(/mode:\s*(\w+)/i);
+            if (modeMatch) results.resistance.mode = modeMatch[1];
+
+            const extensionMatch = fullText.match(/extension:\s*(\w+)/i);
+            if (extensionMatch) results.resistance.extension = extensionMatch[1];
+
+            // === WORKER (основной источник hardware/browser данных) ===
+            const workerSection = fullText.match(/Worker[a-f0-9]*\s*([\s\S]*?)(?=\d+\.\d+ms\s+WebGL|$)/i);
+            if (workerSection) {
+                const workerText = workerSection[1];
+
+                // GPU
+                const gpuVendorMatch = workerText.match(/gpu:\s*\n*([^\n]+)\n*([^\n]+)/i);
+                if (gpuVendorMatch) {
+                    results.hardware.gpuVendor = gpuVendorMatch[1].trim();
+                    results.hardware.gpu = gpuVendorMatch[2].trim();
                 }
 
-                // Security
-                if (text.includes('security')) {
-                    const secMatch = text.match(/security[:\s]+([a-z]+)/i);
-                    if (secMatch) results.resistance.security = secMatch[1];
+                // Альтернативный формат GPU (ANGLE)
+                const angleMatch = workerText.match(/ANGLE\s*\([^)]+\)/i);
+                if (angleMatch && !results.hardware.gpu) {
+                    results.hardware.gpu = angleMatch[0];
                 }
 
-                // Mode
-                if (text.includes('mode')) {
-                    const modeMatch = text.match(/mode[:\s]+([a-z]+)/i);
-                    if (modeMatch) results.resistance.mode = modeMatch[1];
+                // User Agent
+                const uaMatch = workerText.match(/userAgent:\s*\n*(?:ua reduction\n*)?([^\n]+)/i);
+                if (uaMatch) results.browser.userAgent = uaMatch[1].trim();
+
+                // Device/Platform
+                const deviceMatch = workerText.match(/device:\s*\n*([^\n]+)\n*([^\n]+)/i);
+                if (deviceMatch) {
+                    results.hardware.device = deviceMatch[1].trim();
+                    results.hardware.platform = deviceMatch[2].trim();
                 }
 
-                // Extension detection
-                if (text.includes('extension')) {
-                    results.resistance.extension = text.includes('extension detected') ||
-                                                   text.includes('extensions: true');
+                // Cores and RAM
+                const coresMatch = workerText.match(/cores:\s*(\d+)/i);
+                if (coresMatch) results.hardware.cpuCores = parseInt(coresMatch[1]);
+
+                const ramMatch = workerText.match(/ram:\s*(\d+)/i);
+                if (ramMatch) results.hardware.memory = parseInt(ramMatch[1]);
+
+                // Language/Timezone from Worker
+                const langTzMatch = workerText.match(/lang\/timezone:\s*\n*([^\n]+)\n*([^\n]+)/i);
+                if (langTzMatch) {
+                    results.browser.language = langTzMatch[1].trim();
+                    const tzParts = langTzMatch[2].match(/([^\(]+)\s*\(([^)]+)\)/);
+                    if (tzParts) {
+                        results.browser.timezone = tzParts[1].trim();
+                        results.browser.timezoneOffset = tzParts[2].trim();
+                    }
                 }
 
-                results.rawSections.resistance = resistanceSection.innerText.substring(0, 2000);
+                // Confidence
+                const confMatch = workerText.match(/confidence:\s*(\w+)/i);
+                if (confMatch) results.worker.confidence = confMatch[1];
             }
 
-            // === LIES (подмены) ===
-            const liesSection = document.getElementById('lies') ||
-                               document.querySelector('[id*="lies"], [class*="lies"]');
+            // === TIMEZONE (отдельная секция) ===
+            const tzSection = fullText.match(/Timezone[a-f0-9]*\s*\n*([^\n]+)\n*([^\n]+)/i);
+            if (tzSection) {
+                if (!results.browser.timezone) {
+                    results.browser.timezone = tzSection[1].trim() + ', ' + tzSection[2].trim();
+                }
+            }
+
+            // === WebRTC ===
+            const webrtcSection = fullText.match(/WebRTC[a-f0-9]*\s*([\s\S]*?)(?=\d+\.\d+ms\s+Timezone|$)/i);
+            if (webrtcSection) {
+                const rtcText = webrtcSection[1];
+
+                // IP
+                const ipMatch = rtcText.match(/ip:\s*([0-9.]+)/i);
+                if (ipMatch) results.network.ip = ipMatch[1];
+
+                // Devices
+                const devicesMatch = rtcText.match(/devices\s*\((\d+)\):\s*\n*([^\n]+)/i);
+                if (devicesMatch) {
+                    results.network.webrtc = `devices: ${devicesMatch[1]} (${devicesMatch[2].trim()})`;
+                }
+            }
+
+            // === CANVAS ===
+            const canvasSection = fullText.match(/Canvas\s*2d([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Fonts|$)/i);
+            if (canvasSection) {
+                results.fingerprints.canvasHash = canvasSection[1];
+                results.fingerprints.canvas = canvasSection[2].substring(0, 500).trim();
+            }
+
+            // === WebGL ===
+            const webglSection = fullText.match(/WebGL([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Screen|$)/i);
+            if (webglSection) {
+                results.fingerprints.webglHash = webglSection[1];
+                const wglText = webglSection[2];
+
+                // GPU from WebGL section
+                const wglGpuMatch = wglText.match(/gpu:[^\n]*confidence:\s*\w+\s*\n*([^\n]+)\n*([^\n]+)/i);
+                if (wglGpuMatch && !results.hardware.gpu) {
+                    results.hardware.gpuVendor = wglGpuMatch[1].trim();
+                    results.hardware.gpu = wglGpuMatch[2].trim();
+                }
+
+                results.fingerprints.webgl = wglText.substring(0, 500).trim();
+            }
+
+            // === AUDIO ===
+            const audioSection = fullText.match(/Audio([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Speech|$)/i);
+            if (audioSection) {
+                results.fingerprints.audioHash = audioSection[1];
+                const audioText = audioSection[2];
+
+                const sumMatch = audioText.match(/sum:\s*([0-9.]+)/i);
+                if (sumMatch) {
+                    results.fingerprints.audio = `sum: ${sumMatch[1]}`;
+                }
+            }
+
+            // === FONTS ===
+            const fontsSection = fullText.match(/Fonts([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+DOMRect|$)/i);
+            if (fontsSection) {
+                results.fingerprints.fontsHash = fontsSection[1];
+                const fontsText = fontsSection[2];
+
+                const loadMatch = fontsText.match(/load\s*\(([^)]+)\)/i);
+                if (loadMatch) {
+                    results.fingerprints.fonts = `load: ${loadMatch[1]}`;
+                }
+            }
+
+            // === SCREEN ===
+            const screenSection = fullText.match(/Screen([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Canvas|$)/i);
+            if (screenSection) {
+                results.fingerprints.screenHash = screenSection[1];
+                const screenText = screenSection[2];
+
+                const screenMatch = screenText.match(/screen:\s*(\d+\s*x\s*\d+)/i);
+                if (screenMatch) {
+                    results.fingerprints.screen = screenMatch[1];
+                }
+
+                const touchMatch = screenText.match(/touch:\s*(\w+)/i);
+                if (touchMatch) {
+                    results.fingerprints.screen = (results.fingerprints.screen || '') + `, touch: ${touchMatch[1]}`;
+                }
+            }
+
+            // === NAVIGATOR (дополнительно) ===
+            const navSection = fullText.match(/Navigator([a-f0-9]*)\s*([\s\S]*?)(?=Status|$)/i);
+            if (navSection) {
+                const navText = navSection[2];
+
+                if (!results.browser.language) {
+                    const langMatch = navText.match(/lang:\s*([^\n]+)/i);
+                    if (langMatch) results.browser.language = langMatch[1].trim();
+                }
+
+                if (!results.hardware.cpuCores) {
+                    const coresMatch = navText.match(/cores:\s*(\d+)/i);
+                    if (coresMatch) results.hardware.cpuCores = parseInt(coresMatch[1]);
+                }
+            }
+
+            // === LIES ===
+            const liesSection = document.querySelector('.lies-list, [class*="lies"]');
             if (liesSection) {
-                const lieItems = liesSection.querySelectorAll('li, .lie-item, [class*="lie"]');
-                results.lies.count = lieItems.length;
-                lieItems.forEach(li => {
+                const items = liesSection.querySelectorAll('li, .lie-item');
+                results.lies.count = items.length;
+                items.forEach(li => {
                     const text = li.textContent.trim();
                     if (text && text.length < 200) {
                         results.lies.list.push(text);
                     }
                 });
-                results.rawSections.lies = liesSection.innerText.substring(0, 2000);
             }
 
-            // === TRASH (аномалии) ===
-            const trashSection = document.getElementById('trash') ||
-                                document.querySelector('[id*="trash"], [class*="trash"]');
+            // === TRASH ===
+            const trashSection = document.querySelector('.trash-list, [class*="trash"]');
             if (trashSection) {
-                const trashItems = trashSection.querySelectorAll('li, .trash-item');
-                results.trash.count = trashItems.length;
-                trashItems.forEach(ti => {
+                const items = trashSection.querySelectorAll('li, .trash-item');
+                results.trash.count = items.length;
+                items.forEach(ti => {
                     const text = ti.textContent.trim();
                     if (text && text.length < 200) {
                         results.trash.list.push(text);
                     }
                 });
-                results.rawSections.trash = trashSection.innerText.substring(0, 2000);
             }
 
-            // === CANVAS ===
-            const canvasSection = document.getElementById('canvas') ||
-                                 document.querySelector('[id*="canvas-2d"], [id*="canvas"]');
-            if (canvasSection) {
-                results.fingerprints.canvas = canvasSection.innerText.substring(0, 1000);
-            }
-
-            // === WebGL ===
-            const webglSection = document.getElementById('webgl') ||
-                                document.querySelector('[id*="webgl"]');
-            if (webglSection) {
-                const gpuMatch = webglSection.innerText.match(/ANGLE[^)]+\)/i) ||
-                               webglSection.innerText.match(/renderer[:\s]+([^\n]+)/i);
-                if (gpuMatch) results.hardware.gpu = gpuMatch[0];
-                results.fingerprints.webgl = webglSection.innerText.substring(0, 1000);
-            }
-
-            // === Audio ===
-            const audioSection = document.getElementById('audio') ||
-                                document.querySelector('[id*="audio"]');
-            if (audioSection) {
-                results.fingerprints.audio = audioSection.innerText.substring(0, 500);
-            }
-
-            // === Navigator ===
-            const navSection = document.getElementById('navigator') ||
-                              document.querySelector('[id*="navigator"]');
-            if (navSection) {
-                const text = navSection.innerText;
-
-                // User Agent
-                const uaMatch = text.match(/userAgent[:\s]+([^\n]+)/i);
-                if (uaMatch) results.browser.userAgent = uaMatch[1].trim();
-
-                // Platform
-                const platMatch = text.match(/platform[:\s]+([^\n]+)/i);
-                if (platMatch) results.hardware.platform = platMatch[1].trim();
-
-                // Language
-                const langMatch = text.match(/language[:\s]+([^\n]+)/i);
-                if (langMatch) results.browser.language = langMatch[1].trim();
-
-                // Hardware concurrency (CPU cores)
-                const cpuMatch = text.match(/hardwareConcurrency[:\s]+(\d+)/i);
-                if (cpuMatch) results.hardware.cpuCores = parseInt(cpuMatch[1]);
-
-                // Device memory
-                const memMatch = text.match(/deviceMemory[:\s]+(\d+)/i);
-                if (memMatch) results.hardware.memory = parseInt(memMatch[1]);
-
-                results.rawSections.navigator = text.substring(0, 2000);
-            }
-
-            // === Timezone ===
-            const tzSection = document.getElementById('timezone') ||
-                             document.querySelector('[id*="timezone"]');
-            if (tzSection) {
-                results.browser.timezone = tzSection.innerText.substring(0, 500);
-            }
-
-            // === Screen ===
-            const screenSection = document.getElementById('screen') ||
-                                 document.querySelector('[id*="screen"]');
-            if (screenSection) {
-                results.fingerprints.screen = screenSection.innerText.substring(0, 500);
-            }
-
-            // === WebRTC ===
-            const rtcSection = document.getElementById('webrtc') ||
-                              document.querySelector('[id*="webrtc"]');
-            if (rtcSection) {
-                results.network.webrtc = rtcSection.innerText.substring(0, 500);
-            }
-
-            // === CSS Media ===
-            const cssSection = document.getElementById('css-media') ||
-                              document.querySelector('[id*="css"], [id*="media"]');
-            if (cssSection) {
-                results.fingerprints.cssMedia = cssSection.innerText.substring(0, 500);
-            }
-
-            // === Собираем все секции для raw данных ===
+            // === Собираем все секции с ID для raw данных ===
             document.querySelectorAll('[id]').forEach(el => {
                 const id = el.id;
-                if (id && !results.rawSections[id] && el.innerText.length > 10) {
-                    results.rawSections[id] = el.innerText.substring(0, 1500);
+                if (id && el.innerText.length > 10) {
+                    results.rawSections[id] = el.innerText.substring(0, 3000);
                 }
             });
 
@@ -306,7 +356,7 @@
             console.error('[CreepJS Content] Ошибка парсинга:', e);
         }
 
-        console.log('[CreepJS Content] Результаты:', results);
+        console.log('[CreepJS Content] Результаты:', JSON.stringify(results, null, 2));
         return results;
     }
 

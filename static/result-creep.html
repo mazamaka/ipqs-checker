@@ -394,6 +394,82 @@
                         <span class="info-label">Extension</span>
                         <span class="info-value" id="extensionDetected">-</span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Chromium</span>
+                        <span class="info-value" id="chromiumDetected">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Hardware</h3>
+                    <div class="info-row">
+                        <span class="info-label">GPU</span>
+                        <span class="info-value" id="gpuInfo" style="font-size: 0.8em; word-break: break-word;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CPU Cores</span>
+                        <span class="info-value" id="cpuCores">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">RAM</span>
+                        <span class="info-value" id="ramInfo">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Platform</span>
+                        <span class="info-value" id="platformInfo">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Browser</h3>
+                    <div class="info-row">
+                        <span class="info-label">User Agent</span>
+                        <span class="info-value" id="userAgentInfo" style="font-size: 0.75em; word-break: break-word;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Language</span>
+                        <span class="info-value" id="languageInfo">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Timezone</span>
+                        <span class="info-value" id="timezoneInfo">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Network</h3>
+                    <div class="info-row">
+                        <span class="info-label">IP (WebRTC)</span>
+                        <span class="info-value" id="webrtcIp">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Devices</span>
+                        <span class="info-value" id="webrtcDevices">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Fingerprints</h3>
+                    <div class="info-row">
+                        <span class="info-label">Screen</span>
+                        <span class="info-value" id="screenInfo">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Canvas</span>
+                        <span class="info-value" id="canvasHash" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">WebGL</span>
+                        <span class="info-value" id="webglHash" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Audio</span>
+                        <span class="info-value" id="audioInfo" style="font-size: 0.8em;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Fonts</span>
+                        <span class="info-value" id="fontsInfo" style="font-size: 0.8em;">-</span>
+                    </div>
                 </div>
 
                 <div class="info-card">
@@ -403,8 +479,8 @@
                         <span class="info-value" id="calcTime">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">CreepJS Version</span>
-                        <span class="info-value" id="creepVersion">-</span>
+                        <span class="info-label">Confidence</span>
+                        <span class="info-value" id="confidenceInfo">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Source</span>
@@ -526,14 +602,43 @@
 
                 // Resistance
                 const resistance = fp.resistance || {};
+                const headlessData = fp.headless || {};
                 document.getElementById('privacyMode').textContent = summary.privacy || resistance.privacy || '-';
                 document.getElementById('securityMode').textContent = summary.security || resistance.security || '-';
                 document.getElementById('browserMode').textContent = summary.mode || resistance.mode || '-';
                 document.getElementById('extensionDetected').textContent = resistance.extension || '-';
+                document.getElementById('chromiumDetected').textContent = headlessData.chromium !== null ? (headlessData.chromium ? 'true' : 'false') : '-';
+
+                // Hardware
+                const hardware = fp.hardware || {};
+                document.getElementById('gpuInfo').textContent = hardware.gpu || hardware.gpuVendor || '-';
+                document.getElementById('cpuCores').textContent = hardware.cpuCores || '-';
+                document.getElementById('ramInfo').textContent = hardware.memory ? hardware.memory + ' GB' : '-';
+                document.getElementById('platformInfo').textContent = hardware.platform || hardware.device || '-';
+
+                // Browser
+                const browser = fp.browser || {};
+                document.getElementById('userAgentInfo').textContent = browser.userAgent || '-';
+                document.getElementById('languageInfo').textContent = browser.language || '-';
+                document.getElementById('timezoneInfo').textContent = browser.timezone || '-';
+
+                // Network
+                const network = fp.network || {};
+                document.getElementById('webrtcIp').textContent = network.ip || '-';
+                document.getElementById('webrtcDevices').textContent = network.webrtc || '-';
+
+                // Fingerprints
+                const fingerprints = fp.fingerprints || {};
+                document.getElementById('screenInfo').textContent = fingerprints.screen || '-';
+                document.getElementById('canvasHash').textContent = fingerprints.canvasHash || '-';
+                document.getElementById('webglHash').textContent = fingerprints.webglHash || '-';
+                document.getElementById('audioInfo').textContent = fingerprints.audio || fingerprints.audioHash || '-';
+                document.getElementById('fontsInfo').textContent = fingerprints.fonts || fingerprints.fontsHash || '-';
 
                 // Technical
+                const worker = fp.worker || {};
                 document.getElementById('calcTime').textContent = (summary.time_ms || fp.timeMs || 0) + ' ms';
-                document.getElementById('creepVersion').textContent = summary.version || fp.version || '-';
+                document.getElementById('confidenceInfo').textContent = worker.confidence || '-';
                 document.getElementById('source').textContent = data.source || '-';
                 document.getElementById('timestamp').textContent = formatTimestamp(data.timestamp);
 
