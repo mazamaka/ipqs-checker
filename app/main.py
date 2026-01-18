@@ -151,6 +151,15 @@ async def result_fp_page():
     return HTMLResponse(content="<h1>Fingerprint Pro Results</h1><p>Page not found</p>")
 
 
+@app.get("/result-creep", response_class=HTMLResponse)
+async def result_creep_page():
+    """Result page for CreepJS"""
+    html_file = STATIC_DIR / "result-creep.html"
+    if html_file.exists():
+        return HTMLResponse(content=html_file.read_text())
+    return HTMLResponse(content="<h1>CreepJS Results</h1><p>Page not found</p>")
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -611,6 +620,101 @@ async def extension_report_fp(request: Request):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Fingerprint Pro error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+# Store for CreepJS reports (TTL = 1 hour cache)
+creepjs_reports: TTLCache = TTLCache(maxsize=1000, ttl=3600)
+
+
+@app.post("/api/extension/report-creep")
+@limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
+async def extension_report_creep(request: Request):
+    """Receive CreepJS fingerprint data from browser extension"""
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "default")
+        fingerprint = data.get("fingerprint", {})
+        source = data.get("source", "unknown")
+
+        # Extract key identifiers from CreepJS response
+        fp_id = fingerprint.get("fpId", "")
+        fuzzy_hash = fingerprint.get("fuzzyHash", "")
+        time_ms = fingerprint.get("timeMs", 0)
+        headless = fingerprint.get("headless", {})
+        resistance = fingerprint.get("resistance", {})
+        version = fingerprint.get("version", "unknown")
+
+        # Headless detection metrics
+        stealth_score = headless.get("stealth", 0)
+        like_headless = headless.get("likeHeadless", 0)
+        headless_percent = headless.get("headless", 0)
+
+        # Build response data
+        response_data = {
+            "fingerprint": fingerprint,
+            "timestamp": datetime.utcnow().isoformat(),
+            "source": source,
+            "service": "creepjs",
+            "summary": {
+                "fp_id": fp_id,
+                "fuzzy_hash": fuzzy_hash,
+                "time_ms": time_ms,
+                "stealth_score": stealth_score,
+                "like_headless": like_headless,
+                "headless_percent": headless_percent,
+                "privacy": resistance.get("privacy"),
+                "security": resistance.get("security"),
+                "mode": resistance.get("mode"),
+                "version": version,
+            }
+        }
+
+        # Save to PostgreSQL for persistent storage
+        check_id = None
+        try:
+            async with db.session() as db_session:
+                from app.models.check import Check
+
+                check = Check(
+                    session_id=session_id,
+                    service="creepjs",
+                    source=source,
+                    guid=fp_id,
+                    raw_response=response_data,  # Store full response
+                )
+                db_session.add(check)
+                await db_session.commit()
+                await db_session.refresh(check)
+                check_id = check.id
+                response_data["check_id"] = check_id
+                logger.info(f"Saved CreepJS check {check_id} to database")
+        except Exception as db_error:
+            logger.error(f"Error saving CreepJS to database: {db_error}")
+
+        # Store in memory cache for quick access
+        creepjs_reports[session_id] = response_data
+        extension_reports[session_id] = response_data
+
+        # Log to visitors file (backup)
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "service": "creepjs",
+            "fp_id": fp_id,
+            "stealth_score": stealth_score,
+            "like_headless": like_headless,
+            "version": version,
+        }
+        with open(VISITORS_LOG, "a") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        logger.info(f"Received CreepJS for session {session_id}")
+        logger.info(f"FP ID: {fp_id}, Stealth: {stealth_score}%, Version: {version}")
+
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"CreepJS error: {e}")
         return JSONResponse({"error": str(e)}, status_code=400)
 
 

@@ -302,6 +302,97 @@
             .nav-links { display: none; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
         }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0 8px;
+        }
+        .modal-close:hover {
+            color: var(--text);
+        }
+        .modal-body {
+            padding: 20px;
+            overflow: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .json-content {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 60vh;
+            overflow: auto;
+        }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover {
+            background: #2a2a3a;
+            text-decoration: none;
+        }
+        .btn-icon {
+            padding: 4px 8px;
+            font-size: 0.75em;
+            vertical-align: middle;
+        }
+        .copy-success {
+            color: var(--success);
+            font-size: 0.85em;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -324,5 +415,56 @@
 
         {% block content %}{% endblock %}
     </div>
+
+    <!-- JSON Modal -->
+    <div class="modal-overlay" id="jsonModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Raw JSON Response</span>
+                <button class="modal-close" onclick="closeJsonModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre class="json-content" id="jsonContent"></pre>
+            </div>
+            <div class="modal-footer">
+                <span class="copy-success" id="copySuccess" style="display: none;">Скопировано!</span>
+                <button class="btn btn-secondary" onclick="copyJson()">Копировать</button>
+                <button class="btn btn-primary" onclick="closeJsonModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentJsonData = '';
+
+        function showJsonModal(jsonData) {
+            currentJsonData = typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData, null, 2);
+            document.getElementById('jsonContent').textContent = currentJsonData;
+            document.getElementById('jsonModal').classList.add('active');
+            document.getElementById('copySuccess').style.display = 'none';
+        }
+
+        function closeJsonModal() {
+            document.getElementById('jsonModal').classList.remove('active');
+        }
+
+        function copyJson() {
+            navigator.clipboard.writeText(currentJsonData).then(() => {
+                const successEl = document.getElementById('copySuccess');
+                successEl.style.display = 'inline';
+                setTimeout(() => { successEl.style.display = 'none'; }, 2000);
+            });
+        }
+
+        // Close modal on overlay click
+        document.getElementById('jsonModal').addEventListener('click', function(e) {
+            if (e.target === this) closeJsonModal();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeJsonModal();
+        });
+    </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Dashboard</h1>
-    <p>Обзор проверок IPQS и Fingerprint Pro</p>
+    <p>Обзор проверок IPQS, Fingerprint Pro и CreepJS</p>
 </div>
 
 <!-- Services Stats -->
@@ -15,6 +15,10 @@
     <div class="stat-card" style="border-left: 3px solid #ef4444;">
         <div class="stat-value">{{ stats.services.fingerprint_pro if stats.services else 0 }}</div>
         <div class="stat-label">FP Pro проверок</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #10b981;">
+        <div class="stat-value">{{ stats.services.creepjs if stats.services else 0 }}</div>
+        <div class="stat-label">CreepJS проверок</div>
     </div>
     <div class="stat-card" style="border-left: 3px solid #f59e0b;">
         <div class="stat-value danger">{{ stats.services.fp_antidetect if stats.services else 0 }}</div>
@@ -108,6 +112,7 @@
                     <th>Страна</th>
                     <th>Score</th>
                     <th>Детали</th>
+                    <th>JSON</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,6 +122,8 @@
                     <td>
                         {% if check.service == 'fingerprint_pro' %}
                         <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
+                        {% elif check.service == 'creepjs' %}
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.3); color: #6ee7b7;">Creep</span>
                         {% else %}
                         <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
                         {% endif %}
@@ -134,6 +141,19 @@
                             {% else %}
                             <span class="badge badge-muted">N/A</span>
                             {% endif %}
+                        {% elif check.service == 'creepjs' %}
+                            {% if check.raw_response and check.raw_response.summary %}
+                                {% set stealth = check.raw_response.summary.stealth_score or 0 %}
+                                {% if stealth >= 50 %}
+                                <span class="badge badge-danger" title="Stealth: {{ stealth }}%">{{ stealth }}%</span>
+                                {% elif stealth >= 20 %}
+                                <span class="badge badge-warning" title="Stealth: {{ stealth }}%">{{ stealth }}%</span>
+                                {% else %}
+                                <span class="badge badge-success" title="Stealth: {{ stealth }}%">{{ stealth }}%</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
                         {% else %}
                         <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
                             {{ check.fraud_chance|fraud_score }}
@@ -142,17 +162,34 @@
                     </td>
                     <td>
                         {% if check.profile_id %}
-                        <a href="/admin/profile/{{ check.profile_id }}">#{{ check.profile_id }}</a>
-                        {% elif check.service == 'fingerprint_pro' and check.guid %}
-                        <span class="badge badge-muted" title="{{ check.guid }}">{{ check.guid[:8] }}...</span>
-                        {% else %}
+                        <a href="/admin/profile/{{ check.profile_id }}">
+                            {% if check.profile and check.profile.is_flagged %}
+                            <span class="flag-indicator flagged"></span>
+                            {% endif %}
+                            #{{ check.profile_id }}
+                        </a>
+                        {% endif %}
+                        {% if check.service == 'fingerprint_pro' and check.guid %}
+                        <span class="badge badge-muted" title="Visitor ID: {{ check.guid }}" style="{% if check.profile_id %}margin-left: 6px;{% endif %}">{{ check.guid[:8] }}...</span>
+                        {% elif check.service == 'creepjs' and check.guid %}
+                        <span class="badge badge-muted" title="FP ID: {{ check.guid }}" style="{% if check.profile_id %}margin-left: 6px;{% endif %}">{{ check.guid[:8] }}...</span>
+                        {% elif not check.profile_id %}
                         N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if check.raw_response %}
+                        <button class="btn btn-sm btn-secondary btn-icon" onclick='showJsonModal({{ check.raw_response | tojson }})' title="Показать JSON">
+                            { }
+                        </button>
+                        {% else %}
+                        <span class="badge badge-muted">—</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" style="text-align: center; color: var(--muted);">
+                    <td colspan="7" style="text-align: center; color: var(--muted);">
                         Нет данных
                     </td>
                 </tr>

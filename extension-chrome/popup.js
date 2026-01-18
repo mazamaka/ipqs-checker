@@ -45,11 +45,21 @@ document.addEventListener('DOMContentLoaded', function() {
         historyList.innerHTML = history.map(item => {
             const score = item.score || 0;
             const scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
-            const serviceLabel = item.service === 'fingerprint' ? 'FP Pro' : 'IPQS';
-            const scoreLabel = item.service === 'fingerprint' ? score : score + '%';
-            const resultUrl = item.service === 'fingerprint'
-                ? `${SERVER_URL}/result-fp?session=${item.sessionId}`
-                : `${SERVER_URL}/result?session=${item.sessionId}`;
+
+            let serviceLabel, scoreLabel, resultUrl;
+            if (item.service === 'fingerprint') {
+                serviceLabel = 'FP Pro';
+                scoreLabel = score;
+                resultUrl = `${SERVER_URL}/result-fp?session=${item.sessionId}`;
+            } else if (item.service === 'creepjs') {
+                serviceLabel = 'CreepJS';
+                scoreLabel = score + '%';
+                resultUrl = `${SERVER_URL}/result-creep?session=${item.sessionId}`;
+            } else {
+                serviceLabel = 'IPQS';
+                scoreLabel = score + '%';
+                resultUrl = `${SERVER_URL}/result?session=${item.sessionId}`;
+            }
 
             return `<a href="${resultUrl}" target="_blank" class="history-item">
                 <div class="history-item-left">
@@ -169,7 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (response && response.sessionId) {
-                    const siteName = selectedService === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                    let siteName;
+                    if (selectedService === 'fingerprint') {
+                        siteName = 'fingerprint.com';
+                    } else if (selectedService === 'creepjs') {
+                        siteName = 'CreepJS';
+                    } else {
+                        siteName = 'indeed.com';
+                    }
                     setStatus(`Открыта вкладка ${siteName}...`, 'loading');
                     pollForCompletion(response.sessionId, selectedService);
                 } else {
@@ -218,12 +235,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update status based on logs
                 if (currentLogs.length > 0) {
                     const lastLog = currentLogs[currentLogs.length - 1];
-                    if (lastLog.includes('fingerprint') || lastLog.includes('Fingerprint')) {
+                    if (lastLog.includes('fingerprint') || lastLog.includes('Fingerprint') || lastLog.includes('CreepJS')) {
                         setStatus('Получен fingerprint, отправка...', 'loading');
                     } else if (lastLog.includes('сервер')) {
                         setStatus('Отправка на сервер...', 'loading');
                     } else if (lastLog.includes('Открыта вкладка')) {
-                        const siteName = service === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                        let siteName;
+                        if (service === 'fingerprint') {
+                            siteName = 'fingerprint.com';
+                        } else if (service === 'creepjs') {
+                            siteName = 'CreepJS';
+                        } else {
+                            siteName = 'indeed.com';
+                        }
                         setStatus(`Ожидание загрузки ${siteName}...`, 'loading');
                     }
                 }
@@ -231,7 +255,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (attempts < maxAttempts) {
                     setTimeout(poll, 500);
                 } else {
-                    const siteName = service === 'fingerprint' ? 'fingerprint.com' : 'indeed.com';
+                    let siteName;
+                    if (service === 'fingerprint') {
+                        siteName = 'fingerprint.com';
+                    } else if (service === 'creepjs') {
+                        siteName = 'CreepJS';
+                    } else {
+                        siteName = 'indeed.com';
+                    }
                     setStatus(`Таймаут. Проверьте вкладку ${siteName}`, 'error');
                     setLoading(false);
                 }
@@ -261,6 +292,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusText += ' | Anti-detect: YES!';
                 setStatus(statusText, 'error');
             } else {
+                setStatus(statusText, 'success');
+            }
+        } else if (service === 'creepjs') {
+            // CreepJS result
+            const fpId = fingerprint.fpId;
+            const stealth = fingerprint.headless?.stealth || 0;
+
+            let statusText = `FP: ${fpId?.substring(0, 8)}...`;
+            if (stealth > 30) {
+                statusText += ` | Stealth: ${stealth}%`;
+                setStatus(statusText, 'error');
+            } else {
+                statusText += ` | Stealth: ${stealth}%`;
                 setStatus(statusText, 'success');
             }
         } else {

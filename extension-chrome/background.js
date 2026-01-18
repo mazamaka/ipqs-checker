@@ -1,10 +1,10 @@
 // Background Service Worker для Chrome MV3
-// Поддержка IPQS (indeed.com) и Fingerprint Pro (fingerprint.com)
+// Поддержка IPQS (indeed.com), Fingerprint Pro (fingerprint.com) и CreepJS
 const SERVER_URL = 'https://check.maxbob.xyz';
 
 let currentSessionId = null;
 let checkTabId = null;  // ID вкладки проверки
-let currentService = 'ipqs';  // 'ipqs' или 'fingerprint'
+let currentService = 'ipqs';  // 'ipqs', 'fingerprint' или 'creepjs'
 
 // Debug logging helper
 async function addLog(message) {
@@ -72,6 +72,29 @@ async function sendFingerprintToServer(sessionId, data) {
     }
 }
 
+// Отправка CreepJS данных на сервер
+async function sendCreepJSToServer(sessionId, data) {
+    addLog('Отправка CreepJS на сервер...');
+    try {
+        const response = await fetch(`${SERVER_URL}/api/extension/report-creep`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                fingerprint: data,
+                source: 'chrome-extension-creepjs'
+            })
+        });
+
+        const result = await response.json();
+        addLog(`Сервер ответил: ${JSON.stringify(result).substring(0, 100)}`);
+        return result;
+    } catch (error) {
+        addLog(`Ошибка отправки: ${error.message}`);
+        throw error;
+    }
+}
+
 // Очистка данных indeed.com
 async function clearIndeedData() {
     addLog('Очистка данных indeed.com...');
@@ -108,14 +131,38 @@ async function clearFingerprintData() {
     }
 }
 
+// Очистка данных CreepJS (extension page)
+async function clearCreepJSData() {
+    addLog('Очистка данных CreepJS...');
+    // CreepJS работает на extension page, очищать внешние данные не нужно
+    // Но очистим кэш abrahamjuliot.github.io если был доступ
+    try {
+        await chrome.browsingData.remove({
+            origins: ['https://abrahamjuliot.github.io']
+        }, {
+            cookies: true,
+            cache: true,
+            localStorage: true
+        });
+        addLog('Данные CreepJS очищены');
+    } catch (e) {
+        addLog(`Очистка CreepJS: ${e.message}`);
+    }
+}
+
 // Обработка завершения проверки
 async function handleCheckComplete(sessionId, lastFingerprint, service) {
     addLog('Открываю страницу результатов...');
 
     // Формируем URL результатов
-    const resultUrl = service === 'fingerprint'
-        ? `${SERVER_URL}/result-fp?session=${sessionId}`
-        : `${SERVER_URL}/result?session=${sessionId}`;
+    let resultUrl;
+    if (service === 'fingerprint') {
+        resultUrl = `${SERVER_URL}/result-fp?session=${sessionId}`;
+    } else if (service === 'creepjs') {
+        resultUrl = `${SERVER_URL}/result-creep?session=${sessionId}`;
+    } else {
+        resultUrl = `${SERVER_URL}/result?session=${sessionId}`;
+    }
 
     // Редирект вкладки проверки на страницу результатов (вместо закрытия)
     if (checkTabId) {
@@ -136,8 +183,10 @@ async function handleCheckComplete(sessionId, lastFingerprint, service) {
     // Очищаем данные после проверки (в фоне)
     if (service === 'ipqs') {
         clearIndeedData();
-    } else {
+    } else if (service === 'fingerprint') {
         clearFingerprintData();
+    } else if (service === 'creepjs') {
+        clearCreepJSData();
     }
     addLog('Данные очищены после проверки');
 
@@ -162,6 +211,9 @@ async function addToHistory(sessionId, fingerprint, service) {
     let score;
     if (service === 'fingerprint') {
         score = fingerprint.products?.suspectScore?.data?.result || 0;
+    } else if (service === 'creepjs') {
+        // CreepJS не имеет единого score, используем headless.stealth как индикатор
+        score = fingerprint.headless?.stealth || 0;
     } else {
         score = fingerprint.fraud_chance || 0;
     }
@@ -243,6 +295,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ status: 'ok' });
     }
 
+    // CreepJS данные от creep-runner
+    if (message.type === 'CREEPJS_DATA') {
+        chrome.storage.local.get(['sessionId', 'currentService']).then(data => {
+            const sessionId = data.sessionId || currentSessionId;
+            if (!sessionId) {
+                addLog('Ошибка: sessionId не найден!');
+                return;
+            }
+            currentSessionId = sessionId;
+
+            const creepData = message.data;
+
+            addLog(`Получен CreepJS для сессии ${sessionId}`);
+            addLog(`FP ID: ${creepData.fpId}`);
+            addLog(`Headless stealth: ${creepData.headless?.stealth}%`);
+            addLog(`Version: ${creepData.version}`);
+
+            sendCreepJSToServer(sessionId, creepData)
+                .then(() => handleCheckComplete(sessionId, creepData, 'creepjs'))
+                .catch(err => {
+                    addLog(`Ошибка: ${err.message}`);
+                    chrome.storage.local.set({ checkComplete: true, checkError: err.message });
+                });
+        });
+
+        sendResponse({ status: 'ok' });
+    }
+
+    // CreepJS ошибка
+    if (message.type === 'CREEPJS_ERROR') {
+        addLog(`CreepJS ошибка: ${message.error}`);
+        chrome.storage.local.set({ checkComplete: true, checkError: message.error });
+        sendResponse({ status: 'ok' });
+    }
+
     // Запуск проверки
     if (message.type === 'START_CHECK') {
         const service = message.service || 'ipqs';
@@ -258,11 +345,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             checkError: null
         });
 
-        // Очищаем данные и открываем нужный сайт
-        const clearFn = service === 'fingerprint' ? clearFingerprintData : clearIndeedData;
-        const checkUrl = service === 'fingerprint'
-            ? 'https://fingerprint.com/'
-            : 'https://secure.indeed.com/auth';
+        // Определяем функцию очистки и URL
+        let clearFn;
+        let checkUrl;
+
+        if (service === 'fingerprint') {
+            clearFn = clearFingerprintData;
+            checkUrl = 'https://fingerprint.com/';
+        } else if (service === 'creepjs') {
+            clearFn = clearCreepJSData;
+            checkUrl = chrome.runtime.getURL('creep-runner.html');
+        } else {
+            clearFn = clearIndeedData;
+            checkUrl = 'https://secure.indeed.com/auth';
+        }
 
         clearFn().then(() => {
             addLog(`Открываю ${checkUrl}...`);

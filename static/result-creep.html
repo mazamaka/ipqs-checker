@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты проверки - CreepJS</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --muted: #6b7280;
+            --accent: #10b981;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: blobFloat 20s ease-in-out infinite;
+        }
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            bottom: -50px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(-30px, -20px) scale(1.02); }
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #10b981, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--muted); margin-top: 8px; }
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .loader {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--muted); }
+
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 800px) {
+            .score-section { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 500px) {
+            .score-section { grid-template-columns: 1fr; }
+        }
+        .score-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .score-value {
+            font-size: 3em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score-value.low { color: var(--success); }
+        .score-value.medium { color: var(--warning); }
+        .score-value.high { color: var(--danger); }
+        .score-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .score-desc {
+            color: var(--muted);
+            font-size: 0.75em;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+        .verdict {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.85em;
+        }
+        .verdict.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .verdict.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        /* FP ID card */
+        .fp-id-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .fp-id-card h2 {
+            color: var(--accent);
+            font-size: 1.2em;
+            margin-bottom: 12px;
+        }
+        .fp-id-value {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1em;
+            color: var(--text);
+            background: rgba(0,0,0,0.3);
+            padding: 12px 16px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+        .fuzzy-hash {
+            font-size: 0.75em;
+            color: var(--muted);
+            font-family: monospace;
+        }
+
+        /* Headless alert */
+        .headless-alert {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            border: 2px solid rgba(239, 68, 68, 0.5);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .headless-alert.detected {
+            animation: pulseAlert 2s infinite;
+        }
+        @keyframes pulseAlert {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.2); }
+        }
+        .headless-alert h2 {
+            color: var(--danger);
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+        .headless-alert p {
+            color: var(--text);
+            opacity: 0.8;
+        }
+        .headless-alert.safe {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+        .headless-alert.safe h2 {
+            color: var(--success);
+        }
+
+        /* Info grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .info-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .info-card h3 {
+            color: var(--accent);
+            font-size: 1em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--muted); font-size: 0.9em; }
+        .info-value { font-weight: 500; }
+        .info-value.true { color: var(--danger); }
+        .info-value.false { color: var(--success); }
+
+        /* Raw data */
+        .raw-section {
+            margin-top: 24px;
+        }
+        .raw-toggle {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: var(--text);
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .raw-toggle:hover {
+            border-color: var(--accent);
+        }
+        .raw-content {
+            display: none;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow: auto;
+        }
+        .raw-content.show { display: block; }
+        pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75em;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .version-info {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.8em;
+            margin-top: 24px;
+            padding-bottom: 20px;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-grid"></div>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>CreepJS Fingerprint</h1>
+            <p>Open-source headless & stealth detection</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loader"></div>
+            <p class="loading-text">Загрузка результатов...</p>
+        </div>
+
+        <div id="results" style="display: none;">
+            <!-- FP ID Card -->
+            <div class="fp-id-card" id="fpIdCard">
+                <h2>Fingerprint ID</h2>
+                <div class="fp-id-value" id="fpIdValue">-</div>
+                <div class="fuzzy-hash" id="fuzzyHash">Fuzzy: -</div>
+            </div>
+
+            <!-- Headless Alert -->
+            <div class="headless-alert safe" id="headlessAlert">
+                <h2 id="headlessTitle">Headless не обнаружен</h2>
+                <p id="headlessDesc">Браузер выглядит как обычный пользователь</p>
+            </div>
+
+            <!-- Score Cards -->
+            <div class="score-section">
+                <div class="score-card">
+                    <div class="score-value low" id="stealthScore">0%</div>
+                    <div class="score-label">Stealth Score</div>
+                    <div class="score-desc">Обнаружение stealth plugins</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-value low" id="headlessScore">0%</div>
+                    <div class="score-label">Headless</div>
+                    <div class="score-desc">Безголовый браузер</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-value low" id="likeHeadlessScore">0%</div>
+                    <div class="score-label">Like Headless</div>
+                    <div class="score-desc">Похож на headless</div>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Resistance Detection</h3>
+                    <div class="info-row">
+                        <span class="info-label">Privacy Mode</span>
+                        <span class="info-value" id="privacyMode">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Security</span>
+                        <span class="info-value" id="securityMode">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Browser Mode</span>
+                        <span class="info-value" id="browserMode">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Extension</span>
+                        <span class="info-value" id="extensionDetected">-</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Technical Details</h3>
+                    <div class="info-row">
+                        <span class="info-label">Calculation Time</span>
+                        <span class="info-value" id="calcTime">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CreepJS Version</span>
+                        <span class="info-value" id="creepVersion">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Source</span>
+                        <span class="info-value" id="source">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Timestamp</span>
+                        <span class="info-value" id="timestamp">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Raw Data -->
+            <div class="raw-section">
+                <button class="raw-toggle" onclick="toggleRaw()">
+                    <span>Raw Data</span>
+                    <span id="rawArrow">+</span>
+                </button>
+                <div class="raw-content" id="rawContent">
+                    <pre id="rawJson"></pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <p>Не удалось загрузить результаты</p>
+        </div>
+
+        <div class="version-info">
+            CreepJS Fingerprint Checker
+        </div>
+    </div>
+
+    <script>
+        function toggleRaw() {
+            const content = document.getElementById('rawContent');
+            const arrow = document.getElementById('rawArrow');
+            content.classList.toggle('show');
+            arrow.textContent = content.classList.contains('show') ? '-' : '+';
+        }
+
+        function getScoreClass(score) {
+            if (score >= 50) return 'high';
+            if (score >= 20) return 'medium';
+            return 'low';
+        }
+
+        function formatTimestamp(ts) {
+            if (!ts) return '-';
+            const d = new Date(ts);
+            return d.toLocaleString('ru-RU');
+        }
+
+        async function loadResults() {
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session');
+
+            if (!sessionId) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/extension/result/${sessionId}`);
+                const data = await response.json();
+
+                if (data.status === 'pending') {
+                    setTimeout(loadResults, 1000);
+                    return;
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+
+                const fp = data.fingerprint || {};
+                const summary = data.summary || {};
+
+                // FP ID
+                document.getElementById('fpIdValue').textContent = summary.fp_id || fp.fpId || '-';
+                document.getElementById('fuzzyHash').textContent = `Fuzzy: ${summary.fuzzy_hash || fp.fuzzyHash || '-'}`;
+
+                // Scores
+                const stealth = summary.stealth_score ?? fp.headless?.stealth ?? 0;
+                const headless = summary.headless_percent ?? fp.headless?.headless ?? 0;
+                const likeHeadless = summary.like_headless ?? fp.headless?.likeHeadless ?? 0;
+
+                document.getElementById('stealthScore').textContent = stealth + '%';
+                document.getElementById('stealthScore').className = 'score-value ' + getScoreClass(stealth);
+
+                document.getElementById('headlessScore').textContent = headless + '%';
+                document.getElementById('headlessScore').className = 'score-value ' + getScoreClass(headless);
+
+                document.getElementById('likeHeadlessScore').textContent = likeHeadless + '%';
+                document.getElementById('likeHeadlessScore').className = 'score-value ' + getScoreClass(likeHeadless);
+
+                // Headless Alert
+                const maxScore = Math.max(stealth, headless, likeHeadless);
+                const alertEl = document.getElementById('headlessAlert');
+                const titleEl = document.getElementById('headlessTitle');
+                const descEl = document.getElementById('headlessDesc');
+
+                if (maxScore >= 50) {
+                    alertEl.className = 'headless-alert detected';
+                    titleEl.textContent = 'Headless/Stealth обнаружен!';
+                    descEl.textContent = 'Браузер определён как автоматизированный или модифицированный';
+                } else if (maxScore >= 20) {
+                    alertEl.className = 'headless-alert';
+                    alertEl.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1))';
+                    alertEl.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+                    titleEl.textContent = 'Подозрительные признаки';
+                    titleEl.style.color = 'var(--warning)';
+                    descEl.textContent = 'Обнаружены некоторые признаки автоматизации';
+                } else {
+                    alertEl.className = 'headless-alert safe';
+                    titleEl.textContent = 'Headless не обнаружен';
+                    descEl.textContent = 'Браузер выглядит как обычный пользователь';
+                }
+
+                // Resistance
+                const resistance = fp.resistance || {};
+                document.getElementById('privacyMode').textContent = summary.privacy || resistance.privacy || '-';
+                document.getElementById('securityMode').textContent = summary.security || resistance.security || '-';
+                document.getElementById('browserMode').textContent = summary.mode || resistance.mode || '-';
+                document.getElementById('extensionDetected').textContent = resistance.extension || '-';
+
+                // Technical
+                document.getElementById('calcTime').textContent = (summary.time_ms || fp.timeMs || 0) + ' ms';
+                document.getElementById('creepVersion').textContent = summary.version || fp.version || '-';
+                document.getElementById('source').textContent = data.source || '-';
+                document.getElementById('timestamp').textContent = formatTimestamp(data.timestamp);
+
+                // Raw JSON
+                document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
+
+            } catch (e) {
+                console.error('Error loading results:', e);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        loadResults();
+    </script>
+</body>
+</html>

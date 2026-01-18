@@ -125,26 +125,64 @@
             <thead>
                 <tr>
                     <th>Время</th>
+                    <th>Сервис</th>
                     <th>IP</th>
-                    <th>Fraud Score</th>
+                    <th>Score</th>
                     <th>Proxy</th>
                     <th>VPN</th>
                     <th>Bot</th>
                     <th>OS Mismatch</th>
+                    <th>JSON</th>
                 </tr>
             </thead>
             <tbody>
                 {% for check in checks %}
                 <tr>
                     <td>{{ check.created_at|datetime }}</td>
+                    <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
+                        {% elif check.service == 'creepjs' %}
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.3); color: #6ee7b7;">Creep</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
+                        {% endif %}
+                    </td>
                     <td>{{ check.ip_address or 'N/A' }}</td>
                     <td>
+                        {% if check.service == 'fingerprint_pro' %}
+                            {% if check.raw_response and check.raw_response.summary %}
+                                {% if check.raw_response.summary.anti_detect_browser %}
+                                <span class="badge badge-danger">AD!</span>
+                                {% else %}
+                                <span class="badge badge-success">OK</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
+                        {% elif check.service == 'creepjs' %}
+                            {% if check.raw_response and check.raw_response.summary %}
+                                {% set stealth = check.raw_response.summary.stealth_score or 0 %}
+                                {% if stealth >= 50 %}
+                                <span class="badge badge-danger">{{ stealth }}%</span>
+                                {% elif stealth >= 20 %}
+                                <span class="badge badge-warning">{{ stealth }}%</span>
+                                {% else %}
+                                <span class="badge badge-success">{{ stealth }}%</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
+                        {% else %}
                         <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
                             {{ check.fraud_chance|fraud_score }}
                         </span>
+                        {% endif %}
                     </td>
                     <td>
-                        {% if check.proxy %}
+                        {% if check.service == 'fingerprint_pro' or check.service == 'creepjs' %}
+                        <span class="badge badge-muted">—</span>
+                        {% elif check.proxy %}
                         <span class="badge badge-danger">Yes</span>
                         {% else %}
                         <span class="badge badge-muted">No</span>
@@ -171,10 +209,19 @@
                         <span class="badge badge-muted">No</span>
                         {% endif %}
                     </td>
+                    <td>
+                        {% if check.raw_response %}
+                        <button class="btn btn-sm btn-secondary btn-icon" onclick='showJsonModal({{ check.raw_response | tojson }})' title="Показать JSON">
+                            { }
+                        </button>
+                        {% else %}
+                        <span class="badge badge-muted">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: var(--muted);">
+                    <td colspan="9" style="text-align: center; color: var(--muted);">
                         Нет проверок
                     </td>
                 </tr>
