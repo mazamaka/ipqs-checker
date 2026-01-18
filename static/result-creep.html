@@ -90,7 +90,7 @@
             75% { transform: translate(-30px, -20px) scale(1.02); }
         }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         .header {
             text-align: center;
             padding: 40px 0 30px;
@@ -139,7 +139,7 @@
             text-align: center;
         }
         .score-value {
-            font-size: 3em;
+            font-size: 3.5em;
             font-weight: 700;
             line-height: 1;
         }
@@ -157,36 +157,17 @@
             margin-top: 4px;
             opacity: 0.7;
         }
-
-        /* FP ID card */
-        .fp-id-card {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            text-align: center;
+        .verdict {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.85em;
         }
-        .fp-id-card h2 {
-            color: var(--accent);
-            font-size: 1.2em;
-            margin-bottom: 12px;
-        }
-        .fp-id-value {
-            font-family: 'Fira Code', monospace;
-            font-size: 1.1em;
-            color: var(--text);
-            background: rgba(0,0,0,0.3);
-            padding: 12px 16px;
-            border-radius: 8px;
-            word-break: break-all;
-            margin-bottom: 8px;
-        }
-        .fuzzy-hash {
-            font-size: 0.75em;
-            color: var(--muted);
-            font-family: monospace;
-        }
+        .verdict.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .verdict.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 
         /* Headless alert */
         .headless-alert {
@@ -220,166 +201,247 @@
         .headless-alert.safe h2 {
             color: var(--success);
         }
+        .headless-alert.warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+        .headless-alert.warning h2 {
+            color: var(--warning);
+        }
 
-        /* Info grid */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
+        /* FP ID Card */
+        .fp-id-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .fp-id-icon {
+            font-size: 2.5em;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(16, 185, 129, 0.15);
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .fp-id-content { flex: 1; }
+        .fp-id-label {
+            color: var(--muted);
+            font-size: 0.85em;
+            margin-bottom: 4px;
+        }
+        .fp-id-value {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 1.1em;
+            color: var(--accent);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .fp-id-value:hover { color: var(--text); }
+        .fp-id-fuzzy {
+            font-size: 0.8em;
+            color: var(--muted);
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .alerts {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 16px;
             margin-bottom: 24px;
         }
-        .info-card {
+        .alerts h3 {
+            color: var(--accent);
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            font-size: 0.85em;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .alert-item:hover {
+            background: rgba(16, 185, 129, 0.15);
+            transform: translateX(4px);
+        }
+        .alert-item.danger { border-left: 3px solid var(--danger); }
+        .alert-item.warning { border-left: 3px solid var(--warning); }
+        .alert-item.ok { border-left: 3px solid var(--success); opacity: 0.6; }
+        .alert-item.ok:hover { opacity: 1; }
+        .alert-item.unknown { border-left: 3px solid var(--muted); opacity: 0.7; }
+
+        .card {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
-        }
-        .info-card h3 {
-            color: var(--accent);
-            font-size: 1em;
             margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 0.95em;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        .info-row {
+        .card-badge {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--accent);
+            color: white;
+        }
+        .card-body { padding: 4px 0; }
+        .row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            align-items: flex-start;
+            padding: 10px 18px;
             border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
         }
-        .info-row:last-child { border-bottom: none; }
-        .info-label { color: var(--muted); font-size: 0.9em; }
-        .info-value { font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
-        .info-value.true { color: var(--danger); }
-        .info-value.false { color: var(--success); }
-        .info-value.mono { font-family: 'Fira Code', monospace; font-size: 0.75em; }
-
-        /* Section titles */
-        .section-title {
-            color: var(--accent);
-            font-size: 1.2em;
-            margin: 32px 0 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        /* Raw data */
-        .raw-section {
-            margin-top: 24px;
-        }
-        .raw-toggle {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 14px 32px;
-            color: var(--text);
-            cursor: pointer;
+        .row:last-child { border-bottom: none; }
+        .row:hover { background: rgba(255,255,255,0.02); }
+        .row.critical { background: rgba(239, 68, 68, 0.08); }
+        .row-left { display: flex; flex-direction: column; gap: 2px; }
+        .row-label {
+            color: var(--muted);
             font-size: 0.9em;
-            display: block;
-            margin: 0 auto;
-            text-align: center;
-            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .raw-toggle:hover {
-            border-color: var(--accent);
-            background: rgba(16, 185, 129, 0.1);
+        .row-hint {
+            font-size: 0.7em;
+            color: var(--muted);
+            opacity: 0.6;
         }
-        .raw-toggle.copied {
-            border-color: var(--success);
-            color: var(--success);
+        .row-value {
+            font-size: 0.9em;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .raw-content {
-            display: none;
+        .row-value:hover { color: var(--accent); }
+        .row-value.hash { font-size: 0.8em; color: var(--muted); }
+        .row-value.na { color: var(--warning); opacity: 0.8; }
+        .row-value.danger { color: var(--danger); }
+        .row-value.copied { color: var(--success) !important; }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .tag.yes { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .tag.no { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .tag.info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .critical-marker {
+            width: 6px;
+            height: 6px;
+            background: var(--danger);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .json-panel { margin-top: 24px; }
+        .json-toggle {
+            width: 100%;
+            padding: 14px;
             background: var(--card);
             border: 1px solid var(--border);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            padding: 20px;
-            max-height: 400px;
-            overflow: auto;
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .raw-content.show { display: block; }
-        pre {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.75em;
+        .json-toggle:hover { background: var(--border); }
+        .json-box {
+            display: none;
+            margin-top: 12px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8em;
+            overflow-x: auto;
             white-space: pre-wrap;
             word-break: break-all;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #8b949e;
         }
-
-        .version-info {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.8em;
-            margin-top: 24px;
-            padding-bottom: 20px;
-        }
+        .hidden { display: none; }
 
         .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            padding: 40px;
             border-radius: 12px;
-            padding: 20px;
             text-align: center;
-            color: var(--danger);
         }
-
-        /* Quick Nav Menu */
-        .quick-nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-        }
-        .quick-nav a {
-            padding: 8px 14px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 8px;
-            color: var(--text);
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
             text-decoration: none;
-            font-size: 0.85em;
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
         }
-        .quick-nav a:hover {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: var(--accent);
-        }
-        .quick-nav a.danger {
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.4);
-            color: var(--danger);
-        }
-        .quick-nav a.warning {
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.4);
-            color: var(--warning);
-        }
-        .quick-nav a.ok {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
-            color: var(--success);
-        }
-
-        /* Clickable values */
-        .info-value.clickable {
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .info-value.clickable:hover {
-            color: var(--accent);
-        }
-        .info-value.copied {
-            color: var(--success) !important;
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.8em;
         }
     </style>
 </head>
 <body>
+    <!-- Animated Background -->
     <div class="bg-animation">
         <div class="bg-grid"></div>
         <div class="blob blob-1"></div>
@@ -389,7 +451,7 @@
 
     <div class="container">
         <div class="header">
-            <h1>CreepJS Fingerprint</h1>
+            <h1>CreepJS Fingerprint Analysis</h1>
             <p>Open-source headless & stealth detection</p>
         </div>
 
@@ -398,711 +460,71 @@
             <p class="loading-text">Загрузка результатов...</p>
         </div>
 
-        <div id="results" style="display: none;">
-            <!-- FP ID Card -->
-            <div class="fp-id-card" id="fpIdCard">
-                <h2>Fingerprint ID</h2>
-                <div class="fp-id-value" id="fpIdValue">-</div>
-                <div class="fuzzy-hash" id="fuzzyHash">Fuzzy: -</div>
-            </div>
+        <div id="result" class="hidden"></div>
 
-            <!-- Headless Alert -->
-            <div class="headless-alert safe" id="headlessAlert">
-                <h2 id="headlessTitle">Headless не обнаружен</h2>
-                <p id="headlessDesc">Браузер выглядит как обычный пользователь</p>
-            </div>
-
-            <!-- Quick Nav Menu -->
-            <div class="quick-nav" id="quickNav">
-                <a href="#section-scores">Scores</a>
-                <a href="#section-detection">Detection</a>
-                <a href="#section-hardware">Hardware</a>
-                <a href="#section-navigator">Navigator</a>
-                <a href="#section-network">Network</a>
-                <a href="#section-fingerprints">Fingerprints</a>
-                <a href="#section-audio">Audio</a>
-                <a href="#section-speech">Speech & Media</a>
-                <a href="#section-technical">Technical</a>
-            </div>
-
-            <!-- Score Cards -->
-            <div class="score-section" id="section-scores">
-                <div class="score-card">
-                    <div class="score-value low" id="stealthScore">0%</div>
-                    <div class="score-label">Stealth Score</div>
-                    <div class="score-desc">Обнаружение stealth plugins</div>
-                </div>
-                <div class="score-card">
-                    <div class="score-value low" id="headlessScore">0%</div>
-                    <div class="score-label">Headless</div>
-                    <div class="score-desc">Безголовый браузер</div>
-                </div>
-                <div class="score-card">
-                    <div class="score-value low" id="likeHeadlessScore">0%</div>
-                    <div class="score-label">Like Headless</div>
-                    <div class="score-desc">Похож на headless</div>
-                </div>
-            </div>
-
-            <!-- Resistance & Detection -->
-            <h3 class="section-title" id="section-detection">Detection & Resistance</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Resistance Detection</h3>
-                    <div class="info-row">
-                        <span class="info-label">Privacy Mode</span>
-                        <span class="info-value" id="privacyMode">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Security</span>
-                        <span class="info-value" id="securityMode">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Browser Mode</span>
-                        <span class="info-value" id="browserMode">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Extension</span>
-                        <span class="info-value" id="extensionDetected">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Chromium</span>
-                        <span class="info-value" id="chromiumDetected">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Lies & Trash</h3>
-                    <div class="info-row">
-                        <span class="info-label">Lies Count</span>
-                        <span class="info-value" id="liesCount">0</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Trash Count</span>
-                        <span class="info-value" id="trashCount">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hardware & Browser -->
-            <h3 class="section-title" id="section-hardware">Hardware & Browser</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Hardware</h3>
-                    <div class="info-row">
-                        <span class="info-label">GPU Vendor</span>
-                        <span class="info-value" id="gpuVendor">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">GPU</span>
-                        <span class="info-value" id="gpuInfo" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">CPU Cores</span>
-                        <span class="info-value" id="cpuCores">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">RAM</span>
-                        <span class="info-value" id="ramInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Platform</span>
-                        <span class="info-value" id="platformInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Device</span>
-                        <span class="info-value" id="deviceInfo">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Browser</h3>
-                    <div class="info-row">
-                        <span class="info-label">User Agent</span>
-                        <span class="info-value" id="userAgentInfo" style="font-size: 0.7em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Language</span>
-                        <span class="info-value" id="languageInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Timezone</span>
-                        <span class="info-value" id="timezoneInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Vendor</span>
-                        <span class="info-value" id="browserVendor">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Navigator (Full) -->
-            <h3 class="section-title" id="section-navigator">Navigator</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Navigator Properties</h3>
-                    <div class="info-row">
-                        <span class="info-label">DNT</span>
-                        <span class="info-value" id="navDnt">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">GPC</span>
-                        <span class="info-value" id="navGpc">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Lang</span>
-                        <span class="info-value" id="navLang">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Platform</span>
-                        <span class="info-value" id="navPlatform">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Cores</span>
-                        <span class="info-value" id="navCores">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Memory</span>
-                        <span class="info-value" id="navMemory">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Max Touch Points</span>
-                        <span class="info-value" id="navTouchPoints">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Cookie Enabled</span>
-                        <span class="info-value" id="navCookieEnabled">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">PDF Viewer</span>
-                        <span class="info-value" id="navPdfViewer">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Navigator Data</h3>
-                    <div class="info-row">
-                        <span class="info-label">Vendor</span>
-                        <span class="info-value" id="navVendor">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Plugins</span>
-                        <span class="info-value" id="navPlugins" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">MimeTypes</span>
-                        <span class="info-value" id="navMimeTypes" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Permissions</span>
-                        <span class="info-value" id="navPermissions" style="font-size: 0.75em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">WebGPU</span>
-                        <span class="info-value" id="navWebgpu">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">UserAgentData</span>
-                        <span class="info-value" id="navUaData" style="font-size: 0.75em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Network & Status -->
-            <h3 class="section-title" id="section-network">Network & Status</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>WebRTC / Network</h3>
-                    <div class="info-row">
-                        <span class="info-label">IP (WebRTC)</span>
-                        <span class="info-value" id="webrtcIp">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Devices</span>
-                        <span class="info-value" id="webrtcDevices">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">RTT</span>
-                        <span class="info-value" id="statusRtt">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Downlink</span>
-                        <span class="info-value" id="statusDownlink">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Effective Type</span>
-                        <span class="info-value" id="statusEffectiveType">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Status (Battery & Available)</h3>
-                    <div class="info-row">
-                        <span class="info-label">Battery Level</span>
-                        <span class="info-value" id="batteryLevel">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Charging</span>
-                        <span class="info-value" id="batteryCharging">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Storage</span>
-                        <span class="info-value" id="availStorage">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Memory</span>
-                        <span class="info-value" id="availMemory">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Timing Resolution</span>
-                        <span class="info-value" id="availTimingRes">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Stack</span>
-                        <span class="info-value" id="availStack">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fingerprints -->
-            <h3 class="section-title" id="section-fingerprints">Fingerprints</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Canvas & WebGL</h3>
-                    <div class="info-row">
-                        <span class="info-label">Canvas Hash</span>
-                        <span class="info-value mono" id="canvasHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">WebGL Hash</span>
-                        <span class="info-value mono" id="webglHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Screen</span>
-                        <span class="info-value" id="screenInfo">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Audio & Fonts</h3>
-                    <div class="info-row">
-                        <span class="info-label">Audio Hash</span>
-                        <span class="info-value mono" id="audioHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Audio</span>
-                        <span class="info-value" id="audioInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Fonts Hash</span>
-                        <span class="info-value mono" id="fontsHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Fonts</span>
-                        <span class="info-value" id="fontsInfo">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DOMRect & SVGRect -->
-            <h3 class="section-title">DOMRect & SVGRect</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>DOMRect</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="domRectHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Elems A</span>
-                        <span class="info-value" id="domRectElemsA" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Elems B</span>
-                        <span class="info-value" id="domRectElemsB" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Range A</span>
-                        <span class="info-value" id="domRectRangeA" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Range B</span>
-                        <span class="info-value" id="domRectRangeB" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>SVGRect</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="svgRectHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">bBox</span>
-                        <span class="info-value" id="svgRectBbox" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">char</span>
-                        <span class="info-value" id="svgRectChar" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">subs</span>
-                        <span class="info-value" id="svgRectSubs" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">text</span>
-                        <span class="info-value" id="svgRectText" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Features & CSS Media -->
-            <h3 class="section-title">Features & CSS</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Features</h3>
-                    <div class="info-row">
-                        <span class="info-label">JS/DOM</span>
-                        <span class="info-value" id="featJsdom">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">CSS</span>
-                        <span class="info-value" id="featCss">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Window</span>
-                        <span class="info-value" id="featWindow">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>CSS Media Queries</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="cssMediaHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">@media</span>
-                        <span class="info-value" id="cssMediaMedia" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">matchMedia</span>
-                        <span class="info-value" id="cssMediaMatchMedia" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Touch Device</span>
-                        <span class="info-value" id="cssMediaTouch">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Screen Query</span>
-                        <span class="info-value" id="cssMediaScreen" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Computed Style, Math, Error -->
-            <h3 class="section-title">Computed Style, Math, Error</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Computed Style</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="compStyleHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Keys</span>
-                        <span class="info-value" id="compStyleKeys">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">System</span>
-                        <span class="info-value" id="compStyleSystem" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Math & Error</h3>
-                    <div class="info-row">
-                        <span class="info-label">Math Hash</span>
-                        <span class="info-value mono" id="mathHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Math Results</span>
-                        <span class="info-value" id="mathResults" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Error Hash</span>
-                        <span class="info-value mono" id="errorHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Error Results</span>
-                        <span class="info-value" id="errorResults" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Window & HTMLElement -->
-            <h3 class="section-title">Window & HTMLElement</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Window</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="windowHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Keys Count</span>
-                        <span class="info-value" id="windowKeysCount">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Keys</span>
-                        <span class="info-value" id="windowKeys" style="font-size: 0.75em;">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>HTMLElement</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="htmlElemHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Keys Count</span>
-                        <span class="info-value" id="htmlElemKeysCount">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Keys</span>
-                        <span class="info-value" id="htmlElemKeys" style="font-size: 0.75em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audio (Full) -->
-            <h3 class="section-title" id="section-audio">Audio Fingerprint</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Audio Values</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="audioFullHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Sum</span>
-                        <span class="info-value" id="audioSum">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Gain</span>
-                        <span class="info-value" id="audioGain">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Freq</span>
-                        <span class="info-value" id="audioFreq">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Time</span>
-                        <span class="info-value" id="audioTime">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Audio Data</h3>
-                    <div class="info-row">
-                        <span class="info-label">Trap</span>
-                        <span class="info-value" id="audioTrap">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Unique</span>
-                        <span class="info-value" id="audioUnique">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Data</span>
-                        <span class="info-value mono" id="audioData" style="font-size: 0.7em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Copy</span>
-                        <span class="info-value mono" id="audioCopy" style="font-size: 0.7em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Values</span>
-                        <span class="info-value mono" id="audioValues" style="font-size: 0.7em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Intl -->
-            <h3 class="section-title">Intl (Internationalization)</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Intl Data</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="intlHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Locale</span>
-                        <span class="info-value" id="intlLocale">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Date Format</span>
-                        <span class="info-value" id="intlDateFormat" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Number Format</span>
-                        <span class="info-value" id="intlNumberFormat">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Speech & Media -->
-            <h3 class="section-title" id="section-speech">Speech & Media</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Speech</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="speechHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Status</span>
-                        <span class="info-value" id="speechStatus">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Voices Count</span>
-                        <span class="info-value" id="speechVoicesCount">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Voices</span>
-                        <span class="info-value" id="speechVoices" style="font-size: 0.75em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Local</span>
-                        <span class="info-value" id="speechLocal" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Remote</span>
-                        <span class="info-value" id="speechRemote" style="font-size: 0.8em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Lang</span>
-                        <span class="info-value" id="speechLang">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Default</span>
-                        <span class="info-value" id="speechDefault">-</span>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Media Devices</h3>
-                    <div class="info-row">
-                        <span class="info-label">Hash</span>
-                        <span class="info-value mono" id="mediaHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Devices Count</span>
-                        <span class="info-value" id="mediaDevicesCount">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Devices</span>
-                        <span class="info-value" id="mediaDevices" style="font-size: 0.75em;">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Audio Input</span>
-                        <span class="info-value" id="mediaAudioInput">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Audio Output</span>
-                        <span class="info-value" id="mediaAudioOutput">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Video Input</span>
-                        <span class="info-value" id="mediaVideoInput">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Mimes</span>
-                        <span class="info-value" id="mediaMimes">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Mimes Hash</span>
-                        <span class="info-value mono" id="mediaMimesHash" style="font-size: 0.8em;">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technical Details -->
-            <h3 class="section-title" id="section-technical">Technical Details</h3>
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Worker & Timing</h3>
-                    <div class="info-row">
-                        <span class="info-label">Worker Hash</span>
-                        <span class="info-value mono" id="workerHash">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Confidence</span>
-                        <span class="info-value" id="confidenceInfo">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Calculation Time</span>
-                        <span class="info-value" id="calcTime">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Source</span>
-                        <span class="info-value" id="source">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Timestamp</span>
-                        <span class="info-value" id="timestamp">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Raw Data -->
-            <div class="raw-section">
-                <button class="raw-toggle" id="rawToggle" onclick="toggleRaw()">
-                    <span id="rawBtnText">Показать JSON</span>
-                </button>
-                <div class="raw-content" id="rawContent">
-                    <pre id="rawJson"></pre>
-                </div>
-            </div>
+        <div id="error" class="error hidden">
+            <div style="font-size: 1.2em; margin-bottom: 10px;">Результаты не найдены</div>
+            <div style="color: var(--muted);">Возможно, проверка ещё не завершена или сессия истекла</div>
+            <a href="/" class="btn">Попробовать снова</a>
         </div>
 
-        <div id="error" class="error" style="display: none;">
-            <p>Не удалось загрузить результаты</p>
-        </div>
-
-        <div class="version-info">
-            CreepJS Fingerprint Checker v4.4
+        <div class="footer">
+            CreepJS Fingerprint Analysis v4.5
         </div>
     </div>
 
     <script>
+        const sessionId = new URLSearchParams(window.location.search).get('session');
         let jsonData = null;
 
-        async function toggleRaw() {
-            const content = document.getElementById('rawContent');
-            const btn = document.getElementById('rawToggle');
-            const btnText = document.getElementById('rawBtnText');
-            const isHidden = !content.classList.contains('show');
+        const $ = id => document.getElementById(id);
 
-            content.classList.toggle('show');
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
 
-            if (isHidden && jsonData) {
-                // Копируем JSON при открытии
-                try {
-                    await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2));
-                    btn.classList.add('copied');
-                    btnText.textContent = 'JSON скопирован!';
-                    setTimeout(() => {
-                        btn.classList.remove('copied');
-                        btnText.textContent = 'Скрыть JSON';
-                    }, 1500);
-                } catch (e) {
-                    btnText.textContent = 'Скрыть JSON';
-                }
-            } else {
-                btnText.textContent = 'Показать JSON';
+        async function copyToClipboard(text, el) {
+            try {
+                await navigator.clipboard.writeText(text);
+                el.classList.add('copied');
+                setTimeout(() => { el.classList.remove('copied'); }, 1500);
+            } catch (e) {
+                console.error('Copy failed:', e);
             }
+        }
+
+        function tag(val, yesIsBad = true) {
+            if (val === true) return `<span class="tag ${yesIsBad ? 'yes' : 'no'}">Yes</span>`;
+            if (val === false) return `<span class="tag ${yesIsBad ? 'no' : 'yes'}">No</span>`;
+            return `<span class="tag info">N/A</span>`;
+        }
+
+        function row(label, value, hint = '', critical = false, isHash = false) {
+            const v = value ?? '-';
+            const isHTML = typeof v === 'string' && v.includes('<');
+            const isNA = !isHTML && (v === 'N/A' || v === '-' || v === 0 || v === '0' || v === '');
+            const rowCls = critical === 'danger' ? ' critical' : '';
+            const valCls = isHash ? ' hash' : '';
+            const statusCls = critical === 'danger' ? ' danger' : (isNA ? ' na' : '');
+            const marker = critical === 'danger' ? '<span class="critical-marker"></span>' : '';
+
+            let valueHtml;
+            if (isHTML) {
+                valueHtml = `<span class="row-value">${v}</span>`;
+            } else {
+                const safeVal = escapeHtml(String(v));
+                const copyVal = String(v).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                valueHtml = `<span class="row-value${valCls}${statusCls}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${safeVal}</span>`;
+            }
+
+            return `<div class="row${rowCls}">
+                <div class="row-left">
+                    <span class="row-label">${marker}${label}</span>
+                    ${hint ? `<span class="row-hint">${hint}</span>` : ''}
+                </div>
+                ${valueHtml}
+            </div>`;
         }
 
         function getScoreClass(score) {
@@ -1111,321 +533,397 @@
             return 'low';
         }
 
-        function formatTimestamp(ts) {
-            if (!ts) return '-';
-            const d = new Date(ts);
-            return d.toLocaleString('ru-RU');
+        function getVerdictText(score) {
+            if (score >= 50) return 'Обнаружен';
+            if (score >= 20) return 'Подозрительно';
+            return 'Чисто';
         }
 
-        async function copyToClipboard(text, el) {
-            if (!text || text === '-' || text === 'N/A') return;
-            try {
-                await navigator.clipboard.writeText(text);
-                el.classList.add('copied');
-                setTimeout(() => { el.classList.remove('copied'); }, 1000);
-            } catch (e) {
-                console.error('Copy failed:', e);
+        function render(data) {
+            jsonData = data;
+            $('loading').classList.add('hidden');
+            $('error').classList.add('hidden');
+            $('result').classList.remove('hidden');
+
+            const fp = data.fingerprint || {};
+            const summary = data.summary || {};
+
+            // Scores
+            const stealth = summary.stealth_score ?? fp.headless?.stealth ?? 0;
+            const headless = summary.headless_percent ?? fp.headless?.headlessPercent ?? 0;
+            const likeHeadless = summary.like_headless ?? fp.headless?.likeHeadless ?? 0;
+            const maxScore = Math.max(stealth, headless, likeHeadless);
+
+            // FP ID
+            const fpId = summary.fp_id || fp.fpId || 'N/A';
+            const fuzzyHash = summary.fuzzy_hash || fp.fuzzyHash || 'N/A';
+
+            // Resistance
+            const resistance = fp.resistance || {};
+            const headlessData = fp.headless || {};
+            const hardware = fp.hardware || {};
+            const browser = fp.browser || {};
+            const nav = fp.navigator || {};
+            const network = fp.network || {};
+            const status = fp.status || {};
+            const fingerprints = fp.fingerprints || {};
+
+            // Alerts
+            const alerts = [
+                { text: 'Stealth', bad: stealth >= 50, warning: stealth >= 20, hint: 'Stealth plugins detected', anchor: 'card-scores' },
+                { text: 'Headless', bad: headless >= 50, warning: headless >= 20, hint: 'Headless browser', anchor: 'card-scores' },
+                { text: 'Lies', bad: (fp.lies?.count || 0) > 0, hint: 'Обнаружены подмены данных', anchor: 'card-detection' },
+                { text: 'Trash', bad: (fp.trash?.count || 0) > 5, warning: (fp.trash?.count || 0) > 0, hint: 'Мусорные данные', anchor: 'card-detection' },
+                { text: 'Extension', bad: resistance.extension === 'true' || resistance.extension === true, hint: 'Расширение обнаружено', anchor: 'card-resistance' },
+                { text: 'Chromium', bad: headlessData.chromium === false, hint: 'Chromium флаги', anchor: 'card-resistance' },
+                { text: 'Canvas', bad: false, unknown: !fingerprints.canvasHash, hint: 'Canvas fingerprint', anchor: 'card-fingerprints' },
+                { text: 'WebGL', bad: false, unknown: !fingerprints.webglHash, hint: 'WebGL fingerprint', anchor: 'card-fingerprints' },
+                { text: 'Audio', bad: false, unknown: !fingerprints.audioHash, hint: 'Audio fingerprint', anchor: 'card-audio' }
+            ];
+
+            // Headless alert class
+            let alertClass = 'safe';
+            let alertTitle = 'Headless не обнаружен';
+            let alertDesc = 'Браузер выглядит как обычный пользователь';
+
+            if (maxScore >= 50) {
+                alertClass = 'detected';
+                alertTitle = 'Headless/Stealth обнаружен!';
+                alertDesc = 'Браузер определён как автоматизированный или модифицированный';
+            } else if (maxScore >= 20) {
+                alertClass = 'warning';
+                alertTitle = 'Подозрительные признаки';
+                alertDesc = 'Обнаружены некоторые признаки автоматизации';
+            }
+
+            $('result').innerHTML = `
+                <div class="fp-id-card">
+                    <div class="fp-id-icon">🔐</div>
+                    <div class="fp-id-content">
+                        <div class="fp-id-label">Fingerprint ID</div>
+                        <div class="fp-id-value" onclick="copyToClipboard('${escapeHtml(fpId)}', this)" title="Клик для копирования">${escapeHtml(fpId)}</div>
+                        <div class="fp-id-fuzzy" onclick="copyToClipboard('${escapeHtml(fuzzyHash)}', this)" title="Клик для копирования" style="cursor:pointer">Fuzzy: ${escapeHtml(fuzzyHash)}</div>
+                    </div>
+                </div>
+
+                <div class="headless-alert ${alertClass}">
+                    <h2>${alertTitle}</h2>
+                    <p>${alertDesc}</p>
+                </div>
+
+                <div class="score-section" id="card-scores">
+                    <div class="score-card">
+                        <div class="score-value ${getScoreClass(stealth)}">${stealth}%</div>
+                        <div class="score-label">Stealth Score</div>
+                        <div class="score-desc">Обнаружение stealth plugins</div>
+                        <div class="verdict ${getScoreClass(stealth)}">${getVerdictText(stealth)}</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value ${getScoreClass(headless)}">${headless}%</div>
+                        <div class="score-label">Headless</div>
+                        <div class="score-desc">Безголовый браузер</div>
+                        <div class="verdict ${getScoreClass(headless)}">${getVerdictText(headless)}</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value ${getScoreClass(likeHeadless)}">${likeHeadless}%</div>
+                        <div class="score-label">Like Headless</div>
+                        <div class="score-desc">Похож на headless</div>
+                        <div class="verdict ${getScoreClass(likeHeadless)}">${getVerdictText(likeHeadless)}</div>
+                    </div>
+                </div>
+
+                <div class="alerts">
+                    <h3>Детекции</h3>
+                    <div class="alert-grid">
+                        ${alerts.map(a => {
+                            let cls, icon;
+                            if (a.bad) {
+                                cls = 'danger';
+                                icon = '✗';
+                            } else if (a.warning) {
+                                cls = 'warning';
+                                icon = '!';
+                            } else if (a.unknown) {
+                                cls = 'unknown';
+                                icon = '?';
+                            } else {
+                                cls = 'ok';
+                                icon = '✓';
+                            }
+                            return `<a href="#${a.anchor}" class="alert-item ${cls}" title="${a.hint}">${icon} ${a.text}</a>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="card" id="card-resistance">
+                    <div class="card-header">
+                        <span class="card-title">Resistance & Detection</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Privacy Mode', summary.privacy || resistance.privacy, 'Режим приватности')}
+                        ${row('Security', summary.security || resistance.security, 'Уровень безопасности')}
+                        ${row('Browser Mode', summary.mode || resistance.mode, 'Режим браузера')}
+                        ${row('Extension', resistance.extension, 'Обнаружено расширение', resistance.extension === 'true' || resistance.extension === true ? 'danger' : false)}
+                        ${row('Chromium', headlessData.chromium !== null && headlessData.chromium !== undefined ? String(headlessData.chromium) : 'N/A', 'Chromium флаги')}
+                    </div>
+                </div>
+
+                <div class="card" id="card-detection">
+                    <div class="card-header">
+                        <span class="card-title">Lies & Trash</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Lies Count', fp.lies?.count ?? 0, 'Количество подмен данных', (fp.lies?.count || 0) > 0 ? 'danger' : false)}
+                        ${row('Trash Count', fp.trash?.count ?? 0, 'Мусорные данные в fingerprint')}
+                    </div>
+                </div>
+
+                <div class="card" id="card-hardware">
+                    <div class="card-header">
+                        <span class="card-title">Hardware</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('GPU Vendor', hardware.gpuVendor, 'Производитель GPU')}
+                        ${row('GPU', hardware.gpu, 'Модель видеокарты')}
+                        ${row('CPU Cores', hardware.cpuCores, 'Количество ядер')}
+                        ${row('Memory', hardware.memory ? hardware.memory + ' GB' : 'N/A', 'Оперативная память')}
+                        ${row('Platform', hardware.platform, 'Платформа')}
+                        ${row('Device', hardware.device, 'Тип устройства')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Browser</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('User Agent', browser.userAgent, 'Строка User-Agent')}
+                        ${row('Language', browser.language, 'Язык браузера')}
+                        ${row('Timezone', browser.timezone, 'Часовой пояс')}
+                        ${row('Vendor', browser.vendor, 'Вендор браузера')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Navigator</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('DNT', nav.dnt, 'Do Not Track')}
+                        ${row('GPC', nav.gpc, 'Global Privacy Control')}
+                        ${row('Language', nav.lang, 'Язык навигатора')}
+                        ${row('Platform', nav.platform || hardware.platform, 'Платформа')}
+                        ${row('Cores', nav.cores, 'Ядра CPU')}
+                        ${row('Memory', nav.memory, 'Память')}
+                        ${row('Max Touch Points', nav.maxTouchPoints, 'Точки касания')}
+                        ${row('Cookies Enabled', nav.cookieEnabled !== null && nav.cookieEnabled !== undefined ? String(nav.cookieEnabled) : 'N/A', 'Cookies включены')}
+                        ${row('PDF Viewer', nav.pdfViewerEnabled !== null && nav.pdfViewerEnabled !== undefined ? String(nav.pdfViewerEnabled) : 'N/A', 'PDF Viewer')}
+                        ${row('Vendor', nav.vendor, 'Вендор')}
+                        ${row('Plugins', nav.plugins ? `(${nav.pluginsCount || '?'}) ${nav.plugins}` : 'N/A', 'Плагины')}
+                        ${row('MimeTypes', nav.mimeTypes, 'MIME типы')}
+                        ${row('Permissions', nav.permissions, 'Разрешения')}
+                        ${row('WebGPU', nav.webgpu, 'WebGPU')}
+                        ${row('UserAgentData', nav.userAgentData, 'UA Client Hints')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Network & Status</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('WebRTC IP', network.ip, 'IP через WebRTC')}
+                        ${row('WebRTC Devices', network.webrtc, 'Устройства WebRTC')}
+                        ${row('RTT', status.network?.rtt ? status.network.rtt + ' ms' : 'N/A', 'Round Trip Time')}
+                        ${row('Downlink', status.network?.downlink ? status.network.downlink + ' Mbps' : 'N/A', 'Скорость')}
+                        ${row('Effective Type', status.network?.effectiveType, 'Тип соединения')}
+                        ${row('Battery Level', status.battery?.level !== null && status.battery?.level !== undefined ? status.battery.level + '%' : 'N/A', 'Уровень батареи')}
+                        ${row('Charging', status.battery?.charging !== null && status.battery?.charging !== undefined ? String(status.battery.charging) : 'N/A', 'Заряжается')}
+                        ${row('Storage', status.available?.storage, 'Доступное хранилище')}
+                        ${row('Memory', status.available?.memory, 'Доступная память')}
+                    </div>
+                </div>
+
+                <div class="card" id="card-fingerprints">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <span class="critical-marker"></span>
+                            Fingerprints
+                        </span>
+                        <span class="card-badge">UNIQUE</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Canvas Hash', fingerprints.canvasHash || 'N/A', 'Отпечаток Canvas', false, true)}
+                        ${row('WebGL Hash', fingerprints.webglHash || 'N/A', 'Отпечаток WebGL', false, true)}
+                        ${row('Screen', fingerprints.screen, 'Параметры экрана')}
+                        ${row('Fonts Hash', fingerprints.fontsHash || 'N/A', 'Отпечаток шрифтов', false, true)}
+                        ${row('Fonts', fingerprints.fonts, 'Количество шрифтов')}
+                    </div>
+                </div>
+
+                <div class="card" id="card-audio">
+                    <div class="card-header">
+                        <span class="card-title">Audio</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Audio Hash', (fp.audio?.hash || fingerprints.audioHash) || 'N/A', 'Отпечаток аудио', false, true)}
+                        ${row('Sum', fp.audio?.sum, 'Сумма')}
+                        ${row('Gain', fp.audio?.gain, 'Gain')}
+                        ${row('Freq', fp.audio?.freq, 'Frequency')}
+                        ${row('Time', fp.audio?.time, 'Time')}
+                        ${row('Trap', fp.audio?.trap, 'Trap')}
+                        ${row('Unique', fp.audio?.unique, 'Уникальность')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">DOMRect & SVGRect</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('DOMRect Hash', fp.domRect?.hash || 'N/A', 'Отпечаток DOMRect', false, true)}
+                        ${row('DOMRect Elems A', fp.domRect?.elemsA, 'Elements A')}
+                        ${row('DOMRect Elems B', fp.domRect?.elemsB, 'Elements B')}
+                        ${row('SVGRect Hash', fp.svgRect?.hash || 'N/A', 'Отпечаток SVGRect', false, true)}
+                        ${row('SVGRect bBox', fp.svgRect?.bBox, 'Bounding Box')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Features & CSS</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('JS/DOM', fp.features?.jsdom ? `${fp.features.jsdom} (v${fp.features.jsdomVersion || '?'})` : 'N/A', 'JS/DOM features')}
+                        ${row('CSS', fp.features?.css ? `${fp.features.css} (v${fp.features.cssVersion || '?'})` : 'N/A', 'CSS features')}
+                        ${row('Window', fp.features?.window ? `${fp.features.window} (v${fp.features.windowVersion || '?'})` : 'N/A', 'Window features')}
+                        ${row('CSS Media Hash', fp.cssMedia?.hash || 'N/A', 'CSS Media Queries', false, true)}
+                        ${row('@media', fp.cssMedia?.media, 'Media queries')}
+                        ${row('matchMedia', fp.cssMedia?.matchMedia, 'matchMedia')}
+                        ${row('Touch Device', fp.cssMedia?.touchDevice, 'Touch устройство')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Computed Style, Math, Error</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Style Hash', fp.computedStyle?.hash || 'N/A', 'Computed Style hash', false, true)}
+                        ${row('Style Keys', fp.computedStyle?.keys, 'Количество ключей')}
+                        ${row('Math Hash', fp.math?.hash || 'N/A', 'Math hash', false, true)}
+                        ${row('Math Results', fp.math?.results, 'Math results')}
+                        ${row('Error Hash', fp.errorData?.hash || 'N/A', 'Error hash', false, true)}
+                        ${row('Error Results', fp.errorData?.results, 'Error results')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Window & HTMLElement</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Window Hash', fp.windowData?.hash || 'N/A', 'Window hash', false, true)}
+                        ${row('Window Keys', fp.windowData?.keysCount, 'Количество ключей')}
+                        ${row('HTML Hash', fp.htmlElement?.hash || 'N/A', 'HTMLElement hash', false, true)}
+                        ${row('HTML Keys', fp.htmlElement?.keysCount, 'Количество ключей')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Intl</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Intl Hash', fp.intl?.hash || 'N/A', 'Internationalization', false, true)}
+                        ${row('Locale', fp.intl?.locale, 'Локаль')}
+                        ${row('Date Format', fp.intl?.dateFormat, 'Формат даты')}
+                        ${row('Number Format', fp.intl?.numberFormat, 'Формат чисел')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Speech & Media</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Speech Hash', fp.speech?.hash || 'N/A', 'Speech synthesis', false, true)}
+                        ${row('Voices Count', fp.speech?.voicesCount, 'Количество голосов')}
+                        ${row('Local', fp.speech?.local, 'Local voices')}
+                        ${row('Remote', fp.speech?.remote, 'Remote voices')}
+                        ${row('Media Hash', fp.media?.hash || 'N/A', 'Media devices', false, true)}
+                        ${row('Devices', fp.media?.devicesCount, 'Количество устройств')}
+                        ${row('Audio Input', fp.media?.audioinput, 'Микрофоны')}
+                        ${row('Audio Output', fp.media?.audiooutput, 'Динамики')}
+                        ${row('Video Input', fp.media?.videoinput, 'Камеры')}
+                        ${row('Mimes', fp.media?.mimesCount && fp.media?.mimesTotal ? `${fp.media.mimesCount}/${fp.media.mimesTotal}` : 'N/A', 'MIME types')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Worker & Technical</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Worker Hash', fp.worker?.hash || 'N/A', 'Web Worker', false, true)}
+                        ${row('Confidence', fp.worker?.confidence, 'Уверенность')}
+                        ${row('Calc Time', (summary.time_ms || fp.timeMs || 0) + ' ms', 'Время расчёта')}
+                        ${row('Source', data.source, 'Источник данных')}
+                        ${row('Timestamp', data.timestamp ? new Date(data.timestamp).toLocaleString('ru-RU') : 'N/A', 'Время проверки')}
+                    </div>
+                </div>
+
+                <div class="json-panel">
+                    <button class="json-toggle" onclick="toggleJson()">Показать полный JSON</button>
+                    <pre class="json-box" id="jsonBox">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+                </div>
+            `;
+        }
+
+        function toggleJson() {
+            const box = $('jsonBox');
+            const btn = document.querySelector('.json-toggle');
+            const isHidden = getComputedStyle(box).display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+
+            if (isHidden && jsonData) {
+                navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
+                    btn.textContent = 'JSON скопирован!';
+                    setTimeout(() => { btn.textContent = 'Скрыть JSON'; }, 1500);
+                });
+            } else {
+                btn.textContent = 'Показать полный JSON';
             }
         }
 
-        function setText(id, value, clickable = true) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const displayValue = value ?? '-';
-            el.textContent = displayValue;
-
-            // Делаем значения кликабельными для копирования
-            if (clickable && value && value !== '-' && value !== 'N/A') {
-                el.classList.add('clickable');
-                el.title = 'Клик для копирования';
-                el.onclick = function() { copyToClipboard(String(value), this); };
-            }
+        function showError() {
+            $('loading').classList.add('hidden');
+            $('error').classList.remove('hidden');
         }
 
-        async function loadResults() {
-            const params = new URLSearchParams(window.location.search);
-            const sessionId = params.get('session');
-
+        async function loadResult() {
             if (!sessionId) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
+                showError();
                 return;
             }
 
             try {
-                const response = await fetch(`/api/extension/result/${sessionId}`);
-                const data = await response.json();
+                const resp = await fetch('/api/extension/result/' + sessionId);
+                const data = await resp.json();
 
-                if (data.status === 'pending') {
-                    setTimeout(loadResults, 1000);
-                    return;
-                }
-
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('results').style.display = 'block';
-
-                const fp = data.fingerprint || {};
-                const summary = data.summary || {};
-
-                // FP ID
-                const fpIdVal = summary.fp_id || fp.fpId;
-                const fpIdEl = document.getElementById('fpIdValue');
-                if (fpIdEl && fpIdVal) {
-                    fpIdEl.textContent = fpIdVal;
-                    fpIdEl.style.cursor = 'pointer';
-                    fpIdEl.title = 'Клик для копирования';
-                    fpIdEl.onclick = function() { copyToClipboard(fpIdVal, this); };
-                }
-
-                const fuzzyVal = summary.fuzzy_hash || fp.fuzzyHash;
-                const fuzzyEl = document.getElementById('fuzzyHash');
-                if (fuzzyEl) {
-                    fuzzyEl.textContent = `Fuzzy: ${fuzzyVal || '-'}`;
-                    if (fuzzyVal) {
-                        fuzzyEl.style.cursor = 'pointer';
-                        fuzzyEl.title = 'Клик для копирования';
-                        fuzzyEl.onclick = function() { copyToClipboard(fuzzyVal, this); };
-                    }
-                }
-
-                // Scores
-                const stealth = summary.stealth_score ?? fp.headless?.stealth ?? 0;
-                const headless = summary.headless_percent ?? fp.headless?.headlessPercent ?? 0;
-                const likeHeadless = summary.like_headless ?? fp.headless?.likeHeadless ?? 0;
-
-                document.getElementById('stealthScore').textContent = stealth + '%';
-                document.getElementById('stealthScore').className = 'score-value ' + getScoreClass(stealth);
-
-                document.getElementById('headlessScore').textContent = headless + '%';
-                document.getElementById('headlessScore').className = 'score-value ' + getScoreClass(headless);
-
-                document.getElementById('likeHeadlessScore').textContent = likeHeadless + '%';
-                document.getElementById('likeHeadlessScore').className = 'score-value ' + getScoreClass(likeHeadless);
-
-                // Headless Alert
-                const maxScore = Math.max(stealth, headless, likeHeadless);
-                const alertEl = document.getElementById('headlessAlert');
-                const titleEl = document.getElementById('headlessTitle');
-                const descEl = document.getElementById('headlessDesc');
-
-                if (maxScore >= 50) {
-                    alertEl.className = 'headless-alert detected';
-                    titleEl.textContent = 'Headless/Stealth обнаружен!';
-                    descEl.textContent = 'Браузер определён как автоматизированный или модифицированный';
-                } else if (maxScore >= 20) {
-                    alertEl.className = 'headless-alert';
-                    alertEl.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1))';
-                    alertEl.style.borderColor = 'rgba(245, 158, 11, 0.5)';
-                    titleEl.textContent = 'Подозрительные признаки';
-                    titleEl.style.color = 'var(--warning)';
-                    descEl.textContent = 'Обнаружены некоторые признаки автоматизации';
+                if (data.fingerprint) {
+                    render(data);
+                } else if (data.status === 'pending') {
+                    setTimeout(loadResult, 1000);
                 } else {
-                    alertEl.className = 'headless-alert safe';
-                    titleEl.textContent = 'Headless не обнаружен';
-                    descEl.textContent = 'Браузер выглядит как обычный пользователь';
+                    showError();
                 }
-
-                // Resistance
-                const resistance = fp.resistance || {};
-                const headlessData = fp.headless || {};
-                setText('privacyMode', summary.privacy || resistance.privacy);
-                setText('securityMode', summary.security || resistance.security);
-                setText('browserMode', summary.mode || resistance.mode);
-                setText('extensionDetected', resistance.extension);
-                setText('chromiumDetected', headlessData.chromium !== null && headlessData.chromium !== undefined ? String(headlessData.chromium) : null);
-
-                // Lies & Trash
-                setText('liesCount', fp.lies?.count ?? 0);
-                setText('trashCount', fp.trash?.count ?? 0);
-
-                // Hardware
-                const hardware = fp.hardware || {};
-                setText('gpuVendor', hardware.gpuVendor);
-                setText('gpuInfo', hardware.gpu);
-                setText('cpuCores', hardware.cpuCores);
-                setText('ramInfo', hardware.memory ? hardware.memory + ' GB' : null);
-                setText('platformInfo', hardware.platform);
-                setText('deviceInfo', hardware.device);
-
-                // Browser
-                const browser = fp.browser || {};
-                setText('userAgentInfo', browser.userAgent);
-                setText('languageInfo', browser.language);
-                setText('timezoneInfo', browser.timezone);
-                setText('browserVendor', browser.vendor);
-
-                // Navigator
-                const nav = fp.navigator || {};
-                const hardware = fp.hardware || {};
-                setText('navDnt', nav.dnt);
-                setText('navGpc', nav.gpc);
-                setText('navLang', nav.lang);
-                // Fallback на hardware.platform если navigator.platform пустой
-                setText('navPlatform', nav.platform || hardware.platform);
-                setText('navCores', nav.cores);
-                setText('navMemory', nav.memory);
-                setText('navTouchPoints', nav.maxTouchPoints);
-                setText('navCookieEnabled', nav.cookieEnabled !== null && nav.cookieEnabled !== undefined ? String(nav.cookieEnabled) : null);
-                setText('navPdfViewer', nav.pdfViewerEnabled !== null && nav.pdfViewerEnabled !== undefined ? String(nav.pdfViewerEnabled) : null);
-                setText('navVendor', nav.vendor);
-                setText('navPlugins', nav.plugins ? `(${nav.pluginsCount}) ${nav.plugins}` : null);
-                setText('navMimeTypes', nav.mimeTypes);
-                setText('navPermissions', nav.permissions);
-                setText('navWebgpu', nav.webgpu);
-                setText('navUaData', nav.userAgentData);
-
-                // Network / WebRTC
-                const network = fp.network || {};
-                setText('webrtcIp', network.ip);
-                setText('webrtcDevices', network.webrtc);
-
-                // Status
-                const status = fp.status || {};
-                const statusNet = status.network || {};
-                const statusBattery = status.battery || {};
-                const statusAvail = status.available || {};
-                setText('statusRtt', statusNet.rtt ? statusNet.rtt + ' ms' : null);
-                setText('statusDownlink', statusNet.downlink ? statusNet.downlink + ' Mbps' : null);
-                setText('statusEffectiveType', statusNet.effectiveType);
-                // Battery level приходит уже в процентах (100), не умножаем
-                setText('batteryLevel', statusBattery.level !== null && statusBattery.level !== undefined ? statusBattery.level + '%' : null);
-                setText('batteryCharging', statusBattery.charging !== null && statusBattery.charging !== undefined ? String(statusBattery.charging) : null);
-                setText('availStorage', statusAvail.storage);
-                setText('availMemory', statusAvail.memory);
-                setText('availTimingRes', statusAvail.timingRes);
-                setText('availStack', statusAvail.stack);
-
-                // Fingerprints
-                const fingerprints = fp.fingerprints || {};
-                setText('canvasHash', fingerprints.canvasHash);
-                setText('webglHash', fingerprints.webglHash);
-                setText('screenInfo', fingerprints.screen);
-                setText('audioHash', fingerprints.audioHash);
-                setText('audioInfo', fingerprints.audio);
-                setText('fontsHash', fingerprints.fontsHash);
-                setText('fontsInfo', fingerprints.fonts);
-
-                // DOMRect
-                const domRect = fp.domRect || {};
-                setText('domRectHash', domRect.hash);
-                setText('domRectElemsA', domRect.elemsA);
-                setText('domRectElemsB', domRect.elemsB);
-                setText('domRectRangeA', domRect.rangeA);
-                setText('domRectRangeB', domRect.rangeB);
-
-                // SVGRect
-                const svgRect = fp.svgRect || {};
-                setText('svgRectHash', svgRect.hash);
-                setText('svgRectBbox', svgRect.bBox);
-                setText('svgRectChar', svgRect.char);
-                setText('svgRectSubs', svgRect.subs);
-                setText('svgRectText', svgRect.text);
-
-                // Features
-                const features = fp.features || {};
-                setText('featJsdom', features.jsdom ? `${features.jsdom} (v${features.jsdomVersion || '?'})` : null);
-                setText('featCss', features.css ? `${features.css} (v${features.cssVersion || '?'})` : null);
-                setText('featWindow', features.window ? `${features.window} (v${features.windowVersion || '?'})` : null);
-
-                // CSS Media
-                const cssMedia = fp.cssMedia || {};
-                setText('cssMediaHash', cssMedia.hash);
-                setText('cssMediaMedia', cssMedia.media);
-                setText('cssMediaMatchMedia', cssMedia.matchMedia);
-                setText('cssMediaTouch', cssMedia.touchDevice);
-                setText('cssMediaScreen', cssMedia.screenQuery);
-
-                // Computed Style
-                const compStyle = fp.computedStyle || {};
-                setText('compStyleHash', compStyle.hash);
-                setText('compStyleKeys', compStyle.keys);
-                setText('compStyleSystem', compStyle.system);
-
-                // Math & Error
-                const math = fp.math || {};
-                const errorData = fp.errorData || {};
-                setText('mathHash', math.hash);
-                setText('mathResults', math.results);
-                setText('errorHash', errorData.hash);
-                setText('errorResults', errorData.results);
-
-                // Window
-                const windowData = fp.windowData || {};
-                setText('windowHash', windowData.hash);
-                setText('windowKeysCount', windowData.keysCount);
-                setText('windowKeys', windowData.keys);
-
-                // HTMLElement
-                const htmlElement = fp.htmlElement || {};
-                setText('htmlElemHash', htmlElement.hash);
-                setText('htmlElemKeysCount', htmlElement.keysCount);
-                setText('htmlElemKeys', htmlElement.keys);
-
-                // Audio (Full)
-                const audio = fp.audio || {};
-                setText('audioFullHash', audio.hash);
-                setText('audioSum', audio.sum);
-                setText('audioGain', audio.gain);
-                setText('audioFreq', audio.freq);
-                setText('audioTime', audio.time);
-                setText('audioTrap', audio.trap);
-                setText('audioUnique', audio.unique);
-                setText('audioData', audio.data);
-                setText('audioCopy', audio.copy);
-                setText('audioValues', audio.values);
-
-                // Intl
-                const intl = fp.intl || {};
-                setText('intlHash', intl.hash);
-                setText('intlLocale', intl.locale);
-                setText('intlDateFormat', intl.dateFormat);
-                setText('intlNumberFormat', intl.numberFormat);
-
-                // Speech
-                const speech = fp.speech || {};
-                setText('speechHash', speech.hash);
-                setText('speechStatus', speech.blocked ? 'BLOCKED' : 'Available');
-                if (speech.blocked) {
-                    document.getElementById('speechStatus').classList.add('true');
-                }
-                setText('speechVoicesCount', speech.voicesCount);
-                setText('speechVoices', speech.voices);
-                setText('speechLocal', speech.local);
-                setText('speechRemote', speech.remote);
-                setText('speechLang', speech.lang);
-                setText('speechDefault', speech.default);
-
-                // Media
-                const media = fp.media || {};
-                setText('mediaHash', media.hash);
-                setText('mediaDevicesCount', media.devicesCount);
-                setText('mediaDevices', media.devices);
-                setText('mediaAudioInput', media.audioinput);
-                setText('mediaAudioOutput', media.audiooutput);
-                setText('mediaVideoInput', media.videoinput);
-                setText('mediaMimes', media.mimesCount && media.mimesTotal ? `${media.mimesCount}/${media.mimesTotal}` : null);
-                setText('mediaMimesHash', media.mimesHash);
-
-                // Worker & Technical
-                const worker = fp.worker || {};
-                setText('workerHash', worker.hash);
-                setText('confidenceInfo', worker.confidence);
-                setText('calcTime', (summary.time_ms || fp.timeMs || 0) + ' ms');
-                setText('source', data.source);
-                setText('timestamp', formatTimestamp(data.timestamp));
-
-                // Raw JSON
-                jsonData = data;
-                document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
-
             } catch (e) {
-                console.error('Error loading results:', e);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
+                showError();
             }
         }
 
-        loadResults();
+        loadResult();
     </script>
 </body>
 </html>
