@@ -803,10 +803,11 @@
 
             // === Window ===
             // Window секция может быть в разных форматах:
-            // 1. "1.10msWindow243e46a1\nkeys (1196):" - hash в заголовке, без hash после keys
+            // 1. "1.20msWindow243e46a1\nkeys (1196):" - время + hash в заголовке, без hash после keys
             // 2. "Window\nkeys (1283): 996adf46" - hash после keys
             // 3. "Window996adf46\nkeys (1283):" - hash в заголовке, без hash после keys
-            const windowSection = fullText.match(/\nWindow([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+HTMLElement|$)/i);
+            // Важно: перед Window может быть время (например "1.20ms")
+            const windowSection = fullText.match(/(?:\d+\.\d+ms\s*)?Window([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms\s*HTMLElement|$)/i);
             if (windowSection) {
                 const winText = windowSection[2];
 
