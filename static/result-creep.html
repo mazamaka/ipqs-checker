@@ -469,7 +469,7 @@
         </div>
 
         <div class="footer">
-            CreepJS Fingerprint Analysis v4.6
+            CreepJS Fingerprint Analysis v4.7
         </div>
     </div>
 
@@ -660,11 +660,15 @@
                         <span class="card-title">Resistance & Detection</span>
                     </div>
                     <div class="card-body">
+                        ${row('Headless Hash', headlessData.hash || 'N/A', 'Headless fingerprint', false, true)}
+                        ${row('Resistance Hash', resistance.hash || 'N/A', 'Resistance fingerprint', false, true)}
                         ${row('Privacy Mode', summary.privacy || resistance.privacy, 'Режим приватности')}
                         ${row('Security', summary.security || resistance.security, 'Уровень безопасности')}
                         ${row('Browser Mode', summary.mode || resistance.mode, 'Режим браузера')}
                         ${row('Extension', resistance.extension, 'Обнаружено расширение', resistance.extension === 'true' || resistance.extension === true ? 'danger' : false)}
                         ${row('Chromium', headlessData.chromium !== null && headlessData.chromium !== undefined ? String(headlessData.chromium) : 'N/A', 'Chromium флаги')}
+                        ${row('Platform Hints', headlessData.platformHints, 'UA Platform Hints')}
+                        ${row('Platform Hints Metrics', headlessData.platformHintsMetrics, 'Platform hints metrics')}
                     </div>
                 </div>
 
@@ -710,10 +714,13 @@
                     </div>
                     <div class="card-body">
                         ${row('Navigator Hash', nav.hash || 'N/A', 'Хэш Navigator', false, true)}
+                        ${row('Properties', nav.propertiesCount ? `(${nav.propertiesCount})` : 'N/A', 'Количество свойств')}
+                        ${row('Properties Hash', nav.propertiesHash || 'N/A', 'Хэш свойств', false, true)}
                         ${row('DNT', nav.dnt, 'Do Not Track')}
                         ${row('GPC', nav.gpc, 'Global Privacy Control')}
                         ${row('Language', nav.lang, 'Язык навигатора')}
                         ${row('Platform', nav.platform || hardware.platform, 'Платформа')}
+                        ${row('Linux Version', nav.linuxVersion, 'Версия Linux (если есть)')}
                         ${row('Cores', nav.cores, 'Ядра CPU')}
                         ${row('Memory', nav.memory, 'Память')}
                         ${row('Max Touch Points', nav.maxTouchPoints, 'Точки касания')}
@@ -721,9 +728,12 @@
                         ${row('Cookies Enabled', nav.cookieEnabled !== null && nav.cookieEnabled !== undefined ? String(nav.cookieEnabled) : 'N/A', 'Cookies включены')}
                         ${row('PDF Viewer', nav.pdfViewerEnabled !== null && nav.pdfViewerEnabled !== undefined ? String(nav.pdfViewerEnabled) : 'N/A', 'PDF Viewer')}
                         ${row('Vendor', nav.vendor, 'Вендор')}
-                        ${row('Plugins', nav.plugins ? `(${nav.pluginsCount || '?'}) ${nav.plugins}` : 'N/A', 'Плагины')}
-                        ${row('MimeTypes', nav.mimeTypes ? (nav.mimeTypesCount !== undefined ? `(${nav.mimeTypesCount})` : nav.mimeTypes) : 'N/A', 'MIME типы (кол-во)')}
-                        ${row('Permissions', nav.permissions ? (nav.permissionsCount !== undefined ? `(${nav.permissionsCount})` : nav.permissions) : 'N/A', 'Разрешения (кол-во)')}
+                        ${row('Plugins', nav.pluginsCount ? `(${nav.pluginsCount})` : 'N/A', 'Количество плагинов')}
+                        ${row('Plugins Hash', nav.pluginsHash || 'N/A', 'Хэш плагинов', false, true)}
+                        ${row('MimeTypes', nav.mimeTypesCount ? `(${nav.mimeTypesCount})` : 'N/A', 'MIME типы (кол-во)')}
+                        ${row('MimeTypes Hash', nav.mimeTypesHash || 'N/A', 'Хэш MIME типов', false, true)}
+                        ${row('Permissions', nav.permissionsCount ? `(${nav.permissionsCount})` : 'N/A', 'Разрешения (кол-во)')}
+                        ${row('Permissions Hash', nav.permissionsHash || 'N/A', 'Хэш разрешений', false, true)}
                         ${row('WebGPU', nav.webgpu, 'WebGPU')}
                         ${row('UserAgentData', nav.userAgentData, 'UA Client Hints')}
                         ${row('UA Parsed', nav.uaParsed, 'Распарсенный UA')}
@@ -736,18 +746,26 @@
                         <span class="card-title">Network & Status</span>
                     </div>
                     <div class="card-body">
+                        ${row('Status Hash', status.hash || 'N/A', 'Status fingerprint', false, true)}
                         ${row('WebRTC Hash', network.webrtcHash || 'N/A', 'Хэш WebRTC', false, true)}
                         ${row('WebRTC IP', network.ip, 'IP через WebRTC')}
+                        ${row('Host Connection', network.hostConnection, 'ICE candidate (host)')}
+                        ${row('STUN Connection', network.stunConnection, 'ICE candidate (stun)')}
+                        ${row('Foundation/IP', network.foundationIp, 'Foundation type & base IP')}
                         ${row('WebRTC Devices', network.webrtc, 'Устройства WebRTC')}
                         ${row('SDP Capabilities', network.sdpCapabilities || 'N/A', 'SDP возможности', false, true)}
                         ${row('RTT', status.network?.rtt ? status.network.rtt + ' ms' : 'N/A', 'Round Trip Time')}
                         ${row('Downlink', status.network?.downlink ? status.network.downlink + ' Mbps' : 'N/A', 'Скорость')}
                         ${row('Effective Type', status.network?.effectiveType, 'Тип соединения')}
+                        ${row('Save Data', status.network?.saveData !== null && status.network?.saveData !== undefined ? String(status.network.saveData) : 'N/A', 'Режим экономии данных')}
                         ${row('Battery Level', status.battery?.level !== null && status.battery?.level !== undefined ? status.battery.level + '%' : 'N/A', 'Уровень батареи')}
                         ${row('Charging', status.battery?.charging !== null && status.battery?.charging !== undefined ? String(status.battery.charging) : 'N/A', 'Заряжается')}
+                        ${row('Charge Time', status.battery?.chargeTime, 'Время до полной зарядки')}
+                        ${row('Discharge Time', status.battery?.dischargeTime, 'Время до разрядки')}
                         ${row('Storage', status.available?.storage, 'Доступное хранилище')}
                         ${row('Memory', status.available?.memory, 'Доступная память')}
                         ${row('Timing Res', status.available?.timingRes, 'Разрешение таймера')}
+                        ${row('Timing Res 2', status.available?.timingRes2, 'Разрешение таймера (2)')}
                         ${row('Stack', status.available?.stack, 'Размер стека')}
                     </div>
                 </div>
@@ -762,11 +780,26 @@
                     </div>
                     <div class="card-body">
                         ${row('Canvas Hash', fingerprints.canvasHash || 'N/A', 'Отпечаток Canvas', false, true)}
+                        ${row('Canvas Data', fingerprints.canvasDataHash || 'N/A', 'Canvas data hash', false, true)}
+                        ${row('Canvas TextMetrics', fingerprints.canvasTextMetrics, 'Canvas textMetrics')}
+                        ${row('Canvas Emoji', fingerprints.canvasEmoji, 'Canvas emoji rendering')}
                         ${row('WebGL Hash', fingerprints.webglHash || 'N/A', 'Отпечаток WebGL', false, true)}
+                        ${row('WebGL Images', fingerprints.webglImages || 'N/A', 'WebGL images hash', false, true)}
+                        ${row('WebGL Pixels', fingerprints.webglPixels || 'N/A', 'WebGL pixels hash', false, true)}
+                        ${row('WebGL Params', fingerprints.webglParamsCount ? `(${fingerprints.webglParamsCount})` : 'N/A', 'WebGL parameters count')}
+                        ${row('WebGL Params Hash', fingerprints.webglParams || 'N/A', 'WebGL params hash', false, true)}
+                        ${row('WebGL Exts', fingerprints.webglExtsCount ? `(${fingerprints.webglExtsCount})` : 'N/A', 'WebGL extensions count')}
+                        ${row('WebGL Exts Hash', fingerprints.webglExts || 'N/A', 'WebGL extensions hash', false, true)}
+                        ${row('WebGL Confidence', fingerprints.webglConfidence, 'GPU confidence')}
                         ${row('Screen Hash', fingerprints.screenHash || 'N/A', 'Отпечаток экрана', false, true)}
                         ${row('Screen', fingerprints.screen, 'Параметры экрана')}
+                        ${row('Screen Avail', fingerprints.screenAvail, 'Доступный размер экрана')}
+                        ${row('Screen Depth', fingerprints.screenDepth, 'Глубина цвета')}
+                        ${row('Screen Viewport', fingerprints.screenViewport, 'Viewport параметры')}
                         ${row('Fonts Hash', fingerprints.fontsHash || 'N/A', 'Отпечаток шрифтов', false, true)}
                         ${row('Fonts', fingerprints.fonts, 'Количество шрифтов')}
+                        ${row('Fonts Apps', fingerprints.fontsApps, 'Apps status')}
+                        ${row('Font List', fingerprints.fontsList, 'Список шрифтов')}
                     </div>
                 </div>
 
@@ -829,7 +862,9 @@
                     </div>
                     <div class="card-body">
                         ${row('Style Hash', fp.computedStyle?.hash || 'N/A', 'Computed Style hash', false, true)}
-                        ${row('Style Keys', fp.computedStyle?.keys, 'Количество ключей')}
+                        ${row('Style Keys', fp.computedStyle?.keys ? `(${fp.computedStyle.keys})` : 'N/A', 'Количество ключей')}
+                        ${row('Style Keys Hash', fp.computedStyle?.keysHash || 'N/A', 'Хэш ключей', false, true)}
+                        ${row('System Styles Hash', fp.computedStyle?.systemStylesHash || 'N/A', 'Хэш системных стилей', false, true)}
                         ${row('Math Hash', fp.math?.hash || 'N/A', 'Math hash', false, true)}
                         ${row('Math Results', fp.math?.results, 'Math results')}
                         ${row('Error Hash', fp.errorData?.hash || 'N/A', 'Error hash', false, true)}
@@ -851,13 +886,30 @@
 
                 <div class="card">
                     <div class="card-header">
+                        <span class="card-title">Timezone</span>
+                    </div>
+                    <div class="card-body">
+                        ${row('Timezone Hash', fp.timezone?.hash || 'N/A', 'Timezone fingerprint', false, true)}
+                        ${row('Display Name', fp.timezone?.displayName, 'Название')}
+                        ${row('Location', fp.timezone?.location, 'IANA timezone')}
+                        ${row('Raw Offset', fp.timezone?.rawOffset, 'Смещение (raw)')}
+                        ${row('Offset', fp.timezone?.offset, 'Смещение')}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
                         <span class="card-title">Intl</span>
                     </div>
                     <div class="card-body">
                         ${row('Intl Hash', fp.intl?.hash || 'N/A', 'Internationalization', false, true)}
                         ${row('Locale', fp.intl?.locale, 'Локаль')}
                         ${row('Date Format', fp.intl?.dateFormat, 'Формат даты')}
+                        ${row('Display Names', fp.intl?.displayNames, 'Display names')}
                         ${row('Number Format', fp.intl?.numberFormat, 'Формат чисел')}
+                        ${row('Relative Time', fp.intl?.relativeTime, 'Относительное время')}
+                        ${row('Plural Rules', fp.intl?.pluralRules, 'Правила множественного числа')}
+                        ${row('Plural Category', fp.intl?.pluralCategory, 'Категория множественного')}
                     </div>
                 </div>
 

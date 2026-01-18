@@ -62,16 +62,37 @@
             fuzzyHash: null,
             timeMs: null,
             headless: {
+                hash: null,
                 chromium: null,
                 stealth: null,
                 likeHeadless: null,
-                headlessPercent: null
+                headlessPercent: null,
+                platformHints: null,
+                platformHintsMetrics: null
             },
             resistance: {
+                hash: null,
                 privacy: null,
                 security: null,
                 mode: null,
                 extension: null
+            },
+            timezone: {
+                hash: null,
+                displayName: null,
+                location: null,
+                rawOffset: null,
+                offset: null
+            },
+            intl: {
+                hash: null,
+                locale: null,
+                dateFormat: null,
+                displayNames: null,
+                numberFormat: null,
+                relativeTime: null,
+                pluralRules: null,
+                pluralCategory: null
             },
             lies: {
                 count: 0,
@@ -84,14 +105,29 @@
             fingerprints: {
                 canvas: null,
                 canvasHash: null,
+                canvasDataHash: null,
+                canvasTextMetrics: null,
+                canvasEmoji: null,
                 webgl: null,
                 webglHash: null,
+                webglImages: null,
+                webglPixels: null,
+                webglParams: null,
+                webglParamsCount: null,
+                webglExts: null,
+                webglExtsCount: null,
+                webglConfidence: null,
                 audio: null,
                 audioHash: null,
                 fonts: null,
                 fontsHash: null,
+                fontsApps: null,
+                fontsList: null,
                 screen: null,
-                screenHash: null
+                screenHash: null,
+                screenAvail: null,
+                screenDepth: null,
+                screenViewport: null
             },
             hardware: {
                 gpu: null,
@@ -111,7 +147,12 @@
             network: {
                 webrtc: null,
                 webrtcHash: null,
-                ip: null
+                ip: null,
+                sdpCapabilities: null,
+                hostConnection: null,
+                stunConnection: null,
+                foundationIp: null,
+                typeBaseIp: null
             },
             worker: {
                 hash: null,
@@ -150,7 +191,9 @@
             computedStyle: {
                 hash: null,
                 keys: null,
-                system: null
+                keysHash: null,
+                systemStyles: null,
+                systemStylesHash: null
             },
             math: {
                 hash: null,
@@ -172,40 +215,56 @@
             },
             navigator: {
                 hash: null,
+                propertiesCount: null,
+                propertiesHash: null,
                 dnt: null,
                 gpc: null,
                 lang: null,
                 mimeTypes: null,
+                mimeTypesCount: null,
+                mimeTypesHash: null,
                 permissions: null,
+                permissionsCount: null,
+                permissionsHash: null,
                 plugins: null,
                 pluginsCount: null,
+                pluginsHash: null,
                 vendor: null,
                 webgpu: null,
                 userAgentData: null,
+                linuxVersion: null,
                 device: null,
                 uaParsed: null,
                 appVersion: null,
                 platform: null,
                 cores: null,
                 memory: null,
+                touch: null,
                 cookieEnabled: null,
                 maxTouchPoints: null,
                 pdfViewerEnabled: null
             },
             status: {
+                hash: null,
                 network: {
                     rtt: null,
                     downlink: null,
-                    effectiveType: null
+                    effectiveType: null,
+                    saveData: null
                 },
                 battery: {
                     level: null,
-                    charging: null
+                    charging: null,
+                    chargeTime: null,
+                    dischargeTime: null
                 },
                 available: {
                     storage: null,
+                    storageRaw: null,
                     memory: null,
+                    memoryRaw: null,
                     timingRes: null,
+                    timingRes2: null,
                     stack: null
                 }
             },
@@ -254,30 +313,49 @@
             if (timeMatch) results.timeMs = parseFloat(timeMatch[1]);
 
             // === HEADLESS DETECTION ===
-            const headlessMatch = fullText.match(/Headless[a-f0-9]*\s*\n*chromium:\s*(true|false)/i);
-            if (headlessMatch) results.headless.chromium = headlessMatch[1] === 'true';
+            const headlessSection = fullText.match(/Headless([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Resistance|$)/i);
+            if (headlessSection) {
+                results.headless.hash = headlessSection[1];
+                const headlessText = headlessSection[2];
 
-            const likeHeadlessMatch = fullText.match(/(\d+)%\s*like headless/i);
-            if (likeHeadlessMatch) results.headless.likeHeadless = parseInt(likeHeadlessMatch[1]);
+                const chromiumMatch = headlessText.match(/chromium:\s*(true|false)/i);
+                if (chromiumMatch) results.headless.chromium = chromiumMatch[1] === 'true';
 
-            const headlessPercentMatch = fullText.match(/(\d+)%\s*headless:/i);
-            if (headlessPercentMatch) results.headless.headlessPercent = parseInt(headlessPercentMatch[1]);
+                const likeHeadlessMatch = headlessText.match(/(\d+)%\s*like headless/i);
+                if (likeHeadlessMatch) results.headless.likeHeadless = parseInt(likeHeadlessMatch[1]);
 
-            const stealthMatch = fullText.match(/(\d+)%\s*stealth:/i);
-            if (stealthMatch) results.headless.stealth = parseInt(stealthMatch[1]);
+                const headlessPercentMatch = headlessText.match(/(\d+)%\s*headless:/i);
+                if (headlessPercentMatch) results.headless.headlessPercent = parseInt(headlessPercentMatch[1]);
+
+                const stealthMatch = headlessText.match(/(\d+)%\s*stealth:/i);
+                if (stealthMatch) results.headless.stealth = parseInt(stealthMatch[1]);
+
+                // Platform hints
+                const platformHintsMatch = headlessText.match(/platform hints:\s*\n*([^\n]+)\n*([^\n]+)/i);
+                if (platformHintsMatch) {
+                    results.headless.platformHints = platformHintsMatch[1].trim();
+                    results.headless.platformHintsMetrics = platformHintsMatch[2].trim();
+                }
+            }
 
             // === RESISTANCE ===
-            const privacyMatch = fullText.match(/privacy:\s*(\w+)/i);
-            if (privacyMatch) results.resistance.privacy = privacyMatch[1];
+            const resistanceSection = fullText.match(/Resistance([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+ServiceWorker|$)/i);
+            if (resistanceSection) {
+                results.resistance.hash = resistanceSection[1];
+                const resText = resistanceSection[2];
 
-            const securityMatch = fullText.match(/security:\s*(\w+)/i);
-            if (securityMatch) results.resistance.security = securityMatch[1];
+                const privacyMatch = resText.match(/privacy:\s*(\w+)/i);
+                if (privacyMatch) results.resistance.privacy = privacyMatch[1];
 
-            const modeMatch = fullText.match(/mode:\s*(\w+)/i);
-            if (modeMatch) results.resistance.mode = modeMatch[1];
+                const securityMatch = resText.match(/security:\s*(\w+)/i);
+                if (securityMatch) results.resistance.security = securityMatch[1];
 
-            const extensionMatch = fullText.match(/extension:\s*(\w+)/i);
-            if (extensionMatch) results.resistance.extension = extensionMatch[1];
+                const modeMatch = resText.match(/mode:\s*(\w+)/i);
+                if (modeMatch) results.resistance.mode = modeMatch[1];
+
+                const extensionMatch = resText.match(/extension:\s*(\w+)/i);
+                if (extensionMatch) results.resistance.extension = extensionMatch[1];
+            }
 
             // === WORKER ===
             const workerSection = fullText.match(/Worker([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms\s+WebGL|$)/i);
@@ -329,10 +407,21 @@
             }
 
             // === TIMEZONE ===
-            const tzSection = fullText.match(/Timezone([a-f0-9]*)\s*\n*([^\n]+)\n*([^\n]+)/i);
+            // Format: Timezone[hash]\n[display name]\n[location]\n[rawOffset]\n[offset]
+            const tzSection = fullText.match(/Timezone([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Intl|$)/i);
             if (tzSection) {
+                results.timezone.hash = tzSection[1];
+                const tzLines = tzSection[2].split('\n').filter(l => l.trim());
+                if (tzLines[0]) results.timezone.displayName = tzLines[0].trim();
+                if (tzLines[1]) results.timezone.location = tzLines[1].trim();
+                if (tzLines[2]) results.timezone.rawOffset = tzLines[2].trim();
+                if (tzLines[3]) results.timezone.offset = tzLines[3].trim();
+
                 if (!results.browser.timezone) {
-                    results.browser.timezone = tzSection[2].trim() + ', ' + tzSection[3].trim();
+                    results.browser.timezone = results.timezone.location;
+                }
+                if (!results.browser.timezoneOffset && results.timezone.offset) {
+                    results.browser.timezoneOffset = results.timezone.offset;
                 }
             }
 
@@ -342,40 +431,69 @@
                 results.network.webrtcHash = webrtcSection[1];
                 const rtcText = webrtcSection[2];
 
+                // Host connection (full ICE candidate)
+                const hostMatch = rtcText.match(/host connection:\s*\n*([^\n]+)/i);
+                if (hostMatch) results.network.hostConnection = hostMatch[1].trim();
+
+                // Foundation/IP
+                const foundationMatch = rtcText.match(/foundation\/ip:\s*\n*type & base ip:\s*(\d+)/i);
+                if (foundationMatch) results.network.foundationIp = foundationMatch[1];
+
+                const typeBaseMatch = rtcText.match(/type & base ip:\s*(\d+)/i);
+                if (typeBaseMatch) results.network.typeBaseIp = typeBaseMatch[1];
+
                 // IP - ищем реальный IP после "ip:" (не foundation)
                 const ipMatch = rtcText.match(/\nip:\s*([0-9.]+)/i);
                 if (ipMatch) results.network.ip = ipMatch[1];
 
+                // SDP capabilities
+                const sdpMatch = rtcText.match(/sdp capabilities:\s*\n*([a-f0-9]+)/i);
+                if (sdpMatch) results.network.sdpCapabilities = sdpMatch[1];
+
+                // Stun connection
+                const stunMatch = rtcText.match(/stun connection:\s*\n*([^\n]+)/i);
+                if (stunMatch) results.network.stunConnection = stunMatch[1].trim();
+
+                // Devices
                 const devicesMatch = rtcText.match(/devices\s*\((\d+)\):\s*\n*([^\n]+)/i);
                 if (devicesMatch) {
                     results.network.webrtc = `devices: ${devicesMatch[1]} (${devicesMatch[2].trim()})`;
                 }
-
-                // SDP capabilities
-                const sdpMatch = rtcText.match(/sdp capabilities:\s*([a-f0-9]+)/i);
-                if (sdpMatch) results.network.sdpCapabilities = sdpMatch[1];
             }
 
             // === Intl ===
+            // Format: Intl[hash]\n[locale]\n[dateFormat]\n[displayNames]\n[numberFormat]\n[relativeTime]\n[pluralRules]\n[pluralCategory]
             const intlSection = fullText.match(/Intl([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Headless|$)/i);
             if (intlSection) {
-                results.intl = {
-                    hash: intlSection[1],
-                    locale: null,
-                    dateFormat: null,
-                    numberFormat: null
-                };
-                const intlText = intlSection[2];
-                const lines = intlText.split('\n').filter(l => l.trim());
+                results.intl.hash = intlSection[1];
+                const lines = intlSection[2].split('\n').filter(l => l.trim());
                 if (lines[0]) results.intl.locale = lines[0].trim();
-                if (lines.length > 1) results.intl.dateFormat = lines.slice(1, 4).join(', ').trim();
+                if (lines[1]) results.intl.dateFormat = lines[1].trim();
+                if (lines[2]) results.intl.displayNames = lines[2].trim();
+                if (lines[3]) results.intl.numberFormat = lines[3].trim();
+                if (lines[4]) results.intl.relativeTime = lines[4].trim();
+                if (lines[5]) results.intl.pluralRules = lines[5].trim();
+                if (lines[6]) results.intl.pluralCategory = lines[6].trim();
             }
 
             // === CANVAS 2D ===
             const canvasSection = fullText.match(/Canvas\s*2d([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Fonts|$)/i);
             if (canvasSection) {
                 results.fingerprints.canvasHash = canvasSection[1];
-                results.fingerprints.canvas = canvasSection[2].substring(0, 500).trim();
+                const canvasText = canvasSection[2];
+                results.fingerprints.canvas = canvasText.substring(0, 500).trim();
+
+                // Data hash
+                const dataHashMatch = canvasText.match(/data:\s*\n*([a-f0-9]+)/i);
+                if (dataHashMatch) results.fingerprints.canvasDataHash = dataHashMatch[1];
+
+                // textMetrics
+                const textMetricsMatch = canvasText.match(/textMetrics:\s*\n*([0-9.-]+)/i);
+                if (textMetricsMatch) results.fingerprints.canvasTextMetrics = textMetricsMatch[1];
+
+                // Emoji pattern
+                const emojiMatch = canvasText.match(/textMetrics:[\s\S]*?([😀-🙏🤵][^\n]*)/i);
+                if (emojiMatch) results.fingerprints.canvasEmoji = emojiMatch[1].trim();
             }
 
             // === WebGL ===
@@ -383,6 +501,32 @@
             if (webglSection) {
                 results.fingerprints.webglHash = webglSection[1];
                 const wglText = webglSection[2];
+
+                // Images hash
+                const imagesMatch = wglText.match(/images:([a-f0-9]+)/i);
+                if (imagesMatch) results.fingerprints.webglImages = imagesMatch[1];
+
+                // Pixels hash
+                const pixelsMatch = wglText.match(/pixels:([a-f0-9]+)/i);
+                if (pixelsMatch) results.fingerprints.webglPixels = pixelsMatch[1];
+
+                // Params (count): hash
+                const paramsMatch = wglText.match(/params\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (paramsMatch) {
+                    results.fingerprints.webglParamsCount = parseInt(paramsMatch[1]);
+                    results.fingerprints.webglParams = paramsMatch[2];
+                }
+
+                // Exts (count): hash
+                const extsMatch = wglText.match(/exts\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (extsMatch) {
+                    results.fingerprints.webglExtsCount = parseInt(extsMatch[1]);
+                    results.fingerprints.webglExts = extsMatch[2];
+                }
+
+                // GPU confidence
+                const confMatch = wglText.match(/confidence:\s*(\w+)/i);
+                if (confMatch) results.fingerprints.webglConfidence = confMatch[1];
 
                 const wglGpuMatch = wglText.match(/gpu:[^\n]*confidence:\s*\w+\s*\n*([^\n]+)\n*([^\n]+)/i);
                 if (wglGpuMatch && !results.hardware.gpu) {
@@ -450,8 +594,18 @@
                 results.fingerprints.fontsHash = fontsSection[1];
                 const fontsText = fontsSection[2];
 
-                const loadMatch = fontsText.match(/load\s*\(([^)]+)\)/i);
-                if (loadMatch) results.fingerprints.fonts = `load: ${loadMatch[1]}`;
+                const loadMatch = fontsText.match(/load\s*\(([^)]+)\):\s*([^\n]+)/i);
+                if (loadMatch) results.fingerprints.fonts = `load (${loadMatch[1]}): ${loadMatch[2].trim()}`;
+
+                // Apps status
+                const appsMatch = fontsText.match(/apps:\s*(\w+)/i);
+                if (appsMatch) results.fingerprints.fontsApps = appsMatch[1];
+
+                // Font list - long line with comma-separated fonts
+                const fontListMatch = fontsText.match(/apps:\s*\w+\s*\n([^\n]+)/i);
+                if (fontListMatch && fontListMatch[1].includes(',')) {
+                    results.fingerprints.fontsList = fontListMatch[1].trim();
+                }
 
                 const pixelsMatch = fontsText.match(/pixels:\s*([^\n]+)/i);
                 if (pixelsMatch) results.fingerprints.fonts += `, pixels: ${pixelsMatch[1].trim()}`;
@@ -463,11 +617,28 @@
                 results.fingerprints.screenHash = screenSection[1];
                 const screenText = screenSection[2];
 
+                // Main screen resolution
                 const screenMatch = screenText.match(/screen:\s*(\d+\s*x\s*\d+)/i);
                 if (screenMatch) results.fingerprints.screen = screenMatch[1];
 
+                // Available screen
+                const availMatch = screenText.match(/avail:\s*(\d+\s*x\s*\d+)/i);
+                if (availMatch) results.fingerprints.screenAvail = availMatch[1];
+
+                // Touch
                 const touchMatch = screenText.match(/touch:\s*(\w+)/i);
                 if (touchMatch) results.fingerprints.screen = (results.fingerprints.screen || '') + `, touch: ${touchMatch[1]}`;
+
+                // Depth
+                const depthMatch = screenText.match(/depth:\s*([^\n]+)/i);
+                if (depthMatch) results.fingerprints.screenDepth = depthMatch[1].trim();
+
+                // Viewport - multiple values on separate lines after "viewport:"
+                const viewportMatch = screenText.match(/viewport:\s*([\s\S]*?)$/i);
+                if (viewportMatch) {
+                    const vpLines = viewportMatch[1].split('\n').filter(l => l.trim()).slice(0, 10);
+                    results.fingerprints.screenViewport = vpLines.map(l => l.trim()).join(', ');
+                }
 
                 const deviceRatioMatch = screenText.match(/device ratio:\s*([0-9.]+)/i);
                 if (deviceRatioMatch) results.fingerprints.screen += `, ratio: ${deviceRatioMatch[1]}`;
@@ -598,11 +769,16 @@
                 results.computedStyle.hash = computedSection[1];
                 const compText = computedSection[2];
 
-                const keysMatch = compText.match(/keys\s*\((\d+)\)/i);
-                if (keysMatch) results.computedStyle.keys = parseInt(keysMatch[1]);
+                // Keys (count): hash
+                const keysMatch = compText.match(/keys\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (keysMatch) {
+                    results.computedStyle.keys = parseInt(keysMatch[1]);
+                    results.computedStyle.keysHash = keysMatch[2];
+                }
 
-                const systemMatch = compText.match(/system:\s*([^\n]+)/i);
-                if (systemMatch) results.computedStyle.system = systemMatch[1].trim();
+                // System styles: hash
+                const systemMatch = compText.match(/system styles:\s*\n*([a-f0-9]+)/i);
+                if (systemMatch) results.computedStyle.systemStylesHash = systemMatch[1];
             }
 
             // === Math ===
@@ -675,10 +851,17 @@
             }
 
             // === Navigator (ПОЛНЫЙ) ===
-            const navSection = fullText.match(/Navigator([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Status|Status$|$)/i);
+            const navSection = fullText.match(/Navigator([a-f0-9]*)\s*([\s\S]*?)(?=\nStatus[a-f0-9]|$)/i);
             if (navSection) {
                 results.navigator.hash = navSection[1];
                 const navText = navSection[2];
+
+                // Properties (count): hash
+                const propsMatch = navText.match(/properties\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (propsMatch) {
+                    results.navigator.propertiesCount = parseInt(propsMatch[1]);
+                    results.navigator.propertiesHash = propsMatch[2];
+                }
 
                 const dntMatch = navText.match(/dnt:\s*(\w+)/i);
                 if (dntMatch) results.navigator.dnt = dntMatch[1];
@@ -689,30 +872,46 @@
                 const langMatch = navText.match(/lang:\s*([^\n]+)/i);
                 if (langMatch) results.navigator.lang = langMatch[1].trim();
 
-                // mimeTypes может быть в формате "mimeTypes (2):" или "mimeTypes: value"
-                const mimeTypesCountMatch = navText.match(/mimeTypes\s*\((\d+)\)/i);
-                if (mimeTypesCountMatch) {
-                    results.navigator.mimeTypes = mimeTypesCountMatch[1];
-                    results.navigator.mimeTypesCount = parseInt(mimeTypesCountMatch[1]);
+                // mimeTypes (count): hash
+                const mimeTypesFullMatch = navText.match(/mimeTypes\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (mimeTypesFullMatch) {
+                    results.navigator.mimeTypesCount = parseInt(mimeTypesFullMatch[1]);
+                    results.navigator.mimeTypesHash = mimeTypesFullMatch[2];
+                    results.navigator.mimeTypes = mimeTypesFullMatch[1];
                 } else {
-                    const mimeTypesMatch = navText.match(/mimeTypes:\s*([^\n]+)/i);
-                    if (mimeTypesMatch) results.navigator.mimeTypes = mimeTypesMatch[1].trim();
+                    const mimeTypesCountMatch = navText.match(/mimeTypes\s*\((\d+)\)/i);
+                    if (mimeTypesCountMatch) {
+                        results.navigator.mimeTypes = mimeTypesCountMatch[1];
+                        results.navigator.mimeTypesCount = parseInt(mimeTypesCountMatch[1]);
+                    }
                 }
 
-                // permissions может быть в формате "permissions (6):" или "permissions: value"
-                const permissionsCountMatch = navText.match(/permissions\s*\((\d+)\)/i);
-                if (permissionsCountMatch) {
-                    results.navigator.permissions = permissionsCountMatch[1];
-                    results.navigator.permissionsCount = parseInt(permissionsCountMatch[1]);
+                // permissions (count): hash
+                const permissionsFullMatch = navText.match(/permissions\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (permissionsFullMatch) {
+                    results.navigator.permissionsCount = parseInt(permissionsFullMatch[1]);
+                    results.navigator.permissionsHash = permissionsFullMatch[2];
+                    results.navigator.permissions = permissionsFullMatch[1];
                 } else {
-                    const permissionsMatch = navText.match(/permissions:\s*\n*([^\n]+)/i);
-                    if (permissionsMatch) results.navigator.permissions = permissionsMatch[1].trim();
+                    const permissionsCountMatch = navText.match(/permissions\s*\((\d+)\)/i);
+                    if (permissionsCountMatch) {
+                        results.navigator.permissions = permissionsCountMatch[1];
+                        results.navigator.permissionsCount = parseInt(permissionsCountMatch[1]);
+                    }
                 }
 
-                const pluginsMatch = navText.match(/plugins\s*\((\d+)\):\s*([^\n]+)/i);
-                if (pluginsMatch) {
-                    results.navigator.pluginsCount = parseInt(pluginsMatch[1]);
-                    results.navigator.plugins = pluginsMatch[2].trim();
+                // plugins (count): hash
+                const pluginsFullMatch = navText.match(/plugins\s*\((\d+)\):\s*\n*([a-f0-9]+)/i);
+                if (pluginsFullMatch) {
+                    results.navigator.pluginsCount = parseInt(pluginsFullMatch[1]);
+                    results.navigator.pluginsHash = pluginsFullMatch[2];
+                    results.navigator.plugins = pluginsFullMatch[2];
+                } else {
+                    const pluginsMatch = navText.match(/plugins\s*\((\d+)\):\s*([^\n]+)/i);
+                    if (pluginsMatch) {
+                        results.navigator.pluginsCount = parseInt(pluginsMatch[1]);
+                        results.navigator.plugins = pluginsMatch[2].trim();
+                    }
                 }
 
                 const vendorMatch = navText.match(/vendor:\s*([^\n]+)/i);
@@ -758,11 +957,16 @@
 
                 const pdfMatch = navText.match(/pdfViewerEnabled:\s*(\w+)/i);
                 if (pdfMatch) results.navigator.pdfViewerEnabled = pdfMatch[1] === 'true';
+
+                // linuxVersion (для Linux профилей)
+                const linuxVersionMatch = navText.match(/linux version:\s*([^\n]+)/i);
+                if (linuxVersionMatch) results.navigator.linuxVersion = linuxVersionMatch[1].trim();
             }
 
             // === STATUS ===
             const statusSection = fullText.match(/Status([a-f0-9]*)\s*([\s\S]*?)$/i);
             if (statusSection) {
+                results.status.hash = statusSection[1];
                 const statText = statusSection[2];
 
                 // Network
@@ -775,12 +979,23 @@
                 const effectiveTypeMatch = statText.match(/effectiveType:\s*(\w+)/i);
                 if (effectiveTypeMatch) results.status.network.effectiveType = effectiveTypeMatch[1];
 
+                // saveData
+                const saveDataMatch = statText.match(/saveData:\s*(\w+)/i);
+                if (saveDataMatch) results.status.network.saveData = saveDataMatch[1] === 'true';
+
                 // Battery
                 const levelMatch = statText.match(/level:\s*([0-9.]+)/i);
                 if (levelMatch) results.status.battery.level = parseFloat(levelMatch[1]);
 
                 const chargingMatch = statText.match(/charging:\s*(\w+)/i);
                 if (chargingMatch) results.status.battery.charging = chargingMatch[1] === 'true';
+
+                // chargeTime / dischargeTime
+                const chargeTimeMatch = statText.match(/charge\s*time:\s*([^\n,]+)/i);
+                if (chargeTimeMatch) results.status.battery.chargeTime = chargeTimeMatch[1].trim();
+
+                const dischargeTimeMatch = statText.match(/discharge\s*time:\s*([^\n,]+)/i);
+                if (dischargeTimeMatch) results.status.battery.dischargeTime = dischargeTimeMatch[1].trim();
 
                 // Available
                 const storageMatch = statText.match(/storage:\s*([0-9.]+\s*\w+)/i);
@@ -791,6 +1006,10 @@
 
                 const timingMatch = statText.match(/timing res(?:olution)?:\s*([^\n]+)/i);
                 if (timingMatch) results.status.available.timingRes = timingMatch[1].trim();
+
+                // timingRes2 - альтернативный формат
+                const timingRes2Match = statText.match(/timing res\s*2:\s*([^\n]+)/i);
+                if (timingRes2Match) results.status.available.timingRes2 = timingRes2Match[1].trim();
 
                 const stackMatch = statText.match(/stack:\s*([^\n]+)/i);
                 if (stackMatch) results.status.available.stack = stackMatch[1].trim();
