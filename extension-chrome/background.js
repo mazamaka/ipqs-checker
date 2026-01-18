@@ -354,7 +354,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             checkUrl = 'https://fingerprint.com/';
         } else if (service === 'creepjs') {
             clearFn = clearCreepJSData;
-            checkUrl = chrome.runtime.getURL('creep-runner.html');
+            checkUrl = 'https://abrahamjuliot.github.io/creepjs/';
         } else {
             clearFn = clearIndeedData;
             checkUrl = 'https://secure.indeed.com/auth';
@@ -401,4 +401,4 @@ chrome.storage.local.get(['checkComplete']).then(data => {
     }
 });
 
-addLog('Service Worker запущен v2.1');
+addLog('Service Worker запущен v4.0');

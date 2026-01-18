@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fingerprint Checker",
-  "version": "3.2",
+  "version": "4.0",
   "description": "Проверка fingerprint через IPQS, Fingerprint Pro и CreepJS",
   "permissions": [
     "activeTab",
@@ -34,6 +34,11 @@
       "matches": ["https://fingerprint.com/*", "https://*.fingerprint.com/*"],
       "js": ["content-fp.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["https://abrahamjuliot.github.io/creepjs/*"],
+      "js": ["content-creep.js"],
+      "run_at": "document_end"
     }
   ],
   "action": {
@@ -60,10 +65,6 @@
     {
       "resources": ["injected-fp.js"],
       "matches": ["https://fingerprint.com/*", "https://*.fingerprint.com/*"]
-    },
-    {
-      "resources": ["creep-bundled.js"],
-      "matches": ["<all_urls>"]
     }
   ]
 }
