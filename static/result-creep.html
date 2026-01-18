@@ -1256,10 +1256,12 @@
 
                 // Navigator
                 const nav = fp.navigator || {};
+                const hardware = fp.hardware || {};
                 setText('navDnt', nav.dnt);
                 setText('navGpc', nav.gpc);
                 setText('navLang', nav.lang);
-                setText('navPlatform', nav.platform);
+                // Fallback на hardware.platform если navigator.platform пустой
+                setText('navPlatform', nav.platform || hardware.platform);
                 setText('navCores', nav.cores);
                 setText('navMemory', nav.memory);
                 setText('navTouchPoints', nav.maxTouchPoints);
@@ -1285,7 +1287,8 @@
                 setText('statusRtt', statusNet.rtt ? statusNet.rtt + ' ms' : null);
                 setText('statusDownlink', statusNet.downlink ? statusNet.downlink + ' Mbps' : null);
                 setText('statusEffectiveType', statusNet.effectiveType);
-                setText('batteryLevel', statusBattery.level !== null && statusBattery.level !== undefined ? (statusBattery.level * 100).toFixed(0) + '%' : null);
+                // Battery level приходит уже в процентах (100), не умножаем
+                setText('batteryLevel', statusBattery.level !== null && statusBattery.level !== undefined ? statusBattery.level + '%' : null);
                 setText('batteryCharging', statusBattery.charging !== null && statusBattery.charging !== undefined ? String(statusBattery.charging) : null);
                 setText('availStorage', statusAvail.storage);
                 setText('availMemory', statusAvail.memory);

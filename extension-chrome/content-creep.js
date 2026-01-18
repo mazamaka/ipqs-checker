@@ -512,25 +512,28 @@
             }
 
             // === Features ===
-            const featuresSection = fullText.match(/Features([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+CSS Media Queries|$)/i);
+            // Формат: Features[hash]\nJS/DOM:\n317\nv131\nCSS:\n379\nv131\nWindow:\n3\nv131
+            const featuresSection = fullText.match(/Features([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+CSS Media|CSS Media Queries|$)/i);
             if (featuresSection) {
                 const featText = featuresSection[2];
 
-                // Формат может быть: "JS/DOM: 317 v131" или "JS/DOM:\n317\nv131"
-                // Или просто "JS/DOM:\n317" с числом на следующей строке
-                const jsdomMatch = featText.match(/JS\s*\/\s*DOM:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // JS/DOM может быть в формате:
+                // "JS/DOM:\n317\nv131" или "JS/DOM: 317 v131" или просто "JS/DOM\n317"
+                const jsdomMatch = featText.match(/JS\s*[\/\\]\s*DOM[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (jsdomMatch) {
                     results.features.jsdom = parseInt(jsdomMatch[1]);
                     if (jsdomMatch[2]) results.features.jsdomVersion = parseInt(jsdomMatch[2]);
                 }
 
-                const cssMatch = featText.match(/CSS:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // CSS
+                const cssMatch = featText.match(/\nCSS[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (cssMatch) {
                     results.features.css = parseInt(cssMatch[1]);
                     if (cssMatch[2]) results.features.cssVersion = parseInt(cssMatch[2]);
                 }
 
-                const windowFeatMatch = featText.match(/Window:?\s*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
+                // Window (в Features секции, не путать с Window секцией)
+                const windowFeatMatch = featText.match(/\nWindow[:\s]*\n?\s*(\d+)(?:\s*\n?\s*v?(\d+))?/i);
                 if (windowFeatMatch) {
                     results.features.window = parseInt(windowFeatMatch[1]);
                     if (windowFeatMatch[2]) results.features.windowVersion = parseInt(windowFeatMatch[2]);
