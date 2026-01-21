@@ -250,6 +250,11 @@
             font-family: monospace;
             font-size: 0.8em;
         }
+        .data-value {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .data-value:hover { color: var(--accent); }
         .data-value.copied, .score-value.copied { color: var(--success) !important; }
         .clickable { cursor: pointer; transition: opacity 0.2s; }
         .clickable:hover { opacity: 0.7; }
@@ -415,9 +420,11 @@
 
         function row(label, value, valueClass = '') {
             if (value === null || value === undefined || value === '') return '';
+            const safeVal = escapeHtml(String(value));
+            const copyVal = String(value).replace(/'/g, "\\'").replace(/"/g, '&quot;');
             return `<div class="data-row">
                 <span class="data-label">${label}</span>
-                <span class="data-value ${valueClass}">${value}</span>
+                <span class="data-value ${valueClass}" onclick="copyToClipboard('${copyVal}', this)" title="Клик для копирования">${safeVal}</span>
             </div>`;
         }
 
