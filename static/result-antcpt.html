@@ -544,10 +544,11 @@
 
             // User Agent (separate card for long value)
             if (fp.userAgent) {
+                const uaCopyVal = fp.userAgent.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 html += `
                     <div class="data-card" style="margin-bottom: 24px;">
                         <h3>User Agent</h3>
-                        <p style="font-family: monospace; font-size: 0.8em; word-break: break-all; color: var(--muted);">${escapeHtml(fp.userAgent)}</p>
+                        <p class="data-value" style="font-family: monospace; font-size: 0.85em; word-break: break-all; text-align: left; max-width: 100%;" onclick="copyToClipboard('${uaCopyVal}', this)" title="Клик для копирования">${escapeHtml(fp.userAgent)}</p>
                     </div>
                 `;
             }
