@@ -455,7 +455,7 @@
                 <!-- Score Cards -->
                 <div class="score-section">
                     <div class="score-card main">
-                        <div class="score-value ${scoreClass}">${score.toFixed(2)}</div>
+                        <div class="score-value ${scoreClass}">${parseFloat(score.toFixed(2))}</div>
                         <div class="score-label">reCAPTCHA Score</div>
                         <div class="score-desc">0.0 = бот, 1.0 = человек</div>
                         <span class="verdict ${scoreClass}">${scorePercent}%</span>
@@ -489,7 +489,7 @@
                 <div class="data-grid">
                     <div class="data-card">
                         <h3>reCAPTCHA Response</h3>
-                        ${row('Score', score.toFixed(3), scoreClass)}
+                        ${row('Score', parseFloat(score.toFixed(2)), scoreClass)}
                         ${row('Success', fp.success ? 'true' : 'false', fp.success ? 'success' : 'danger')}
                         ${row('Action', fp.action)}
                         ${row('Hostname', fp.hostname)}

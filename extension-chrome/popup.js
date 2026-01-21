@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (item.service === 'antcpt') {
                 serviceLabel = 'AntCpt';
                 // AntCpt: score 0-1, высокий score = хорошо (инвертируем цвета)
-                scoreLabel = score.toFixed ? score.toFixed(2) : score;
+                scoreLabel = parseFloat(score.toFixed(2));  // 0.90 -> 0.9
                 scoreClass = score >= 0.7 ? 'low' : score >= 0.3 ? 'medium' : 'high';
                 resultUrl = `${SERVER_URL}/result-antcpt?session=${item.sessionId}`;
             } else {
