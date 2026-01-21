@@ -462,7 +462,6 @@
                         <div class="score-value ${scoreClass}">${parseFloat(score.toFixed(2))}</div>
                         <div class="score-label">reCAPTCHA Score</div>
                         <div class="score-desc">0.0 = бот, 1.0 = человек</div>
-                        <span class="verdict ${scoreClass}">${scorePercent}%</span>
                     </div>
                     <div class="score-card">
                         <div class="score-value clickable" style="font-size: 1.8em; color: var(--text);" onclick="copyToClipboard('${escapeHtml(fp.ip || '')}', this)" title="Клик для копирования">${escapeHtml(fp.ip || 'N/A')}</div>
