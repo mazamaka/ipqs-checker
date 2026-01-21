@@ -44,24 +44,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         historyList.innerHTML = history.map(item => {
             const score = item.score || 0;
-            const scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
+            let scoreClass;
 
             let serviceLabel, scoreLabel, resultUrl;
             if (item.service === 'fingerprint') {
                 serviceLabel = 'FP Pro';
                 scoreLabel = score;
+                scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
                 resultUrl = `${SERVER_URL}/result-fp?session=${item.sessionId}`;
             } else if (item.service === 'creepjs') {
                 serviceLabel = 'CreepJS';
                 scoreLabel = score + '%';
+                scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
                 resultUrl = `${SERVER_URL}/result-creep?session=${item.sessionId}`;
             } else if (item.service === 'antcpt') {
                 serviceLabel = 'AntCpt';
-                scoreLabel = score + '%';
+                // AntCpt: score 0-1, высокий score = хорошо (инвертируем цвета)
+                scoreLabel = score.toFixed ? score.toFixed(2) : score;
+                scoreClass = score >= 0.7 ? 'low' : score >= 0.3 ? 'medium' : 'high';
                 resultUrl = `${SERVER_URL}/result-antcpt?session=${item.sessionId}`;
             } else {
                 serviceLabel = 'IPQS';
                 scoreLabel = score + '%';
+                scoreClass = score >= 70 ? 'high' : score >= 30 ? 'medium' : 'low';
                 resultUrl = `${SERVER_URL}/result?session=${item.sessionId}`;
             }
 

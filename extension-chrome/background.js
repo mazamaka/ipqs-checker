@@ -260,8 +260,8 @@ async function addToHistory(sessionId, fingerprint, service) {
         // CreepJS: используем likeHeadless как основной индикатор (самый показательный)
         score = fingerprint.headless?.likeHeadless || fingerprint.headless?.stealth || 0;
     } else if (service === 'antcpt') {
-        // AntCpt: reCAPTCHA score (0-1), показываем как процент (0.9 = 90%)
-        score = Math.round((fingerprint.score || 0) * 100);
+        // AntCpt: reCAPTCHA score (0-1), сохраняем как есть
+        score = fingerprint.score || 0;
     } else {
         score = fingerprint.fraud_chance || 0;
     }

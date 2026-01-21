@@ -250,6 +250,37 @@
             font-family: monospace;
             font-size: 0.8em;
         }
+        .data-value.copied, .score-value.copied { color: var(--success) !important; }
+        .clickable { cursor: pointer; transition: opacity 0.2s; }
+        .clickable:hover { opacity: 0.7; }
+
+        /* JSON panel */
+        .json-panel { margin-top: 24px; margin-bottom: 24px; }
+        .json-toggle {
+            width: 100%;
+            padding: 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .json-toggle:hover { background: var(--border); }
+        .json-box {
+            display: none;
+            margin-top: 12px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            color: var(--text);
+        }
 
         /* Score scale */
         .score-scale {
@@ -337,6 +368,38 @@
 
     <script>
         const SERVER_URL = 'https://check.maxbob.xyz';
+        let jsonData = null;
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        async function copyToClipboard(text, el) {
+            try {
+                await navigator.clipboard.writeText(text);
+                el.classList.add('copied');
+                setTimeout(() => { el.classList.remove('copied'); }, 1500);
+            } catch (e) {
+                console.error('Copy failed:', e);
+            }
+        }
+
+        function toggleJson() {
+            const box = document.getElementById('jsonBox');
+            const btn = document.querySelector('.json-toggle');
+            const isHidden = getComputedStyle(box).display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+
+            if (isHidden && jsonData) {
+                navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
+                    btn.textContent = 'JSON скопирован!';
+                    setTimeout(() => { btn.textContent = 'Скрыть JSON'; }, 1500);
+                });
+            } else {
+                btn.textContent = 'Показать полный JSON';
+            }
+        }
 
         function getScoreClass(score) {
             if (score >= 0.7) return 'high';
@@ -359,6 +422,7 @@
         }
 
         function renderResults(data) {
+            jsonData = data;
             const fp = data.fingerprint || {};
             const summary = data.summary || {};
 
@@ -390,11 +454,11 @@
                         <span class="verdict ${scoreClass}">${scorePercent}%</span>
                     </div>
                     <div class="score-card">
-                        <div class="score-value" style="font-size: 1.8em; color: var(--text);">${fp.ip || 'N/A'}</div>
+                        <div class="score-value clickable" style="font-size: 1.8em; color: var(--text);" onclick="copyToClipboard('${escapeHtml(fp.ip || '')}', this)" title="Клик для копирования">${escapeHtml(fp.ip || 'N/A')}</div>
                         <div class="score-label">IP Address</div>
                     </div>
                     <div class="score-card">
-                        <div class="score-value" style="font-size: 1.5em; color: var(--text);">${fp.timezone || 'N/A'}</div>
+                        <div class="score-value clickable" style="font-size: 1.5em; color: var(--text);" onclick="copyToClipboard('${escapeHtml(fp.timezone || '')}', this)" title="Клик для копирования">${escapeHtml(fp.timezone || 'N/A')}</div>
                         <div class="score-label">Timezone</div>
                     </div>
                 </div>
@@ -473,10 +537,18 @@
                 html += `
                     <div class="data-card" style="margin-bottom: 24px;">
                         <h3>User Agent</h3>
-                        <p style="font-family: monospace; font-size: 0.8em; word-break: break-all; color: var(--muted);">${fp.userAgent}</p>
+                        <p style="font-family: monospace; font-size: 0.8em; word-break: break-all; color: var(--muted);">${escapeHtml(fp.userAgent)}</p>
                     </div>
                 `;
             }
+
+            // JSON Panel
+            html += `
+                <div class="json-panel">
+                    <button class="json-toggle" onclick="toggleJson()">Показать полный JSON</button>
+                    <pre class="json-box" id="jsonBox">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+                </div>
+            `;
 
             document.getElementById('content').innerHTML = html;
         }
