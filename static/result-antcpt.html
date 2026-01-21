@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты проверки - AntCpt reCAPTCHA</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --muted: #6b7280;
+            --accent: #ffc107;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 193, 7, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 193, 7, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: blobFloat 20s ease-in-out infinite;
+        }
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #ffca28 0%, #ffc107 100%);
+            bottom: -50px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(-30px, -20px) scale(1.02); }
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--muted); margin-top: 8px; }
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .loader {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--muted); }
+
+        /* Score section */
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 700px) {
+            .score-section { grid-template-columns: 1fr; }
+        }
+        .score-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .score-card.main {
+            grid-column: span 1;
+        }
+        .score-value {
+            font-size: 3.5em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score-value.high { color: var(--success); }
+        .score-value.medium { color: var(--warning); }
+        .score-value.low { color: var(--danger); }
+        .score-label {
+            color: var(--muted);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .score-desc {
+            color: var(--muted);
+            font-size: 0.75em;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+        .verdict {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.85em;
+        }
+        .verdict.high { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .verdict.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .verdict.low { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        /* Result alert */
+        .result-alert {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border: 2px solid rgba(16, 185, 129, 0.5);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .result-alert.human { }
+        .result-alert.suspicious {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+        .result-alert.bot {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+            border-color: rgba(239, 68, 68, 0.5);
+            animation: pulseAlert 2s infinite;
+        }
+        @keyframes pulseAlert {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.2); }
+        }
+        .result-alert h2 {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+        .result-alert.human h2 { color: var(--success); }
+        .result-alert.suspicious h2 { color: var(--warning); }
+        .result-alert.bot h2 { color: var(--danger); }
+        .result-alert p {
+            color: var(--text);
+            opacity: 0.8;
+        }
+
+        /* Data grid */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .data-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .data-card h3 {
+            font-size: 0.9em;
+            color: var(--accent);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-row:last-child { border-bottom: none; }
+        .data-label {
+            color: var(--muted);
+            font-size: 0.85em;
+        }
+        .data-value {
+            text-align: right;
+            font-size: 0.9em;
+            max-width: 60%;
+            word-break: break-word;
+        }
+        .data-value.success { color: var(--success); }
+        .data-value.warning { color: var(--warning); }
+        .data-value.danger { color: var(--danger); }
+        .data-value.mono {
+            font-family: monospace;
+            font-size: 0.8em;
+        }
+
+        /* Score scale */
+        .score-scale {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .score-scale h3 {
+            font-size: 0.9em;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .scale-bar {
+            height: 8px;
+            background: linear-gradient(to right, #ef4444 0%, #f59e0b 30%, #10b981 70%, #10b981 100%);
+            border-radius: 4px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+        .scale-marker {
+            position: absolute;
+            top: -4px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            color: var(--muted);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--muted);
+            font-size: 0.8em;
+        }
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-grid"></div>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>AntCpt - reCAPTCHA v3 Score</h1>
+            <p>Проверка reCAPTCHA score для оценки "человечности"</p>
+        </div>
+
+        <div id="content">
+            <div class="loading">
+                <div class="loader"></div>
+                <p class="loading-text">Загрузка результатов...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Powered by <a href="https://antcpt.com" target="_blank">AntCpt</a> reCAPTCHA Score Detector</p>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://check.maxbob.xyz';
+
+        function getScoreClass(score) {
+            if (score >= 0.7) return 'high';
+            if (score >= 0.3) return 'medium';
+            return 'low';
+        }
+
+        function getScoreVerdict(score) {
+            if (score >= 0.7) return { text: 'Human', class: 'human', desc: 'Профиль распознан как человек' };
+            if (score >= 0.3) return { text: 'Suspicious', class: 'suspicious', desc: 'Подозрительная активность' };
+            return { text: 'Bot Detected', class: 'bot', desc: 'Профиль распознан как бот!' };
+        }
+
+        function row(label, value, valueClass = '') {
+            if (value === null || value === undefined || value === '') return '';
+            return `<div class="data-row">
+                <span class="data-label">${label}</span>
+                <span class="data-value ${valueClass}">${value}</span>
+            </div>`;
+        }
+
+        function renderResults(data) {
+            const fp = data.fingerprint || {};
+            const summary = data.summary || {};
+
+            const score = fp.score || summary.score || 0;
+            const scoreClass = getScoreClass(score);
+            const verdict = getScoreVerdict(score);
+            const scorePercent = Math.round(score * 100);
+
+            // Screen info
+            const screen = fp.screen || {};
+            const screenRes = screen.width && screen.height ? `${screen.width}x${screen.height}` : 'N/A';
+
+            // WebGL info
+            const webgl = fp.webgl || {};
+
+            let html = `
+                <!-- Result Alert -->
+                <div class="result-alert ${verdict.class}">
+                    <h2>${verdict.text}</h2>
+                    <p>${verdict.desc}</p>
+                </div>
+
+                <!-- Score Cards -->
+                <div class="score-section">
+                    <div class="score-card main">
+                        <div class="score-value ${scoreClass}">${score.toFixed(2)}</div>
+                        <div class="score-label">reCAPTCHA Score</div>
+                        <div class="score-desc">0.0 = бот, 1.0 = человек</div>
+                        <span class="verdict ${scoreClass}">${scorePercent}%</span>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value" style="font-size: 1.8em; color: var(--text);">${fp.ip || 'N/A'}</div>
+                        <div class="score-label">IP Address</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value" style="font-size: 1.5em; color: var(--text);">${fp.timezone || 'N/A'}</div>
+                        <div class="score-label">Timezone</div>
+                    </div>
+                </div>
+
+                <!-- Score Scale -->
+                <div class="score-scale">
+                    <h3>Шкала оценки</h3>
+                    <div class="scale-bar">
+                        <div class="scale-marker" style="left: ${scorePercent}%"></div>
+                    </div>
+                    <div class="scale-labels">
+                        <span>0.0 (Bot)</span>
+                        <span>0.3</span>
+                        <span>0.5</span>
+                        <span>0.7</span>
+                        <span>1.0 (Human)</span>
+                    </div>
+                </div>
+
+                <!-- Data Grid -->
+                <div class="data-grid">
+                    <div class="data-card">
+                        <h3>reCAPTCHA Response</h3>
+                        ${row('Score', score.toFixed(3), scoreClass)}
+                        ${row('Success', fp.success ? 'true' : 'false', fp.success ? 'success' : 'danger')}
+                        ${row('Action', fp.action)}
+                        ${row('Hostname', fp.hostname)}
+                        ${row('Challenge Time', fp.challenge_ts)}
+                    </div>
+
+                    <div class="data-card">
+                        <h3>Device Info</h3>
+                        ${row('Platform', fp.platform)}
+                        ${row('Language', fp.language)}
+                        ${row('Languages', fp.languages?.join(', '))}
+                        ${row('CPU Cores', fp.hardwareConcurrency)}
+                        ${row('Device Memory', fp.deviceMemory ? fp.deviceMemory + ' GB' : null)}
+                        ${row('Touch Points', fp.maxTouchPoints)}
+                    </div>
+
+                    <div class="data-card">
+                        <h3>Screen</h3>
+                        ${row('Resolution', screenRes)}
+                        ${row('Available', screen.availWidth && screen.availHeight ? `${screen.availWidth}x${screen.availHeight}` : null)}
+                        ${row('Color Depth', screen.colorDepth ? screen.colorDepth + ' bit' : null)}
+                        ${row('Pixel Ratio', screen.pixelRatio)}
+                    </div>
+
+                    <div class="data-card">
+                        <h3>WebGL</h3>
+                        ${row('Vendor', webgl.vendor)}
+                        ${row('Renderer', webgl.renderer, 'mono')}
+                        ${row('Version', webgl.version)}
+                    </div>
+
+                    <div class="data-card">
+                        <h3>Network</h3>
+                        ${row('IP Address', fp.ip)}
+                        ${row('Timezone', fp.timezone)}
+                        ${row('Timezone Offset', fp.timezoneOffset !== undefined ? 'UTC' + (fp.timezoneOffset > 0 ? '-' : '+') + Math.abs(fp.timezoneOffset / 60) : null)}
+                    </div>
+
+                    <div class="data-card">
+                        <h3>Session</h3>
+                        ${row('Check ID', data.check_id)}
+                        ${row('Profile ID', data.profile_id)}
+                        ${row('Source', data.source)}
+                        ${row('Timestamp', data.timestamp ? new Date(data.timestamp).toLocaleString('ru-RU') : null)}
+                        ${row('Check Time', fp.checkTime ? fp.checkTime + ' ms' : null)}
+                    </div>
+                </div>
+            `;
+
+            // User Agent (separate card for long value)
+            if (fp.userAgent) {
+                html += `
+                    <div class="data-card" style="margin-bottom: 24px;">
+                        <h3>User Agent</h3>
+                        <p style="font-family: monospace; font-size: 0.8em; word-break: break-all; color: var(--muted);">${fp.userAgent}</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function showError(message) {
+            document.getElementById('content').innerHTML = `
+                <div class="error-message">
+                    <h3>Ошибка</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        async function loadResults() {
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session');
+
+            if (!sessionId) {
+                showError('Session ID не указан');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/extension/result/${sessionId}`);
+                const data = await response.json();
+
+                if (data.status === 'pending') {
+                    // Still waiting
+                    setTimeout(loadResults, 1000);
+                    return;
+                }
+
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                renderResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Не удалось загрузить результаты: ' + error.message);
+            }
+        }
+
+        loadResults();
+    </script>
+</body>
+</html>

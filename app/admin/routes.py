@@ -238,7 +238,7 @@ async def history_list(
     offset = (page - 1) * limit
 
     # Validate service filter
-    valid_services = ["ipqs", "fingerprint_pro", "creepjs", None]
+    valid_services = ["ipqs", "fingerprint_pro", "creepjs", "antcpt", None]
     if service not in valid_services:
         service = None
 

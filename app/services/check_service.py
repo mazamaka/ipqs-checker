@@ -220,6 +220,10 @@ async def get_stats(session: AsyncSession) -> dict:
         select(func.count(Check.id)).where(Check.service == "creepjs")
     )).scalar() or 0
 
+    antcpt_count = (await session.execute(
+        select(func.count(Check.id)).where(Check.service == "antcpt")
+    )).scalar() or 0
+
     # FP Pro specific: anti-detect browser detected count
     # We need to check raw_response for this
     fp_antidetect_count = 0
@@ -257,6 +261,7 @@ async def get_stats(session: AsyncSession) -> dict:
             "ipqs": ipqs_count,
             "fingerprint_pro": fp_count,
             "creepjs": creepjs_count,
+            "antcpt": antcpt_count,
             "fp_antidetect": fp_antidetect_count,
         },
     }

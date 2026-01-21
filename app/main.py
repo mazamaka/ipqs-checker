@@ -161,6 +161,15 @@ async def result_creep_page():
     return HTMLResponse(content="<h1>CreepJS Results</h1><p>Page not found</p>")
 
 
+@app.get("/result-antcpt", response_class=HTMLResponse)
+async def result_antcpt_page():
+    """Result page for AntCpt (reCAPTCHA v3 score)"""
+    html_file = STATIC_DIR / "result-antcpt.html"
+    if html_file.exists():
+        return HTMLResponse(content=html_file.read_text())
+    return HTMLResponse(content="<h1>AntCpt Results</h1><p>Page not found</p>")
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -768,6 +777,126 @@ async def extension_report_creep(request: Request):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"CreepJS error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+# Store for AntCpt reports (TTL = 1 hour cache)
+antcpt_reports: TTLCache = TTLCache(maxsize=1000, ttl=3600)
+
+
+@app.post("/api/extension/report-antcpt")
+@limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
+async def extension_report_antcpt(request: Request):
+    """Receive AntCpt reCAPTCHA v3 score data from browser extension"""
+    try:
+        data = await request.json()
+        session_id = data.get("session_id", "default")
+        fingerprint = data.get("fingerprint", {})
+        source = data.get("source", "unknown")
+
+        # Extract key data from AntCpt response
+        recaptcha_score = fingerprint.get("score", 0)
+        recaptcha_success = fingerprint.get("success", False)
+        recaptcha_action = fingerprint.get("action", "")
+        antcpt_ip = fingerprint.get("ip")
+        user_agent = fingerprint.get("userAgent", "")
+        platform = fingerprint.get("platform", "")
+        timezone = fingerprint.get("timezone", "")
+        webgl = fingerprint.get("webgl", {})
+        screen = fingerprint.get("screen", {})
+
+        # Build response data
+        response_data = {
+            "fingerprint": fingerprint,
+            "timestamp": datetime.utcnow().isoformat(),
+            "source": source,
+            "service": "antcpt",
+            "summary": {
+                "score": recaptcha_score,
+                "success": recaptcha_success,
+                "action": recaptcha_action,
+                "ip": antcpt_ip,
+                "platform": platform,
+                "timezone": timezone,
+                "user_agent": user_agent[:100] if user_agent else None,
+                "gpu_vendor": webgl.get("vendor") if webgl else None,
+                "gpu_renderer": webgl.get("renderer") if webgl else None,
+            }
+        }
+
+        # Save to PostgreSQL for persistent storage
+        check_id = None
+        profile_id = None
+        try:
+            async with db.session() as db_session:
+                from app.models.check import Check
+
+                # Get or create profile using a combination of screen + webgl as identifier
+                screen_fp = f"{screen.get('width', 0)}x{screen.get('height', 0)}x{screen.get('colorDepth', 0)}"
+                gpu_fp = webgl.get("renderer", "")[:50] if webgl else ""
+                device_identifier = f"antcpt:{screen_fp}:{gpu_fp}"
+
+                profile = await profile_service.get_or_create_profile(
+                    db_session,
+                    canvas_hash=None,
+                    webgl_hash=gpu_fp[:32] if gpu_fp else None,
+                    device_id=device_identifier,
+                )
+                profile_id = profile.id
+
+                # Get country from timezone
+                antcpt_country = get_country_by_timezone(timezone)
+
+                check = Check(
+                    profile_id=profile_id,
+                    session_id=session_id,
+                    service="antcpt",
+                    source=source,
+                    guid=str(recaptcha_score),  # Store score as guid for easy access
+                    ip_address=antcpt_ip,
+                    country=antcpt_country,
+                    timezone=timezone,
+                    user_agent=user_agent[:500] if user_agent else None,
+                    raw_response=response_data,  # Store full response
+                )
+                db_session.add(check)
+                await db_session.commit()
+                await db_session.refresh(check)
+                check_id = check.id
+
+                # Update profile stats
+                profile.check_count += 1
+                profile.last_seen = datetime.utcnow()
+                await db_session.commit()
+
+                response_data["check_id"] = check_id
+                response_data["profile_id"] = profile_id
+                logger.info(f"Saved AntCpt check {check_id} for profile {profile_id}")
+        except Exception as db_error:
+            logger.error(f"Error saving AntCpt to database: {db_error}")
+
+        # Store in memory cache for quick access
+        antcpt_reports[session_id] = response_data
+        extension_reports[session_id] = response_data
+
+        # Log to visitors file (backup)
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "service": "antcpt",
+            "score": recaptcha_score,
+            "ip": antcpt_ip,
+            "platform": platform,
+        }
+        with open(VISITORS_LOG, "a") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        logger.info(f"Received AntCpt for session {session_id}")
+        logger.info(f"reCAPTCHA Score: {recaptcha_score}, IP: {antcpt_ip}")
+
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"AntCpt error: {e}")
         return JSONResponse({"error": str(e)}, status_code=400)
 
 

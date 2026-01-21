@@ -1,11 +1,11 @@
-// Popup script для Chrome - поддержка IPQS и Fingerprint Pro
+// Popup script для Chrome - поддержка IPQS, Fingerprint Pro, CreepJS и AntCpt
 const SERVER_URL = 'https://check.maxbob.xyz';
 
 let logsVisible = false;
 let logsInterval = null;
 let currentLogs = [];
 let checkInProgress = false;
-let selectedService = 'ipqs';  // 'ipqs' или 'fingerprint'
+let selectedService = 'ipqs';  // 'ipqs', 'fingerprint', 'creepjs' или 'antcpt'
 
 document.addEventListener('DOMContentLoaded', function() {
     const checkBtn = document.getElementById('checkBtn');
@@ -55,6 +55,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 serviceLabel = 'CreepJS';
                 scoreLabel = score + '%';
                 resultUrl = `${SERVER_URL}/result-creep?session=${item.sessionId}`;
+            } else if (item.service === 'antcpt') {
+                serviceLabel = 'AntCpt';
+                scoreLabel = score + '%';
+                resultUrl = `${SERVER_URL}/result-antcpt?session=${item.sessionId}`;
             } else {
                 serviceLabel = 'IPQS';
                 scoreLabel = score + '%';
@@ -184,6 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         siteName = 'fingerprint.com';
                     } else if (selectedService === 'creepjs') {
                         siteName = 'CreepJS';
+                    } else if (selectedService === 'antcpt') {
+                        siteName = 'antcpt.com';
                     } else {
                         siteName = 'indeed.com';
                     }
@@ -235,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update status based on logs
                 if (currentLogs.length > 0) {
                     const lastLog = currentLogs[currentLogs.length - 1];
-                    if (lastLog.includes('fingerprint') || lastLog.includes('Fingerprint') || lastLog.includes('CreepJS')) {
+                    if (lastLog.includes('fingerprint') || lastLog.includes('Fingerprint') || lastLog.includes('CreepJS') || lastLog.includes('AntCpt')) {
                         setStatus('Получен fingerprint, отправка...', 'loading');
                     } else if (lastLog.includes('сервер')) {
                         setStatus('Отправка на сервер...', 'loading');
@@ -245,6 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             siteName = 'fingerprint.com';
                         } else if (service === 'creepjs') {
                             siteName = 'CreepJS';
+                        } else if (service === 'antcpt') {
+                            siteName = 'antcpt.com';
                         } else {
                             siteName = 'indeed.com';
                         }
@@ -260,6 +268,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         siteName = 'fingerprint.com';
                     } else if (service === 'creepjs') {
                         siteName = 'CreepJS';
+                    } else if (service === 'antcpt') {
+                        siteName = 'antcpt.com';
                     } else {
                         siteName = 'indeed.com';
                     }
@@ -306,6 +316,20 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 statusText += ` | Like Headless: ${likeHeadless}%`;
                 setStatus(statusText, 'success');
+            }
+        } else if (service === 'antcpt') {
+            // AntCpt result - reCAPTCHA v3 score (0-1)
+            const score = fingerprint.score || 0;
+            const scorePercent = Math.round(score * 100);
+
+            let statusText = `reCAPTCHA Score: ${score}`;
+            // Score >= 0.7 is good (human), < 0.3 is bad (bot)
+            if (score >= 0.7) {
+                setStatus(statusText + ' (Human)', 'success');
+            } else if (score >= 0.3) {
+                setStatus(statusText + ' (Suspicious)', 'warning');
+            } else {
+                setStatus(statusText + ' (Bot detected)', 'error');
             }
         } else {
             // IPQS result

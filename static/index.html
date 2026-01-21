@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fingerprint Checker — IPQS, Fingerprint Pro & CreepJS</title>
+    <title>Fingerprint Checker — IPQS, Fingerprint Pro, CreepJS & AntCpt</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -262,11 +262,16 @@
         }
         .services {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
             margin-bottom: 25px;
         }
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
+            .services {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 500px) {
             .services {
                 grid-template-columns: 1fr;
             }
@@ -303,6 +308,10 @@
         .service-badge.creepjs {
             background: rgba(16, 185, 129, 0.3);
             color: #6ee7b7;
+        }
+        .service-badge.antcpt {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
         }
         .service-via {
             font-size: 11px;
@@ -348,7 +357,7 @@
     <div class="container">
         <div class="card">
             <h1>Fingerprint Checker</h1>
-            <p class="subtitle">Проверка антидетект-браузеров через IPQS, Fingerprint Pro и CreepJS</p>
+            <p class="subtitle">Проверка антидетект-браузеров через IPQS, Fingerprint Pro, CreepJS и AntCpt</p>
 
             <div class="services">
                 <div class="service">
@@ -385,6 +394,18 @@
                         <li>Stealth/Headless детект</li>
                         <li>Lie/Trash детект</li>
                         <li>Resistance анализ</li>
+                    </ul>
+                </div>
+                <div class="service">
+                    <div class="service-header">
+                        <span class="service-badge antcpt" title="AntCpt — проверка reCAPTCHA v3 score для оценки 'человечности' профиля">AntCpt</span>
+                        <span class="service-via">via antcpt.com</span>
+                    </div>
+                    <ul class="service-features">
+                        <li>reCAPTCHA v3 Score</li>
+                        <li>Human/Bot детект</li>
+                        <li>Device fingerprint</li>
+                        <li>IP & Timezone</li>
                     </ul>
                 </div>
             </div>

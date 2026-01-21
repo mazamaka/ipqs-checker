@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Dashboard</h1>
-    <p>Обзор проверок IPQS, Fingerprint Pro и CreepJS</p>
+    <p>Обзор проверок IPQS, Fingerprint Pro, CreepJS и AntCpt</p>
 </div>
 
 <!-- Services Stats -->
@@ -23,6 +23,10 @@
     <div class="stat-card" style="border-left: 3px solid #10b981;">
         <div class="stat-value">{{ stats.services.creepjs if stats.services else 0 }}</div>
         <div class="stat-label">CreepJS проверок</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #fbbf24;">
+        <div class="stat-value">{{ stats.services.antcpt if stats.services else 0 }}</div>
+        <div class="stat-label">AntCpt проверок</div>
     </div>
     <div class="stat-card" style="border-left: 3px solid #f59e0b;">
         <div class="stat-value danger">{{ stats.services.fp_antidetect if stats.services else 0 }}</div>
@@ -135,6 +139,8 @@
                         <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
                         {% elif check.service == 'creepjs' %}
                         <span class="badge" style="background: rgba(16, 185, 129, 0.3); color: #6ee7b7;">Creep</span>
+                        {% elif check.service == 'antcpt' %}
+                        <span class="badge" style="background: rgba(251, 191, 36, 0.3); color: #fcd34d;">AntCpt</span>
                         {% else %}
                         <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
                         {% endif %}
@@ -161,6 +167,19 @@
                                 <span class="badge badge-warning" title="Stealth: {{ stealth }}%">{{ stealth }}%</span>
                                 {% else %}
                                 <span class="badge badge-success" title="Stealth: {{ stealth }}%">{{ stealth }}%</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
+                        {% elif check.service == 'antcpt' %}
+                            {% if check.raw_response and check.raw_response.recaptcha_score is defined %}
+                                {% set score = check.raw_response.recaptcha_score %}
+                                {% if score >= 0.7 %}
+                                <span class="badge badge-success" title="reCAPTCHA: {{ score }}">{{ score }}</span>
+                                {% elif score >= 0.3 %}
+                                <span class="badge badge-warning" title="reCAPTCHA: {{ score }}">{{ score }}</span>
+                                {% else %}
+                                <span class="badge badge-danger" title="reCAPTCHA: {{ score }}">{{ score }}</span>
                                 {% endif %}
                             {% else %}
                             <span class="badge badge-muted">N/A</span>
@@ -192,6 +211,10 @@
                             {% elif check.service == 'creepjs' %}
                             <a href="/result-creep?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">
                                 Creep
+                            </a>
+                            {% elif check.service == 'antcpt' %}
+                            <a href="/result-antcpt?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">
+                                AntCpt
                             </a>
                             {% else %}
                             <a href="/result?session={{ check.session_id }}" target="_blank" class="btn btn-sm btn-secondary" title="Открыть результат">

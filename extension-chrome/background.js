@@ -1,10 +1,10 @@
 // Background Service Worker для Chrome MV3
-// Поддержка IPQS (indeed.com), Fingerprint Pro (fingerprint.com) и CreepJS
+// Поддержка IPQS (indeed.com), Fingerprint Pro (fingerprint.com), CreepJS и AntCpt
 const SERVER_URL = 'https://check.maxbob.xyz';
 
 let currentSessionId = null;
 let checkTabId = null;  // ID вкладки проверки
-let currentService = 'ipqs';  // 'ipqs', 'fingerprint' или 'creepjs'
+let currentService = 'ipqs';  // 'ipqs', 'fingerprint', 'creepjs' или 'antcpt'
 
 // Debug logging helper
 async function addLog(message) {
@@ -95,6 +95,29 @@ async function sendCreepJSToServer(sessionId, data) {
     }
 }
 
+// Отправка AntCpt данных на сервер
+async function sendAntCptToServer(sessionId, data) {
+    addLog('Отправка AntCpt на сервер...');
+    try {
+        const response = await fetch(`${SERVER_URL}/api/extension/report-antcpt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                fingerprint: data,
+                source: 'chrome-extension-antcpt'
+            })
+        });
+
+        const result = await response.json();
+        addLog(`Сервер ответил: ${JSON.stringify(result).substring(0, 100)}`);
+        return result;
+    } catch (error) {
+        addLog(`Ошибка отправки: ${error.message}`);
+        throw error;
+    }
+}
+
 // Очистка данных indeed.com
 async function clearIndeedData() {
     addLog('Очистка данных indeed.com...');
@@ -150,6 +173,24 @@ async function clearCreepJSData() {
     }
 }
 
+// Очистка данных AntCpt
+async function clearAntCptData() {
+    addLog('Очистка данных antcpt.com...');
+    try {
+        await chrome.browsingData.remove({
+            origins: ['https://antcpt.com']
+        }, {
+            cookies: true,
+            cache: true,
+            localStorage: true,
+            indexedDB: true
+        });
+        addLog('Данные antcpt.com очищены');
+    } catch (e) {
+        addLog(`Ошибка очистки antcpt: ${e.message}`);
+    }
+}
+
 // Обработка завершения проверки
 async function handleCheckComplete(sessionId, lastFingerprint, service) {
     addLog('Открываю страницу результатов...');
@@ -160,6 +201,8 @@ async function handleCheckComplete(sessionId, lastFingerprint, service) {
         resultUrl = `${SERVER_URL}/result-fp?session=${sessionId}`;
     } else if (service === 'creepjs') {
         resultUrl = `${SERVER_URL}/result-creep?session=${sessionId}`;
+    } else if (service === 'antcpt') {
+        resultUrl = `${SERVER_URL}/result-antcpt?session=${sessionId}`;
     } else {
         resultUrl = `${SERVER_URL}/result?session=${sessionId}`;
     }
@@ -187,6 +230,8 @@ async function handleCheckComplete(sessionId, lastFingerprint, service) {
         clearFingerprintData();
     } else if (service === 'creepjs') {
         clearCreepJSData();
+    } else if (service === 'antcpt') {
+        clearAntCptData();
     }
     addLog('Данные очищены после проверки');
 
@@ -214,6 +259,9 @@ async function addToHistory(sessionId, fingerprint, service) {
     } else if (service === 'creepjs') {
         // CreepJS: используем likeHeadless как основной индикатор (самый показательный)
         score = fingerprint.headless?.likeHeadless || fingerprint.headless?.stealth || 0;
+    } else if (service === 'antcpt') {
+        // AntCpt: reCAPTCHA score (0-1), показываем как процент (0.9 = 90%)
+        score = Math.round((fingerprint.score || 0) * 100);
     } else {
         score = fingerprint.fraud_chance || 0;
     }
@@ -330,6 +378,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ status: 'ok' });
     }
 
+    // AntCpt данные от antcpt.com
+    if (message.type === 'ANTCPT_DATA') {
+        chrome.storage.local.get(['sessionId', 'currentService']).then(data => {
+            const sessionId = data.sessionId || currentSessionId;
+            if (!sessionId) {
+                addLog('Ошибка: sessionId не найден!');
+                return;
+            }
+            currentSessionId = sessionId;
+
+            const antcptData = message.data;
+
+            addLog(`Получен AntCpt для сессии ${sessionId}`);
+            addLog(`reCAPTCHA Score: ${antcptData.score}`);
+            addLog(`IP: ${antcptData.ip}`);
+
+            sendAntCptToServer(sessionId, antcptData)
+                .then(() => handleCheckComplete(sessionId, antcptData, 'antcpt'))
+                .catch(err => {
+                    addLog(`Ошибка: ${err.message}`);
+                    chrome.storage.local.set({ checkComplete: true, checkError: err.message });
+                });
+        });
+
+        sendResponse({ status: 'ok' });
+    }
+
+    // AntCpt ошибка
+    if (message.type === 'ANTCPT_ERROR') {
+        addLog(`AntCpt ошибка: ${message.error}`);
+        chrome.storage.local.set({ checkComplete: true, checkError: message.error });
+        sendResponse({ status: 'ok' });
+    }
+
     // Запуск проверки
     if (message.type === 'START_CHECK') {
         const service = message.service || 'ipqs';
@@ -355,6 +437,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (service === 'creepjs') {
             clearFn = clearCreepJSData;
             checkUrl = 'https://abrahamjuliot.github.io/creepjs/';
+        } else if (service === 'antcpt') {
+            clearFn = clearAntCptData;
+            checkUrl = 'https://antcpt.com/score_detector/';
         } else {
             clearFn = clearIndeedData;
             checkUrl = 'https://secure.indeed.com/auth';

@@ -144,6 +144,8 @@
                         <span class="badge" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">FP</span>
                         {% elif check.service == 'creepjs' %}
                         <span class="badge" style="background: rgba(16, 185, 129, 0.3); color: #6ee7b7;">Creep</span>
+                        {% elif check.service == 'antcpt' %}
+                        <span class="badge" style="background: rgba(251, 191, 36, 0.3); color: #fcd34d;">AntCpt</span>
                         {% else %}
                         <span class="badge" style="background: rgba(102, 126, 234, 0.3); color: #a5b4fc;">IPQS</span>
                         {% endif %}
@@ -173,6 +175,19 @@
                             {% else %}
                             <span class="badge badge-muted">N/A</span>
                             {% endif %}
+                        {% elif check.service == 'antcpt' %}
+                            {% if check.raw_response and check.raw_response.recaptcha_score is defined %}
+                                {% set score = check.raw_response.recaptcha_score %}
+                                {% if score >= 0.7 %}
+                                <span class="badge badge-success">{{ score }}</span>
+                                {% elif score >= 0.3 %}
+                                <span class="badge badge-warning">{{ score }}</span>
+                                {% else %}
+                                <span class="badge badge-danger">{{ score }}</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-muted">N/A</span>
+                            {% endif %}
                         {% else %}
                         <span class="badge badge-{{ fraud_color_class(check.fraud_chance) }}">
                             {{ check.fraud_chance|fraud_score }}
@@ -180,7 +195,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if check.service == 'fingerprint_pro' or check.service == 'creepjs' %}
+                        {% if check.service == 'fingerprint_pro' or check.service == 'creepjs' or check.service == 'antcpt' %}
                         <span class="badge badge-muted">—</span>
                         {% elif check.proxy %}
                         <span class="badge badge-danger">Yes</span>
