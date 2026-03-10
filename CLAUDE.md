@@ -427,37 +427,12 @@ WORKERS=1
 
 ## Деплой
 
-- **Сервер**: 94.156.232.242 (admin)
-- **Домен**: check.maxbob.xyz
-- **Portainer**: stack ipqs-checker (ID: 95, endpoint: 3)
-- **SSL**: Nginx Proxy Manager
-- **БД**: PostgreSQL 16 в контейнере
-
-### Быстрый деплой через API
+Deploy via Docker Compose or Portainer. See docker-compose.yml for configuration.
 
 ```bash
-# 1. Получить JWT и сделать redeploy одной командой
-JWT=$(curl -s -X POST 'https://portainer.farm-mafia.cash/api/auth' \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"***REMOVED***"}' | jq -r '.jwt')
-
-# 2. Получить текущие env и сделать redeploy
-ENV=$(curl -s "https://portainer.farm-mafia.cash/api/stacks/95?endpointId=3" \
-  -H "Authorization: Bearer $JWT" | jq '.Env')
-
-curl -s -X PUT "https://portainer.farm-mafia.cash/api/stacks/95/git/redeploy?endpointId=3" \
-  -H "Authorization: Bearer $JWT" \
-  -H "Content-Type: application/json" \
-  -d "{\"env\":$ENV,\"prune\":false,\"RepositoryReferenceName\":\"refs/heads/main\",\"RepositoryAuthentication\":true,\"RepositoryUsername\":\"mazamaka603@gmail.com\",\"RepositoryPassword\":\"\",\"PullImage\":true}"
-
-# 3. Проверить health
-sleep 10 && curl -s https://check.maxbob.xyz/health
+docker-compose up -d
+curl -s http://localhost:8000/health
 ```
-
-### Процесс
-
-1. Закоммитить и запушить изменения
-2. Выполнить команды деплоя выше ИЛИ через Portainer UI
 
 ---
 

@@ -5,7 +5,10 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv/
 .env
+.env.local
+stack.env
 
 # IDE
 .idea/
