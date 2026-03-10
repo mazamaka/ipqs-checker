@@ -1,343 +1,364 @@
-# IPQS Fingerprint Checker
+<div align="center">
 
-A service for checking device fingerprints through the IPQS API with support for both Firefox and Chrome/Octo Browser extensions.
+# Fingerprint Checker
 
-**Live Demo:** [check.maxbob.xyz](https://check.maxbob.xyz/) · **Admin Panel:** [check.maxbob.xyz/admin](https://check.maxbob.xyz/admin)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Overview
+**Multi-service fingerprint analysis platform for antidetect browser profiles**
 
-IPQS Fingerprint Checker allows you to verify the quality of browser profiles by analyzing device fingerprints, fraud scores, and potential detection risks. This tool is particularly useful for validating antidetect browser sessions before use.
+Validates browser session quality through 4 independent fingerprinting services,
+providing comprehensive risk assessment before production use.
+
+[Live Demo](https://check.maxbob.xyz) ·
+[Admin Panel](https://check.maxbob.xyz/admin) ·
+[Download Extension](#extension-installation)
+
+</div>
+
+---
+
+## What It Does
+
+Fingerprint Checker intercepts and analyzes device fingerprint data from major anti-fraud services to assess the quality of antidetect browser profiles (Octo Browser, Multilogin, GoLogin, etc.).
+
+| Service | What It Checks | Key Metrics |
+|---------|---------------|-------------|
+| **IPQS** (via indeed.com) | Device fingerprint fraud scoring | Fraud Score 0-100%, VPN/Proxy/Tor detection, OS mismatch, Canvas/WebGL/Audio hashes |
+| **Fingerprint Pro** (fingerprint.com) | Commercial browser identification | Anti-detect browser detection, Suspect Score, Tampering detection, Visitor ID confidence |
+| **CreepJS** (abrahamjuliot.github.io) | Open-source fingerprint analysis | Headless/Stealth detection %, Lie detection, Trash score, Resistance analysis |
+| **AntCpt** (antcpt.com) | reCAPTCHA v3 scoring | Human/Bot score 0.0-1.0, Device fingerprint, GPU info, Platform analysis |
 
 ## Screenshots
 
-**Landing Page** — choose checker service (IPQS, Fingerprint Pro, CreepJS, AntCpt):
+<details>
+<summary><b>Landing Page</b> — choose checker service</summary>
 
 ![Landing](docs/screenshot-landing.png)
+</details>
 
-**IPQS Result** — fraud score, detections, device info:
+<details>
+<summary><b>IPQS Result</b> — fraud score, detections, device info</summary>
 
 ![IPQS Result](docs/screenshot-ipqs.png)
+</details>
 
-**Fingerprint Pro Result** — anti-detect browser detection, suspect score:
+<details>
+<summary><b>Fingerprint Pro Result</b> — anti-detect browser detection, suspect score</summary>
 
 ![FP Pro Result](docs/screenshot-fp.png)
+</details>
 
-**CreepJS Result** — headless & stealth detection scores:
+<details>
+<summary><b>CreepJS Result</b> — headless & stealth detection scores</summary>
 
 ![CreepJS Result](docs/screenshot-creep.png)
+</details>
 
-**AntCpt Result** — reCAPTCHA v3 score, device fingerprint:
+<details>
+<summary><b>AntCpt Result</b> — reCAPTCHA v3 score, device fingerprint</summary>
 
 ![AntCpt Result](docs/screenshot-antcpt.png)
+</details>
 
-**Admin Dashboard** — statistics, recent checks, country breakdown:
+<details>
+<summary><b>Admin Dashboard</b> — statistics, recent checks, country breakdown</summary>
 
 ![Admin Dashboard](docs/screenshot-admin.png)
-
-## Features
-
-- **FastAPI Backend** — High-performance API server with async/await support
-- **Chrome/Octo Extension** (Manifest V3) — Modern extension for Octo Browser and Chrome
-- **Firefox Extension** (Manifest V2) — Legacy support for Firefox
-- **PostgreSQL Database** — Persistent storage with async query support
-- **Admin Dashboard** — Monitoring and profile management interface
-- **Device Fingerprinting** — Canvas, WebGL, and hardware-based identification
-- **Fraud Detection** — Real-time risk scoring and anomaly detection
+</details>
 
 ## Architecture
 
 ```
-┌──────────────┐
-│ Browser      │
-│ Extension    │
-└──────┬───────┘
-       │ IPQS fingerprint data
-       ▼
-┌──────────────────────────────┐
-│ FastAPI Backend              │
-│ ├── /api/extension/report    │
-│ └── /api/extension/result    │
-└──────┬───────────────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│ PostgreSQL           │
-│ ├── profiles         │
-│ ├── checks           │
-│ └── indices          │
-└──────────────────────┘
-
-Browser → Extension intercepts IPQS data
-         → Sends to backend API
-         → Stored in PostgreSQL
-         → Results displayed on dashboard
+┌──────────────────────┐     ┌──────────────────────┐
+│  Chrome/Octo         │     │  Firefox Extension   │
+│  Extension (MV3)     │     │  (MV2)               │
+│                      │     │                      │
+│  ┌─ content-ipqs.js  │     │  ┌─ background.js    │
+│  ├─ content-fp.js    │     │  │  webRequest API    │
+│  ├─ content-creep.js │     │  └─ content.js       │
+│  ├─ content-antcpt.js│     │                      │
+│  └─ injected*.js     │     │                      │
+│     (fetch/XHR hook) │     │                      │
+└──────────┬───────────┘     └──────────┬───────────┘
+           │ POST /api/extension/report-*            │
+           ▼                                         ▼
+┌──────────────────────────────────────────────────────┐
+│  FastAPI Backend (Python 3.12, async)                │
+│                                                      │
+│  ├─ /api/extension/report      IPQS fingerprint      │
+│  ├─ /api/extension/report-fp   Fingerprint Pro       │
+│  ├─ /api/extension/report-creep CreepJS              │
+│  ├─ /api/extension/report-antcpt AntCpt              │
+│  ├─ /api/extension/result/{id} Get results           │
+│  ├─ /ipqs/{path}               Reverse proxy (IPQS)  │
+│  └─ /admin/*                   Admin panel (JWT)     │
+│                                                      │
+│  Rate limiting (slowapi) · CORS · Path traversal     │
+│  protection · JWT auth · Input validation            │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│  PostgreSQL 16 (asyncpg)                             │
+│                                                      │
+│  profiles ─┐  Unique fingerprints (SHA256 hash)      │
+│            │  Canvas + WebGL + DeviceID composite     │
+│  checks ───┘  Individual verification results        │
+│               4 services, JSONB raw responses         │
+│               Fraud scores, detections, geo, ISP      │
+└──────────────────────────────────────────────────────┘
 ```
+
+### Data Flow (IPQS Example)
+
+1. User clicks **"Check IPQS"** in extension popup
+2. Extension clears indeed.com cookies/cache/localStorage
+3. Opens `https://secure.indeed.com/auth` (IPQS-protected page)
+4. `injected.js` intercepts IPQS API response via fetch/XHR monkey-patching
+5. Fingerprint data sent to backend via `POST /api/extension/report`
+6. Backend creates/updates Profile + Check in PostgreSQL
+7. Extension polls `GET /api/extension/result/{session_id}`
+8. Tab redirects to results page with full analysis
 
 ## Quick Start
 
 ### Docker (Recommended)
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/ipqs-checker.git
+git clone https://github.com/mazamaka/ipqs-checker.git
 cd ipqs-checker
 
-# Create .env file
+# Configure environment
 cp .env.example .env
-# Edit .env with your PostgreSQL credentials
+# Edit .env: set POSTGRES_PASSWORD, ADMIN_PASSWORD, ADMIN_TOKEN_SECRET
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
-# Check health
+# Verify
 curl http://localhost:8000/health
+# {"status":"ok","timestamp":"..."}
 ```
 
 ### Local Development
 
 ```bash
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Setup PostgreSQL and create .env file
+# Requires running PostgreSQL
 export POSTGRES_HOST=127.0.0.1
-
-# Run server
 uvicorn app.main:app --reload --port 8000
 ```
-
-## API Endpoints
-
-### Main Pages
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Home page with instructions |
-| GET | `/result` | Results display page |
-| GET | `/health` | Health check endpoint |
-
-### Extension API
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/extension/report` | Receive fingerprint data from extension |
-| GET | `/api/extension/result/{session_id}` | Get check results for session |
-
-### Admin Panel
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/admin` | Dashboard and statistics |
-| GET | `/admin/profiles` | List of profiles |
-| GET | `/admin/profile/{id}` | Profile details and history |
-| GET | `/admin/history` | All checks history |
-| POST | `/admin/api/profile/{id}/flag` | Mark profile as suspicious |
 
 ## Extension Installation
 
 ### Chrome / Octo Browser (Recommended)
 
-1. Open `chrome://extensions/`
-2. Enable **"Developer mode"** (top right)
-3. Click **"Load unpacked"**
-4. Select the `extension-chrome/` folder
-5. Pin the extension to your toolbar
+1. Download extension: [ipqs-checker-chrome.zip](https://check.maxbob.xyz/download/extension-chrome.zip)
+2. Extract the archive
+3. Open `chrome://extensions/` → Enable **Developer mode**
+4. Click **Load unpacked** → Select extracted folder
+5. Pin the extension to toolbar
 
 ### Firefox
 
 1. Open `about:debugging#/runtime/this-firefox`
-2. Click **"Load Temporary Add-on..."**
-3. Select `extension/manifest.json`
+2. Click **Load Temporary Add-on...** → Select `extension/manifest.json`
 
-> Note: Temporary extensions are removed on Firefox restart. For permanent installation, use the packaged `.xpi` file.
+> **Note:** Temporary extensions are removed on Firefox restart. For permanent installation, use the `.xpi` file from [dist/](https://check.maxbob.xyz/dist/ipqs-checker-firefox.xpi).
 
-## Configuration
+## API Reference
 
-Create a `.env` file in the project root:
+### Public Endpoints
 
-```bash
-# PostgreSQL Connection
-POSTGRES_HOST=db              # "db" in Docker, "127.0.0.1" locally
-POSTGRES_PORT=5432
-POSTGRES_USER=ipqs_user
-POSTGRES_PASSWORD=your_secure_password
-POSTGRES_DB=ipqs_checker
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Landing page |
+| `GET` | `/result` | IPQS results page |
+| `GET` | `/result-fp` | Fingerprint Pro results |
+| `GET` | `/result-creep` | CreepJS results |
+| `GET` | `/result-antcpt` | AntCpt results |
+| `GET` | `/health` | Health check |
 
-# Admin Panel
-ADMIN_PASSWORD=your_admin_password
-ADMIN_TOKEN_SECRET=your_random_secret_key
+### Extension API
 
-# Server
-PORT=8000
-WORKERS=1
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/extension/report` | Submit IPQS fingerprint |
+| `POST` | `/api/extension/report-fp` | Submit Fingerprint Pro data |
+| `POST` | `/api/extension/report-creep` | Submit CreepJS data |
+| `POST` | `/api/extension/report-antcpt` | Submit AntCpt data |
+| `GET` | `/api/extension/result/{session_id}` | Poll check results |
 
-# IPQS Configuration
-IPQS_DOMAIN=indeed.com        # Domain for fingerprint checks
-```
+### Admin Panel (JWT-protected)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/admin` | Dashboard with statistics |
+| `GET` | `/admin/profiles` | Profiles list (pagination, search, filters) |
+| `GET` | `/admin/profile/{id}` | Profile detail with check history |
+| `GET` | `/admin/history` | All checks (filterable by service) |
+| `POST` | `/admin/api/profile/{id}/flag` | Flag suspicious profile |
+
+### IPQS Reverse Proxy
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET/POST` | `/ipqs/{path}` | Proxy to IPQS CDN with `learn.js` patch |
+
+## Result Interpretation
+
+### IPQS Fraud Score
+
+| Score | Risk Level | Meaning |
+|-------|-----------|---------|
+| 0-25% | Low | Clean profile, safe to use |
+| 25-50% | Medium | Monitor for changes |
+| 50-75% | High | Potential detection, review settings |
+| 75-100% | Critical | Profile likely compromised |
+
+### Key Detection Flags
+
+| Flag | What It Means |
+|------|--------------|
+| **OS Mismatch** | Reported OS differs from actual (antidetect misconfiguration) |
+| **Timezone Mismatch** | Browser timezone doesn't match IP geolocation |
+| **Proxy/VPN Detected** | Network-level detection (bad proxy quality) |
+| **Bot Status** | Automated behavior patterns detected |
+| **Anti-detect Browser** | Fingerprint Pro detected browser spoofing |
+| **High Stealth %** | CreepJS headless/stealth detection score |
 
 ## Project Structure
 
 ```
 ipqs-checker/
-├── app/                       # FastAPI application
-│   ├── main.py               # Server entry point
-│   ├── config.py             # Pydantic settings
+├── app/                           # FastAPI application
+│   ├── main.py                    # Server, routes, IPQS proxy
+│   ├── config.py                  # Pydantic Settings with validation
 │   ├── db/
-│   │   ├── database.py       # AsyncEngine and connection pooling
-│   │   └── deps.py           # Database dependency injection
+│   │   ├── database.py            # AsyncEngine, connection pooling, migrations
+│   │   └── deps.py                # FastAPI dependency injection
 │   ├── models/
-│   │   ├── profile.py        # Profile model (fingerprints)
-│   │   └── check.py          # Check model (verification results)
+│   │   ├── profile.py             # Profile model (unique fingerprints)
+│   │   └── check.py               # Check model (verification results)
 │   ├── services/
-│   │   ├── profile_service.py # Profile CRUD operations
-│   │   └── check_service.py   # Check CRUD and statistics
-│   └── admin/
-│       ├── auth.py            # JWT authentication
-│       ├── routes.py          # Admin endpoints
-│       └── templates/         # Jinja2 templates
-├── extension/                 # Firefox extension (Manifest V2)
-│   ├── manifest.json
-│   ├── background.js         # webRequest API interception
-│   ├── content.js
-│   ├── popup.html / popup.js
-│   └── ipqs-checker.xpi
-├── extension-chrome/          # Chrome/Octo extension (Manifest V3)
-│   ├── manifest.json
-│   ├── background.js         # Service Worker
-│   ├── content.js            # Script injector
-│   ├── injected.js           # Fetch/XHR interceptor
-│   └── popup.html / popup.js
-├── static/
-│   ├── index.html            # Home page
-│   └── result.html           # Results page
-├── docker-compose.yml
-├── Dockerfile
-└── requirements.txt
+│   │   ├── profile_service.py     # Profile CRUD, stats recalculation
+│   │   └── check_service.py       # Check CRUD, aggregated statistics
+│   ├── admin/
+│   │   ├── auth.py                # JWT authentication (HS256)
+│   │   ├── routes.py              # Admin endpoints with rate limiting
+│   │   └── templates/             # Jinja2 templates (dashboard, profiles, history)
+│   └── utils/
+│       └── __init__.py            # Timezone-to-country mapping (131 zones)
+├── extension-chrome/              # Chrome/Octo extension (Manifest V3)
+│   ├── manifest.json              # Permissions, content scripts
+│   ├── background.js              # Service Worker (session management)
+│   ├── content-ipqs.js            # Indeed.com script injector
+│   ├── content-fp.js              # Fingerprint.com interceptor
+│   ├── content-creep.js           # CreepJS data extractor
+│   ├── content-antcpt.js          # AntCpt score interceptor
+│   ├── injected.js                # Fetch/XHR monkey-patch (IPQS)
+│   ├── injected-fp.js             # Fetch/XHR monkey-patch (FP Pro)
+│   ├── injected-antcpt.js         # Fetch/XHR monkey-patch (AntCpt)
+│   └── popup.html / popup.js      # Extension UI
+├── extension/                     # Firefox extension (Manifest V2)
+├── static/                        # Frontend pages (HTML/JS)
+│   ├── index.html                 # Landing page
+│   ├── result.html                # IPQS results
+│   ├── result-fp.html             # Fingerprint Pro results
+│   ├── result-creep.html          # CreepJS results
+│   └── result-antcpt.html         # AntCpt results
+├── dist/                          # Packaged extensions (.crx, .xpi, .zip)
+├── docker-compose.yml             # App + PostgreSQL 16
+├── Dockerfile                     # Python 3.12-slim
+└── requirements.txt               # Pinned dependencies
 ```
 
-## Result Interpretation
+## Tech Stack
 
-| Indicator | Good | Bad |
-|-----------|------|-----|
-| Fraud Score | < 30% | > 70% |
-| Fingerprint Unique | Yes | No (exposed) |
-| Visit Count | 1 | > 3 |
-| OS Mismatch | No | Yes |
-| Proxy/VPN Detected | No | Yes |
-| Bot Status | No | Yes |
-| Recent Abuse | No | Yes |
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Python 3.12, FastAPI, Uvicorn, asyncio |
+| **Database** | PostgreSQL 16, asyncpg, SQLModel/SQLAlchemy |
+| **Auth** | JWT (PyJWT), cookie-based sessions |
+| **Rate Limiting** | slowapi (per-IP) |
+| **HTTP Client** | httpx (async) |
+| **Templates** | Jinja2 |
+| **Caching** | cachetools (TTLCache, in-memory) |
+| **Extensions** | Chrome MV3 (Service Worker), Firefox MV2 (webRequest) |
+| **Infrastructure** | Docker Compose, GitHub Actions CI/CD |
 
-**Fraud Score Guide:**
-- **0-25%**: Clean profile, safe to use
-- **25-50%**: Low risk, monitor for changes
-- **50-75%**: Moderate risk, potential detection
-- **75-100%**: High risk, profile likely detected
+## Configuration
 
-## How It Works
+Create `.env` from the example:
 
-### Data Flow
+```bash
+cp .env.example .env
+```
 
-1. User clicks "Check" button in extension popup
-2. Extension clears Indeed.com cookies and data
-3. Opens `https://secure.indeed.com/auth`
-4. Extension intercepts IPQS API response from Indeed
-5. Fingerprint data is extracted and sent to backend
-6. Backend stores profile and check result in PostgreSQL
-7. Results are displayed on the results page
-
-### Key Components
-
-**Profile Model**: Stores unique fingerprints identified by:
-- Canvas hash
-- WebGL hash
-- Device ID
-- IP address and geolocation
-
-**Check Model**: Individual verification result containing:
-- Fraud score (0-100)
-- Device type and OS
-- Browser information
-- VPN/Proxy detection status
-- Geographic and ISP details
-
-## Technologies
-
-- **Backend**: Python 3.11+, FastAPI, Uvicorn
-- **Database**: PostgreSQL 16, asyncpg
-- **ORM**: SQLModel, SQLAlchemy
-- **Frontend**: HTML, JavaScript, Jinja2
-- **Extensions**: Manifest V2 (Firefox), Manifest V3 (Chrome)
-- **Containerization**: Docker, Docker Compose
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `IPQS_API_KEY` | IPQS API key (optional, for proxy mode) | — |
+| `IPQS_DOMAIN` | Domain for IPQS checks | `indeed.com` |
+| `POSTGRES_HOST` | Database host (`db` in Docker) | `db` |
+| `POSTGRES_PASSWORD` | Database password | — |
+| `ADMIN_PASSWORD` | Admin panel password | — |
+| `ADMIN_TOKEN_SECRET` | JWT signing secret | auto-generated |
+| `PORT` | Server port | `8000` |
+| `WORKERS` | Uvicorn workers | `1` |
 
 ## Development
 
-### Running Tests
-
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio httpx
-
-# Run tests
-pytest
-```
-
-### Code Quality
-
-```bash
-# Format code
-black app/
-
 # Lint
 ruff check app/
+
+# Format
+ruff format app/
 
 # Type checking
 mypy app/ --strict
 ```
 
-## Database Schema
-
-### profiles table
-- `fingerprint_hash` (unique) — SHA256 of canvas + WebGL + device_id
-- `fraud_score` — Latest risk score
-- `check_count` — Total verification count
-- `is_flagged` — Manual flagging for review
-- `first_seen`, `last_seen` — Timestamp tracking
-
-### checks table
-- `session_id` — Unique verification session
-- `profile_id` — Foreign key to profile
-- `fraud_chance` — Risk percentage
-- `proxy`, `vpn`, `tor` — Detection flags
-- `raw_response` — Complete IPQS API response
-
 ## Troubleshooting
 
-### Extension not intercepting data
+<details>
+<summary>Extension not intercepting data</summary>
 
-1. Verify Indeed.com is accessible
-2. Check extension console: `chrome://extensions` → Inspect
+1. Verify the target site is accessible (indeed.com, fingerprint.com, etc.)
+2. Check extension console: `chrome://extensions` → **Inspect** on service worker
 3. Confirm server is running: `curl http://localhost:8000/health`
+4. Check browser console on the target page for injection errors
+</details>
 
-### Database connection errors
+<details>
+<summary>Database connection errors</summary>
 
-- Verify `POSTGRES_HOST`: Use `db` in Docker, `127.0.0.1` locally
-- Check database container: `docker-compose ps`
-- Review logs: `docker-compose logs db`
+- Use `POSTGRES_HOST=db` in Docker, `127.0.0.1` locally
+- Check container: `docker compose ps`
+- Review logs: `docker compose logs db`
+</details>
 
-### Results not displaying
+<details>
+<summary>Results not displaying</summary>
 
 - Check browser console for JavaScript errors
-- Verify API response: `curl http://localhost:8000/api/extension/result/{session_id}`
-- Ensure PostgreSQL has data: Check admin panel
+- Verify API: `curl http://localhost:8000/api/extension/result/{session_id}`
+- Ensure PostgreSQL has data via admin panel
+</details>
+
+## Author
+
+**Maksym Babenko**
+
+[![GitHub](https://img.shields.io/badge/GitHub-mazamaka-181717?logo=github)](https://github.com/mazamaka)
+[![Telegram](https://img.shields.io/badge/Telegram-@Mazamaka-2CA5E0?logo=telegram)](https://t.me/Mazamaka)
 
 ## License
 
-MIT License - see LICENSE file for details
-
-## Contributing
-
-Contributions are welcome! Please ensure code passes linting and type checking before submitting PRs.
-
-## Support
-
-For issues and feature requests, please create a GitHub issue.
+MIT License — see [LICENSE](LICENSE) file for details.

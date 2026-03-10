@@ -25,3 +25,12 @@ data/
 .DS_Store
 Thumbs.db
 *.pem
+
+# BFG cleanup reports
+..bfg-report/
+
+# Experimental nodriver scripts
+check_*_nodriver.py
+
+# Claude
+CLAUDE.md
