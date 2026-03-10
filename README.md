@@ -2,6 +2,8 @@
 
 A service for checking device fingerprints through the IPQS API with support for both Firefox and Chrome/Octo Browser extensions.
 
+**Live Demo:** [check.maxbob.xyz](https://check.maxbob.xyz/) · **Admin Panel:** [check.maxbob.xyz/admin](https://check.maxbob.xyz/admin)
+
 ## Overview
 
 IPQS Fingerprint Checker allows you to verify the quality of browser profiles by analyzing device fingerprints, fraud scores, and potential detection risks. This tool is particularly useful for validating antidetect browser sessions before use.
