@@ -30,7 +30,7 @@ Thumbs.db
 ..bfg-report/
 
 # Experimental nodriver scripts
-check_*_nodriver.py
+check*nodriver.py
 
 # Claude
 CLAUDE.md
