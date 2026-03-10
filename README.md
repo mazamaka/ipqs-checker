@@ -8,6 +8,32 @@ A service for checking device fingerprints through the IPQS API with support for
 
 IPQS Fingerprint Checker allows you to verify the quality of browser profiles by analyzing device fingerprints, fraud scores, and potential detection risks. This tool is particularly useful for validating antidetect browser sessions before use.
 
+## Screenshots
+
+**Landing Page** — choose checker service (IPQS, Fingerprint Pro, CreepJS, AntCpt):
+
+![Landing](docs/screenshot-landing.png)
+
+**IPQS Result** — fraud score, detections, device info:
+
+![IPQS Result](docs/screenshot-ipqs.png)
+
+**Fingerprint Pro Result** — anti-detect browser detection, suspect score:
+
+![FP Pro Result](docs/screenshot-fp.png)
+
+**CreepJS Result** — headless & stealth detection scores:
+
+![CreepJS Result](docs/screenshot-creep.png)
+
+**AntCpt Result** — reCAPTCHA v3 score, device fingerprint:
+
+![AntCpt Result](docs/screenshot-antcpt.png)
+
+**Admin Dashboard** — statistics, recent checks, country breakdown:
+
+![Admin Dashboard](docs/screenshot-admin.png)
+
 ## Features
 
 - **FastAPI Backend** — High-performance API server with async/await support
