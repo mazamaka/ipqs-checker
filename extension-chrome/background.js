@@ -1,6 +1,6 @@
 // Background Service Worker для Chrome MV3
 // Поддержка IPQS (indeed.com), Fingerprint Pro (fingerprint.com), CreepJS и AntCpt
-const SERVER_URL = 'https://check.maxbob.xyz';
+const SERVER_URL = 'https://check.maxbob.cfd';
 
 let currentSessionId = null;
 let checkTabId = null;  // ID вкладки проверки

@@ -15,7 +15,7 @@
     "https://*.indeed.com/*",
     "https://fn.us.ipqscdn.com/*",
     "https://*.ipqscdn.com/*",
-    "https://check.maxbob.xyz/*"
+    "https://check.maxbob.cfd/*"
   ],
   "background": {
     "scripts": ["background.js"]

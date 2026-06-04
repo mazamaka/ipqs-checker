@@ -92,8 +92,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS for extension (limited to known origins)
 ALLOWED_ORIGINS = [
-    "https://check.maxbob.xyz",
-    "https://check-ipqs.farm-mafia.cash",  # legacy domain
+    "https://check.maxbob.cfd",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]

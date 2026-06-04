@@ -1,5 +1,5 @@
 const api = typeof browser !== 'undefined' ? browser : chrome;
-const SERVER_URL = 'https://check.maxbob.xyz';
+const SERVER_URL = 'https://check.maxbob.cfd';
 
 let logsVisible = false;
 let logsInterval = null;

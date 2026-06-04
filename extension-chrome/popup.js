@@ -1,5 +1,5 @@
 // Popup script для Chrome - поддержка IPQS, Fingerprint Pro, CreepJS и AntCpt
-const SERVER_URL = 'https://check.maxbob.xyz';
+const SERVER_URL = 'https://check.maxbob.cfd';
 
 let logsVisible = false;
 let logsInterval = null;
