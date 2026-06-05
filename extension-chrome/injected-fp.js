@@ -2,20 +2,26 @@
 (function() {
     'use strict';
 
-    // Паттерн для API endpoints fingerprint.com
-    // Они используют короткие случайные пути типа /HNCm0CwV/, /L9VR/, /r4a0Rd2Xs/?ci=...
-    // Примеры из анализа: Vtu1bhY5s, r4a0Rd2Xs, sdub4ver, NsV02kcx, cpaJ, DRDgIsvG, CToT
-    const FP_EVENT_PATTERN = /fingerprint\.com\/[A-Za-z0-9]{4,12}(\/|\?|$)/i;
+    // Паттерн для API endpoints fingerprint.com:
+    //  - старый агент: короткие пути /r4a0Rd2Xs/, /Vtu1bhY5s/ ...
+    //  - demo.fingerprint.com Smart Signals: /api/event/v4/{requestId} (богатый ответ)
+    const FP_EVENT_PATTERN = /(fingerprint\.com\/[A-Za-z0-9]{4,12}(\/|\?|$)|\/api\/event\/v\d)/i;
 
     let capturedData = null;
     let dataSent = false;
 
     function isFingerprintResponse(data) {
-        // Проверяем что это ответ с products (event endpoint)
-        return data &&
-               data.products &&
-               data.products.identification &&
-               data.products.identification.data;
+        if (!data) return false;
+        // Старый формат (products.{name}.data)
+        if (data.products && data.products.identification && data.products.identification.data) {
+            return true;
+        }
+        // Новый v4 Server API формат (demo.fingerprint.com): identification.visitor_id на верхнем уровне
+        const ident = data.identification;
+        if (ident && (ident.visitor_id || ident.visitorId)) {
+            return true;
+        }
+        return false;
     }
 
     function sendFingerprintData(data) {

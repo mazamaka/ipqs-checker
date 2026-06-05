@@ -106,6 +106,22 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+
+@app.middleware("http")
+async def no_store_dynamic(request: Request, call_next):
+    """Disable CDN/browser caching for dynamically-generated downloads and result
+    pages. The extension archives are zipped on the fly from source, and result
+    pages reflect live DB data — caching them (Cloudflare defaults to caching .zip)
+    served stale extensions/results after each deploy.
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/download") or path.startswith("/result"):
+        response.headers["Cache-Control"] = "no-store, must-revalidate"
+        response.headers["CDN-Cache-Control"] = "no-store"
+    return response
+
+
 # Static files
 STATIC_DIR = Path(__file__).parent.parent / "static"
 if STATIC_DIR.exists():
@@ -533,6 +549,73 @@ async def extension_result(session_id: str):
 fingerprint_reports: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 
 
+def _normalize_fp_v4(fp: dict) -> dict:
+    """Normalize the new Fingerprint Pro v4 Server API response (demo.fingerprint.com
+    /api/event/v4) into the legacy ``products.{name}.data`` shape that the backend
+    extraction, result-fp.html and admin already understand.
+
+    The old fingerprint.com homepage returned ``products``; the current agent
+    (js/4.x) returns a flat snake_case object. Old payloads pass through untouched.
+    """
+    if not isinstance(fp, dict) or fp.get("products"):
+        return fp
+    ident = fp.get("identification") or {}
+    if not (ident.get("visitor_id") or ident.get("visitorId")):
+        return fp  # unknown shape — leave as-is
+
+    def _geo(v):
+        if not isinstance(v, dict):
+            return {}
+        g = v.get("geolocation") or {}
+        return {
+            "address": v.get("address"),
+            "geolocation": {
+                "country": {"name": g.get("country_name"), "code": g.get("country_code")},
+                "city": {"name": g.get("city_name")},
+                "timezone": g.get("timezone"),
+                "latitude": g.get("latitude"),
+                "longitude": g.get("longitude"),
+            },
+            "asn": {"asn": v.get("asn"), "name": v.get("asn_name"), "network": v.get("asn_network")},
+            "datacenter": {"result": v.get("datacenter_result", False)},
+        }
+
+    td = fp.get("tampering_details") or {}
+    ipq = fp.get("ip_info") or {}
+    products = {
+        "identification": {"data": {
+            "visitorId": ident.get("visitor_id") or ident.get("visitorId"),
+            "requestId": fp.get("event_id") or fp.get("request_id"),
+            "confidence": ident.get("confidence") or {},
+            "firstSeenAt": ident.get("first_seen_at"),
+            "lastSeenAt": ident.get("last_seen_at"),
+            "browserDetails": fp.get("browser_details") or {},
+        }},
+        "tampering": {"data": {
+            "result": bool(fp.get("tampering")),
+            "antiDetectBrowser": bool(td.get("anti_detect_browser", False)),
+            "anomalyScore": td.get("anomaly_score", 0),
+        }},
+        "suspectScore": {"data": {"result": fp.get("suspect_score", 0)}},
+        "botd": {"data": {"bot": {"result": fp.get("bot"), "type": fp.get("bot_type")}}},
+        "vpn": {"data": {
+            "result": bool(fp.get("vpn")),
+            "confidence": fp.get("vpn_confidence"),
+            "methods": fp.get("vpn_methods") or {},
+        }},
+        "ipInfo": {"data": {"v4": _geo(ipq.get("v4")), "v6": _geo(ipq.get("v6"))}},
+        "virtualMachine": {"data": {"result": bool(fp.get("virtual_machine"))}},
+        "incognito": {"data": {"result": bool(fp.get("incognito"))}},
+        "developerTools": {"data": {"result": bool(fp.get("developer_tools"))}},
+        "privacySettings": {"data": {"result": bool(fp.get("privacy_settings"))}},
+        "highActivity": {"data": {"result": bool(fp.get("high_activity_device"))}},
+        "rawDeviceAttributes": {"data": fp.get("raw_device_attributes") or {}},
+    }
+    out = dict(fp)
+    out["products"] = products
+    return out
+
+
 @app.post("/api/extension/report-fp")
 @limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
 async def extension_report_fp(request: Request):
@@ -540,7 +623,7 @@ async def extension_report_fp(request: Request):
     try:
         data = await request.json()
         session_id = data.get("session_id", "default")
-        fingerprint = data.get("fingerprint", {})
+        fingerprint = _normalize_fp_v4(data.get("fingerprint", {}))
         source = data.get("source", "unknown")
 
         # Extract key identifiers from Fingerprint Pro response

@@ -141,7 +141,7 @@ async function clearFingerprintData() {
     addLog('Очистка данных fingerprint.com...');
     try {
         await chrome.browsingData.remove({
-            origins: ['https://fingerprint.com', 'https://www.fingerprint.com']
+            origins: ['https://fingerprint.com', 'https://www.fingerprint.com', 'https://demo.fingerprint.com']
         }, {
             cookies: true,
             cache: true,
@@ -433,7 +433,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (service === 'fingerprint') {
             clearFn = clearFingerprintData;
-            checkUrl = 'https://fingerprint.com/';
+            // demo.fingerprint.com отдаёт полный Smart Signals результат (/api/event/v4)
+            checkUrl = 'https://demo.fingerprint.com/';
         } else if (service === 'creepjs') {
             clearFn = clearCreepJSData;
             checkUrl = 'https://abrahamjuliot.github.io/creepjs/';
