@@ -1,4 +1,8 @@
-name: Deploy to Production
+name: Deploy to coldmath
+
+# Live server is coldmath (150.241.81.67), /opt/ipqs-checker — a git checkout
+# deployed via /opt/deploy.sh (git reset --hard origin/main + docker compose up --build).
+# (The old farm-mafia Portainer redeploy never worked: stale token, wrong host.)
 
 on:
   push:
@@ -9,10 +13,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Redeploy Portainer Stack
+      - name: Deploy over SSH
         run: |
-          curl -X POST \
-            "${{ secrets.PORTAINER_URL }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}/git/redeploy?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
-            -H "X-API-Key: ${{ secrets.PORTAINER_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"pullImage": true, "prune": false}'
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          sshpass -p "${{ secrets.COLDMATH_SSH_PASSWORD }}" \
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=25 \
+            root@150.241.81.67 'bash /opt/deploy.sh'
+
+      - name: Verify health
+        run: |
+          sleep 5
+          for i in 1 2 3 4 5; do
+            if curl -fsS -m 10 https://check.maxbob.cfd/health; then
+              echo "" && echo "health OK"; exit 0
+            fi
+            sleep 5
+          done
+          echo "health check failed"; exit 1
