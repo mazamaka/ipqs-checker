@@ -59,8 +59,9 @@
             if (dtc) out.language = dtc;
             const plugins = p.getAll('dtq[]');   // плагины (JSON-объекты)
             if (plugins && plugins.length) {
-                const names = plugins.map(s => { try { return JSON.parse(s).name; } catch (e) { return null; } }).filter(Boolean);
-                if (names.length) out.plugins = names.join(', ');
+                // Массив объектов {name,...} — как нативный IPQS-формат (result.html ждёт d.plugins.map(p=>p.name))
+                const objs = plugins.map(s => { try { return JSON.parse(s); } catch (e) { return null; } }).filter(Boolean);
+                if (objs.length) out.plugins = objs;
             }
             const dtme = get('dtme');            // эвристика: hardwareConcurrency
             if (dtme && /^\d+$/.test(dtme)) out.cpu_cores = parseInt(dtme, 10);

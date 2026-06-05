@@ -794,7 +794,7 @@
                         ${row('OS (Detected)', d.true_os, 'Реальная ОС', osMismatch ? 'danger' : false)}
                         ${row('Browser', d.browser, 'Браузер и версия')}
                         ${row('Mobile', tag(d.mobile, false), 'Мобильное устройство')}
-                        ${d.plugins && d.plugins.length ? `
+                        ${Array.isArray(d.plugins) && d.plugins.length ? `
                         <div class="row">
                             <div class="row-left">
                                 <span class="row-label">Plugins</span>
