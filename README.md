@@ -13,8 +13,8 @@
 Validates browser session quality through 4 independent fingerprinting services,
 providing comprehensive risk assessment before production use.
 
-[Live Demo](https://check.maxbob.xyz) ·
-[Admin Panel](https://check.maxbob.xyz/admin) ·
+[Live Demo](https://check.maxbob.cfd) ·
+[Admin Panel](https://check.maxbob.cfd/admin) ·
 [Download Extension](#extension-installation)
 
 </div>
@@ -159,7 +159,7 @@ uvicorn app.main:app --reload --port 8000
 
 ### Chrome / Octo Browser (Recommended)
 
-1. Download extension: [ipqs-checker-chrome.zip](https://check.maxbob.xyz/download/extension-chrome.zip)
+1. Download extension: [ipqs-checker-chrome.zip](https://check.maxbob.cfd/download/extension-chrome.zip)
 2. Extract the archive
 3. Open `chrome://extensions/` → Enable **Developer mode**
 4. Click **Load unpacked** → Select extracted folder
@@ -170,7 +170,7 @@ uvicorn app.main:app --reload --port 8000
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click **Load Temporary Add-on...** → Select `extension/manifest.json`
 
-> **Note:** Temporary extensions are removed on Firefox restart. For permanent installation, use the `.xpi` file from [dist/](https://check.maxbob.xyz/dist/ipqs-checker-firefox.xpi).
+> **Note:** Temporary extensions are removed on Firefox restart. For permanent installation, use the `.xpi` file from the [`.xpi` file](https://check.maxbob.cfd/download/extension-firefox.xpi).
 
 ## API Reference
 

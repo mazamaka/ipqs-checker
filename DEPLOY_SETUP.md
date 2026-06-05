@@ -66,7 +66,7 @@ After merging to main:
 2. Select **Deploy to Production** workflow
 3. Click **Run workflow** (manual trigger)
 4. Watch the workflow run
-5. Verify production: https://check.maxbob.xyz/health
+5. Verify production: https://check.maxbob.cfd/health
 
 ## How It Works
 
@@ -117,10 +117,10 @@ jobs:
 ### Health Check Failed
 - Wait 30-60 seconds for container to start
 - Check Portainer logs for errors
-- Verify production URL: https://check.maxbob.xyz/health
+- Verify production URL: https://check.maxbob.cfd/health
 
 ## Production URLs
 
-- **Health Check**: https://check.maxbob.xyz/health
-- **Main App**: https://check.maxbob.xyz/
+- **Health Check**: https://check.maxbob.cfd/health
+- **Main App**: https://check.maxbob.cfd/
 - **Portainer**: https://portainer.farm-mafia.cash
