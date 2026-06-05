@@ -580,16 +580,103 @@ def _normalize_fp_v4(fp: dict) -> dict:
             "datacenter": {"result": v.get("datacenter_result", False)},
         }
 
+    def _ms_to_iso(ms):
+        try:
+            return {"global": datetime.utcfromtimestamp(ms / 1000).isoformat() + "Z"} if ms else None
+        except Exception:
+            return None
+
+    def _ip_location(v):
+        g = (v or {}).get("geolocation") or {}
+        return {
+            "country": {"name": g.get("country_name"), "code": g.get("country_code")},
+            "city": {"name": g.get("city_name")},
+            "timezone": g.get("timezone"),
+            "latitude": g.get("latitude"),
+            "longitude": g.get("longitude"),
+            "asn": {"name": v.get("asn_name"), "asn": v.get("asn")} if v else {},
+        }
+
+    def _browser_details():
+        bd = fp.get("browser_details") or {}
+        return {
+            "browserName": bd.get("browser_name"),
+            "browserMajorVersion": bd.get("browser_major_version"),
+            "browserFullVersion": bd.get("browser_full_version"),
+            "os": bd.get("os") or fp.get("os"),
+            "osVersion": bd.get("os_version") or fp.get("os_version"),
+            "device": bd.get("device") or fp.get("device"),
+            "userAgent": fp.get("user_agent"),
+        }
+
+    def _v(x):
+        return {"value": x}
+
+    def _raw_device(rda):
+        """v4 flat snake_case raw_device_attributes -> legacy .value-wrapped camelCase."""
+        if not isinstance(rda, dict):
+            return {}
+        out = {}
+        simple = {
+            "audio": "audio", "math": "math", "platform": "platform", "timezone": "timezone",
+            "fonts": "fonts", "vendor": "vendor", "screen_resolution": "screenResolution",
+            "screen_frame": "screenFrame", "color_depth": "colorDepth", "color_gamut": "colorGamut",
+            "hdr": "hdr", "hardware_concurrency": "hardwareConcurrency", "device_memory": "deviceMemory",
+            "date_time_locale": "dateTimeLocale", "languages": "languages", "vendor_flavors": "vendorFlavors",
+            "plugins": "plugins", "cookies_enabled": "cookiesEnabled", "local_storage": "localStorage",
+            "session_storage": "sessionStorage", "indexed_db": "indexedDB", "pdf_viewer_enabled": "pdfViewerEnabled",
+            "reduced_motion": "reducedMotion", "forced_colors": "forcedColors", "monochrome": "monochrome",
+            "contrast": "contrast", "font_preferences": "fontPreferences",
+        }
+        for src, dst in simple.items():
+            if src in rda:
+                out[dst] = _v(rda[src])
+        c = rda.get("canvas")
+        if isinstance(c, dict):
+            out["canvas"] = _v({"Geometry": c.get("geometry"), "Text": c.get("text"), "Winding": c.get("winding")})
+        wb = rda.get("webgl_basics")
+        if isinstance(wb, dict):
+            out["webGlBasics"] = _v({
+                "renderer": wb.get("renderer"), "rendererUnmasked": wb.get("renderer_unmasked"),
+                "vendor": wb.get("vendor"), "vendorUnmasked": wb.get("vendor_unmasked"),
+                "version": wb.get("version"), "shadingLanguageVersion": wb.get("shading_language_version"),
+            })
+        we = rda.get("webgl_extensions")
+        if isinstance(we, dict):
+            out["webGlExtensions"] = _v({"extensions": we.get("extensions"), "parameters": we.get("parameters")})
+        ts = rda.get("touch_support")
+        if isinstance(ts, dict):
+            out["touchSupport"] = _v({
+                "maxTouchPoints": ts.get("max_touch_points"),
+                "touchEvent": ts.get("touch_event"), "touchStart": ts.get("touch_start"),
+            })
+        return out
+
+    def _velocity(v):
+        if not isinstance(v, dict):
+            return {}
+        def iv(d):
+            d = d or {}
+            return {"intervals": {"5m": d.get("5_minutes"), "1h": d.get("1_hour"), "24h": d.get("24_hours")}}
+        return {
+            "events": iv(v.get("events")),
+            "distinctIp": iv(v.get("distinct_ip")),
+            "distinctCountry": iv(v.get("distinct_country")),
+        }
+
     td = fp.get("tampering_details") or {}
     ipq = fp.get("ip_info") or {}
+    v4 = ipq.get("v4") or ipq.get("v6") or {}
     products = {
         "identification": {"data": {
             "visitorId": ident.get("visitor_id") or ident.get("visitorId"),
             "requestId": fp.get("event_id") or fp.get("request_id"),
             "confidence": ident.get("confidence") or {},
-            "firstSeenAt": ident.get("first_seen_at"),
-            "lastSeenAt": ident.get("last_seen_at"),
-            "browserDetails": fp.get("browser_details") or {},
+            "firstSeenAt": _ms_to_iso(ident.get("first_seen_at")),
+            "lastSeenAt": _ms_to_iso(ident.get("last_seen_at")),
+            "browserDetails": _browser_details(),
+            "ip": fp.get("ip_address") or v4.get("address"),
+            "ipLocation": _ip_location(v4),
         }},
         "tampering": {"data": {
             "result": bool(fp.get("tampering")),
@@ -609,7 +696,9 @@ def _normalize_fp_v4(fp: dict) -> dict:
         "developerTools": {"data": {"result": bool(fp.get("developer_tools"))}},
         "privacySettings": {"data": {"result": bool(fp.get("privacy_settings"))}},
         "highActivity": {"data": {"result": bool(fp.get("high_activity_device"))}},
-        "rawDeviceAttributes": {"data": fp.get("raw_device_attributes") or {}},
+        "locationSpoofing": {"data": {"result": bool(fp.get("location_spoofing"))}},
+        "velocity": {"data": _velocity(fp.get("velocity"))},
+        "rawDeviceAttributes": {"data": _raw_device(fp.get("raw_device_attributes"))},
     }
     out = dict(fp)
     out["products"] = products
