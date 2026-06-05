@@ -116,7 +116,9 @@ async def no_store_dynamic(request: Request, call_next):
     """
     response = await call_next(request)
     path = request.url.path
-    if path.startswith("/download") or path.startswith("/result"):
+    # /api/extension/result is polled right after the redirect — caching a transient
+    # {"status":"pending"} at the edge made result pages show "не найдены".
+    if path.startswith("/download") or path.startswith("/result") or path.startswith("/api/extension/result"):
         response.headers["Cache-Control"] = "no-store, must-revalidate"
         response.headers["CDN-Cache-Control"] = "no-store"
     return response
