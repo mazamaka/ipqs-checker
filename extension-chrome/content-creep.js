@@ -300,6 +300,10 @@
 
             const fullText = fpApp.innerText || '';
 
+            // Fallback: сырой текст CreepJS. Если вёрстка сменится и секционные
+            // парсеры вернут N/A — бэкенд/результат всё равно получат сырые данные.
+            results.rawText = fullText.slice(0, 8000);
+
             // === FP ID и Fuzzy ===
             const fpMatch = fullText.match(/FP ID:\s*([a-f0-9]{64})/i);
             if (fpMatch) results.fpId = fpMatch[1];
@@ -405,6 +409,8 @@
                 if (confMatch) results.worker.confidence = confMatch[1];
             }
 
+            } catch (e) { console.warn('[CreepJS] section group error:', e); }
+            try {
             // === TIMEZONE ===
             // Format: Timezone[hash]\n[display name]\n[location]\n[rawOffset]\n[offset]
             const tzSection = fullText.match(/Timezone([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Intl|$)/i);
@@ -475,6 +481,8 @@
                 if (lines[6]) results.intl.pluralCategory = lines[6].trim();
             }
 
+            } catch (e) { console.warn('[CreepJS] section group error:', e); }
+            try {
             // === CANVAS 2D ===
             const canvasSection = fullText.match(/Canvas\s*2d([a-f0-9]*)\s*([\s\S]*?)(?=\d+\.\d+ms\s+Fonts|$)/i);
             if (canvasSection) {
@@ -782,6 +790,8 @@
                 if (resultsMatch) results.errorData.results = resultsMatch[1].trim();
             }
 
+            } catch (e) { console.warn('[CreepJS] section group error:', e); }
+            try {
             // === Window ===
             // Window секция: "1.20msWindow243e46a1\nkeys (1196):" - hash в заголовке, keys count без hash
             const windowSection = fullText.match(/(?:\d+\.\d+ms\s*)?Window([a-f0-9]+)\s*([\s\S]*?)(?=\d+\.\d+ms\s*HTMLElement|$)/i);
@@ -813,6 +823,8 @@
                 }
             }
 
+            } catch (e) { console.warn('[CreepJS] section group error:', e); }
+            try {
             // === Navigator (ПОЛНЫЙ) ===
             const navSection = fullText.match(/Navigator([a-f0-9]*)\s*([\s\S]*?)(?=\nStatus[a-f0-9]|$)/i);
             if (navSection) {
