@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fingerprint Checker",
-  "version": "5.3",
+  "version": "5.4",
   "description": "Проверка fingerprint через IPQS, Fingerprint Pro, CreepJS и AntCpt",
   "permissions": [
     "activeTab",

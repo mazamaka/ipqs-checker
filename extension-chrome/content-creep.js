@@ -291,19 +291,20 @@
             }
         };
 
+        // fpApp/fullText объявлены в области видимости функции — все группы-try
+        // ниже их используют (иначе block-scoped const => ReferenceError в группах 2+).
+        const fpApp = document.getElementById('fp-app');
+        if (!fpApp) {
+            console.error('[CreepJS Content] fp-app не найден');
+            return results;
+        }
+        const fullText = fpApp.innerText || '';
+
+        // Fallback: сырой текст CreepJS. Если вёрстка сменится и секционные
+        // парсеры вернут N/A — бэкенд/результат всё равно получат сырые данные.
+        results.rawText = fullText.slice(0, 8000);
+
         try {
-            const fpApp = document.getElementById('fp-app');
-            if (!fpApp) {
-                console.error('[CreepJS Content] fp-app не найден');
-                return results;
-            }
-
-            const fullText = fpApp.innerText || '';
-
-            // Fallback: сырой текст CreepJS. Если вёрстка сменится и секционные
-            // парсеры вернут N/A — бэкенд/результат всё равно получат сырые данные.
-            results.rawText = fullText.slice(0, 8000);
-
             // === FP ID и Fuzzy ===
             const fpMatch = fullText.match(/FP ID:\s*([a-f0-9]{64})/i);
             if (fpMatch) results.fpId = fpMatch[1];
