@@ -12,6 +12,21 @@ from app.models.profile import Profile
 from app.models.check import Check
 
 
+def _pick(data: dict, *keys):
+    """Return the first present, non-None value among ``keys``.
+
+    Unlike ``data.get(a) or data.get(b)``, this preserves falsy-but-valid
+    values such as ``False`` and ``0``. IPQS returns proxy/vpn/tor/recent_abuse
+    as ``false`` for clean devices and fraud_chance can be ``0`` — the ``or``
+    idiom silently turned those into ``None`` (NULL in the DB).
+    """
+    for key in keys:
+        value = data.get(key)
+        if value is not None:
+            return value
+    return None
+
+
 async def create_check(
     session: AsyncSession,
     profile_id: int,
@@ -22,14 +37,14 @@ async def create_check(
 
     # Determine OS mismatch
     os_mismatch = False
-    true_os = data.get("true_os") or data.get("TrueOS")
-    operating_system = data.get("operating_system") or data.get("OperatingSystem")
+    true_os = _pick(data, "true_os", "TrueOS")
+    operating_system = _pick(data, "operating_system", "OperatingSystem")
     if true_os and operating_system:
         os_mismatch = true_os.lower() != operating_system.lower()
 
     # Determine timezone mismatch
     tz_mismatch = False
-    timezone = data.get("timezone") or data.get("Timezone")
+    timezone = _pick(data, "timezone", "Timezone")
     device_timezone = data.get("device_timezone")
     if timezone and device_timezone:
         tz_mismatch = timezone != device_timezone
@@ -37,36 +52,36 @@ async def create_check(
     check = Check(
         profile_id=profile_id,
         session_id=session_id,
-        guid=data.get("guid") or data.get("GUID"),
-        ip_address=data.get("ip_address") or data.get("IPAddress"),
-        country=data.get("country") or data.get("Country"),
-        city=data.get("city") or data.get("City"),
-        region=data.get("region") or data.get("Region"),
-        isp=data.get("isp") or data.get("ISP"),
-        organization=data.get("organization") or data.get("Organization"),
-        asn=data.get("asn") or data.get("ASN"),
+        guid=_pick(data, "guid", "GUID"),
+        ip_address=_pick(data, "ip_address", "IPAddress"),
+        country=_pick(data, "country", "Country"),
+        city=_pick(data, "city", "City"),
+        region=_pick(data, "region", "Region"),
+        isp=_pick(data, "isp", "ISP"),
+        organization=_pick(data, "organization", "Organization"),
+        asn=_pick(data, "asn", "ASN"),
         timezone=timezone,
-        fraud_chance=data.get("fraud_chance") or data.get("FraudChance"),
-        guid_confidence=data.get("guid_confidence") or data.get("GUIDConfidence"),
-        browser=data.get("browser") or data.get("Browser"),
+        fraud_chance=_pick(data, "fraud_chance", "FraudChance"),
+        guid_confidence=_pick(data, "guid_confidence", "GUIDConfidence"),
+        browser=_pick(data, "browser", "Browser"),
         operating_system=operating_system,
         true_os=true_os,
-        device_type=data.get("device") or data.get("Device"),
-        is_mobile=data.get("mobile") or data.get("Mobile"),
-        canvas_hash=data.get("canvas_hash") or data.get("CanvasHash"),
-        webgl_hash=data.get("webgl_hash") or data.get("WebGLHash"),
-        audio_hash=data.get("audio_hash") or data.get("AudioHash"),
-        ssl_hash=data.get("ssl_hash") or data.get("SSLHash"),
-        device_id=data.get("device_id") or data.get("DeviceID"),
-        proxy=data.get("proxy") or data.get("Proxy"),
-        vpn=data.get("vpn") or data.get("VPN"),
-        tor=data.get("tor") or data.get("TOR"),
-        bot_status=data.get("bot_status") or data.get("BotStatus"),
-        is_crawler=data.get("is_crawler") or data.get("IsCrawler"),
-        recent_abuse=data.get("recent_abuse") or data.get("RecentAbuse"),
-        high_risk_device=data.get("high_risk_device") or data.get("HighRiskDevice"),
-        active_vpn=data.get("active_vpn") or data.get("ActiveVPN"),
-        active_tor=data.get("active_tor") or data.get("ActiveTOR"),
+        device_type=_pick(data, "device", "Device"),
+        is_mobile=_pick(data, "mobile", "Mobile"),
+        canvas_hash=_pick(data, "canvas_hash", "CanvasHash"),
+        webgl_hash=_pick(data, "webgl_hash", "WebGLHash"),
+        audio_hash=_pick(data, "audio_hash", "AudioHash"),
+        ssl_hash=_pick(data, "ssl_hash", "SSLHash"),
+        device_id=_pick(data, "device_id", "DeviceID"),
+        proxy=_pick(data, "proxy", "Proxy"),
+        vpn=_pick(data, "vpn", "VPN"),
+        tor=_pick(data, "tor", "TOR"),
+        bot_status=_pick(data, "bot_status", "BotStatus"),
+        is_crawler=_pick(data, "is_crawler", "IsCrawler"),
+        recent_abuse=_pick(data, "recent_abuse", "RecentAbuse"),
+        high_risk_device=_pick(data, "high_risk_device", "HighRiskDevice"),
+        active_vpn=_pick(data, "active_vpn", "ActiveVPN"),
+        active_tor=_pick(data, "active_tor", "ActiveTOR"),
         os_mismatch=os_mismatch,
         timezone_mismatch=tz_mismatch,
         raw_response=data,
