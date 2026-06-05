@@ -170,7 +170,7 @@ uvicorn app.main:app --reload --port 8000
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click **Load Temporary Add-on...** → Select `extension/manifest.json`
 
-> **Note:** Temporary extensions are removed on Firefox restart. For permanent installation, use the `.xpi` file from the [`.xpi` file](https://check.maxbob.cfd/download/extension-firefox.xpi).
+> **Note:** Temporary extensions are removed on Firefox restart. For permanent installation, download the [`.xpi` file](https://check.maxbob.cfd/download/extension-firefox.xpi).
 
 ## API Reference
 
